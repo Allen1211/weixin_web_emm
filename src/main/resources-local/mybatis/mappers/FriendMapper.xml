@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.FriendMapper">
+
+    <resultMap id="FriendApplicationMap" type="com.allen.imsystem.model.dto.FriendApplicationDTO">
+        <!-- association和result同时存在时，一定要指定id列 ，不然结果集只会有一条结果 待探究      -->
+        <id column="uid" />
+        <result property="applicationReason" column="reason"/>
+        <result property="hasAccept" column="pass" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <association property="applicationInfo" resultMap="applicationInfoMap"/>
+    </resultMap>
+
+    <resultMap id="applicationInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+    </resultMap>
+
+    <resultMap id="friendGroupMap" type="com.allen.imsystem.model.dto.FriendGroup">
+        <result property="groupId" column="id"/>
+        <result property="groupName" column="fri_group_name"/>
+    </resultMap>
+
+    <resultMap id="friendGroupWithSizeMap" type="com.allen.imsystem.model.dto.FriendGroup">
+        <result property="groupId" column="id"/>
+        <result property="groupName" column="fri_group_name"/>
+        <result property="groupSize" column="fri_group_size"/>
+    </resultMap>
+
+
+    <select id="selectFriendId" resultType="java.lang.String">
+        SELECT uid_b as friend_uid from friend
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE friend.uid_a = #{uid}
+        UNION ALL
+        SELECT uid_a as friend_uid from friend
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE friend.uid_b = #{uid}
+    </select>
+
+    <select id="selectAquiredId" resultType="java.lang.String">
+        SELECT to_uid FROM friend_apply WHERE from_uid = #{uid} AND pass=0
+    </select>
+
+    <select id="selectApplyGroupId" resultType="java.lang.Integer">
+        SELECT group_id FROM friend_apply where from_uid=#{fromUid} and to_uid=#{toUid}
+    </select>
+
+    <select id="selectFriendGroupList" resultMap="friendGroupMap">
+        SELECT id,fri_group_name FROM friend_group where uid=#{uid}
+    </select>
+
+    <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
+        SELECT id,fri_group_name,
+        (SELECT count(*) from friend
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE friend.uid_a = #{uid} AND b_in_a_fgroup_id = fg.id)
+        +
+        (SELECT count(*) from friend
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = fg.id)
+        as fri_group_size
+        FROM friend_group as fg where uid= '0' or uid = #{uid}
+    </select>
+
+    <select id="selectLatestApply" resultMap="FriendApplicationMap">
+        (SELECT uid,username,icon_id,reason,pass,fa.created_time,fa.has_read FROM user_info as ui
+        INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
+        WHERE fa.to_uid = #{uid} and fa.has_read=0
+        ORDER BY fa.created_time DESC)
+        UNION ALL
+        (SELECT uid,username,icon_id,reason,pass,fa.created_time,fa.has_read FROM user_info as ui
+        INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
+        WHERE fa.to_uid = #{uid} and fa.has_read=1 and (TO_DAYS(NOW()) - TO_DAYS(fa.created_time)) &lt;=30
+        ORDER BY fa.created_time DESC)
+        LIMIT #{limit}
+    </select>
+
+    <insert id="addFriendApply" >
+        INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
+        values (#{fromUid},#{toUid},#{groupId},#{reason})
+    </insert>
+
+    <update id="updateFriendApplyPass" >
+        UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW() WHERE from_uid=#{fromUid} and to_uid=#{toUid}
+    </update>
+
+    <insert id="insertNewFriend" >
+        INSERT INTO friend (uid_a, uid_b, a_in_b_fgroup_id, b_in_a_fgroup_id)
+        VALUES (#{uidA},#{uidB},#{abGroupId},#{baGroupId});
+    </insert>
+</mapper>

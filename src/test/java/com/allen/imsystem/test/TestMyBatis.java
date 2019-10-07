@@ -1,0 +1,60 @@
+package com.allen.imsystem.test;
+
+import com.allen.imsystem.dao.FriendDao;
+import com.allen.imsystem.dao.SerachDao;
+import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.dto.UserSearchResult;
+import com.allen.imsystem.service.impl.UserService;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
+public class TestMyBatis {
+
+    @Autowired
+    UserDao userDao;
+
+    @Autowired
+    SerachDao serachDao;
+
+    @Autowired
+    FriendDao friendDao;
+
+    @Test
+    public void test1(){
+//        Assert.assertEquals(0,userDao.countUid("12345").intValue());
+        userDao.findUserWithEmail("837806944@qq.com");
+    }
+
+    @Test
+    public void test2(){
+        Map<String, UserSearchResult> map = serachDao.searchUserByKeyword("1");
+        List<String> friendId = friendDao.getAllFriendId("63374315");
+        List<String> requiredId = friendDao.getAllRequiredToId("63374315");
+        for(String id:friendId){
+            UserSearchResult result = map.get(id);
+            result.setApplicable(false);
+            result.setReason("已是好友");
+        }
+        for(String id:requiredId){
+            UserSearchResult result = map.get(id);
+            result.setApplicable(false);
+            result.setReason("已发起申请");
+        }
+        map.get("63374315").setApplicable(false);
+        map.get("63374315").setReason("是自己");
+
+        List<UserSearchResult> resultList = new ArrayList<>(map.values());
+
+    }
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+
+    <!-- 加载类路径下的属性文件 -->
+    <properties resource="db.properties">
+    </properties>
+
+    <!-- MyBatis设置， 改变Mybatis的运行时行为 -->
+<!--    <settings>
+        <setting name="" value=""/>
+    </settings>-->
+
+    <!-- 设置一个默认的连接环境信息 -->
+    <environments default="mysql-env">
+        <!-- 连接环境信息，取一个任意唯一的名字 -->
+        <environment id="mysql-env">
+            <!-- mybatis使用jdbc事务管理方式 -->
+            <transactionManager type="jdbc"/>
+            <!-- mybatis使用连接池方式来获取连接 -->
+            <dataSource type="com.allen.imsystem.dao.C3p0DataSourceFactory">
+                <!-- 配置与数据库交互的4个必要属性 -->
+                <property name="driverClass" value="${mysql.driver}"/>
+                <property name="jdbcUrl" value="${mysql.url}"/>
+                <property name="user" value="${mysql.username}"/>
+                <property name="password" value="${mysql.password}"/>
+            </dataSource>
+        </environment>
+
+
+    </environments>
+
+    <mappers>
+        <mapper resource="mappers/UserMapper.xml"/>
+    </mappers>
+
+</configuration>
