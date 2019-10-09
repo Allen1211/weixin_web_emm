@@ -19,7 +19,8 @@ public class RegistFormDTO {
     @Length(min = 1, max = 12, message = "用户名格式错误")
     private String username;
 
-    @Pattern(regexp = GlobalConst.RegExp.PASSWORD, message = "密码格式错误")
+//    @Pattern(regexp = GlobalConst.RegExp.PASSWORD, message = "密码格式错误")
+    @NotEmpty
     private String password;
 
     @NotEmpty(message = "验证码不可为空")

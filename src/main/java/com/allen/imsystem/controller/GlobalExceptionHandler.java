@@ -5,10 +5,12 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.model.dto.ErrMsg;
 import com.allen.imsystem.model.dto.JSONResponse;
+import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import org.apache.ibatis.binding.BindingException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -40,6 +42,20 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public JSONResponse handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex){
         throw new BusinessException(ExceptionType.REQUEST_METHOD_WRONG);
+    }
+
+    @ExceptionHandler(MySQLIntegrityConstraintViolationException.class)
+    @ResponseBody
+    public JSONResponse handleMySQLIntegrityConstraintViolationException(MySQLIntegrityConstraintViolationException ex){
+        throw new BusinessException(ExceptionType.DATA_NOT_UNIQUE);
+    }
+
+
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseBody
+    public JSONResponse handleHttpMediaTypeNotSupportedException(HttpRequestMethodNotSupportedException ex){
+        throw new BusinessException(ExceptionType.SERVER_ERROR, "不支持的content-type");
     }
 
 

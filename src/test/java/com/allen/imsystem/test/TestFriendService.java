@@ -23,16 +23,16 @@ public class TestFriendService {
         List<FriendApplicationDTO> list = friendService.getFriendApplicationList("63374315");
         System.out.println(list.size());
     }
-    @Test
-    public void test2(){
-        ApplyAddFriendDTO params = new ApplyAddFriendDTO();
-        params.setApplicationReason("测试");
-        params.setUid("63374315");
-        params.setFriendId("97554417");
-        params.setGroupId("1");
-        boolean change = friendService.addFriendApply(params);
-        System.out.println(change);
-    }
+//    @Test
+//    public void test2(){
+//        ApplyAddFriendDTO params = new ApplyAddFriendDTO();
+//        params.setApplicationReason("测试");
+//        params.setUid("63374315");
+//        params.setFriendId("97554417");
+//        params.setGroupId("1");
+//        boolean change = friendService.addFriendApply(params);
+//        System.out.println(change);
+//    }
     @Test
     public void test3(){
         boolean success = friendService.passFriendApply("63374315","97554417",1);

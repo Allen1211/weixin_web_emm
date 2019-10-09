@@ -1,13 +1,13 @@
 package com.allen.imsystem.service.impl;
 
+import com.allen.imsystem.common.exception.BusinessException;
+import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SerachDao;
 import com.allen.imsystem.dao.UserDao;
-import com.allen.imsystem.model.dto.ApplyAddFriendDTO;
-import com.allen.imsystem.model.dto.FriendApplicationDTO;
-import com.allen.imsystem.model.dto.FriendGroup;
-import com.allen.imsystem.model.dto.UserSearchResult;
+import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.service.IFriendService;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,8 +61,8 @@ public class FriendService implements IFriendService {
 
     @Override
     @Transactional
-    public boolean addFriendApply(ApplyAddFriendDTO params) {
-        String fromUId = params.getUid();
+    public boolean addFriendApply(ApplyAddFriendDTO params,String uid) {
+        String fromUId = uid;
         String toUId = params.getFriendId();
         String reason = params.getApplicationReason();
         Integer groupId = params.getGroupId()==null? 1:Integer.valueOf(params.getGroupId()) ;
@@ -90,6 +90,35 @@ public class FriendService implements IFriendService {
     @Override
     public List<FriendGroup> getFriendGroupList(String uid) {
         return friendDao.selectFriendGroupListWithSize(uid);
+    }
+
+    @Override
+    public boolean addFriendGroup(String uid, String groupName) {
+        if(groupName == null){
+            throw new BusinessException(ExceptionType.MISSING_PARAMETER_ERROR);
+        }
+        if(groupName.length() >10)
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名长度应小于10");
+        return friendDao.insertNewFriendGroup(uid,groupName) > 0;
+    }
+
+    @Override
+    public List<UserInfoDTO> getFriendList(String uid) {
+        return friendDao.selectFriendList(uid);
+    }
+
+    @Override
+    public UserInfoDTO getFriendInfo(String uid, String friendId) {
+        boolean isNotFriend = friendDao.checkIsFriend(uid,friendId)==0;
+        if(isNotFriend){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"这不是你的好友");
+        }
+        return friendDao.selectFriendInfo(friendId);
+    }
+
+    @Override
+    public boolean deleteFriend(String uid, String friendId) {
+        return friendDao.deleteFriend(uid,friendId)>0;
     }
 
 

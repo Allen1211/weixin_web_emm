@@ -22,7 +22,7 @@
 
     <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
         <property name="driverClass" value="${mysql.driver}"/>
-        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/emm_im"/>
+        <property name="jdbcUrl" value="jdbc:mysql://120.77.42.156:3306/emm_im"/>
         <property name="user" value="${mysql.username}"/>
         <property name="password" value="${mysql.password}"/>
         <property name="initialPoolSize" value="3"/>

@@ -83,7 +83,7 @@ public class UserService implements IUserService {
      * @return
      */
     @Override
-    public Map<String,String> login(String uidOrEmail, String password){
+    public Map<String,Object> login(String uidOrEmail, String password){
         User user = null;
         // 判断是email还是uid
         if(uidOrEmail.contains("@")){
@@ -108,10 +108,9 @@ public class UserService implements IUserService {
          * 分发、刷新token
          */
         String newToken = JWTUtil.createLoginToken(user.getUid());
-        String uid = user.getUid();
-        Map<String,String> map = new HashMap<>(2);
+        Map<String,Object> map = new HashMap<>(2);
         map.put("newToken",newToken);
-        map.put("uid",uid);
+        map.put("user",user);
         return map;
     }
 

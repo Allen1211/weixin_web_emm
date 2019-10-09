@@ -32,9 +32,9 @@ public interface IUserService {
      * 用户登录
      * @param uid
      * @param password
-     * @return 返回uid，及newToken
+     * @return 返回user对象，及newToken
      */
-    Map<String,String> login(String uid, String password);
+    Map<String,Object> login(String uid, String password);
 
     /**
      * 用户下线

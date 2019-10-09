@@ -87,7 +87,7 @@ public class JWTUtil {
      * @param token
      * @return 校验成功返回true
      */
-    public static boolean verifyLoginToken(String token){
+    public static boolean verifyLoginToken(String token, String correctUid){
         try {
             JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
             DecodedJWT decodedJWT = verifier.verify(token);

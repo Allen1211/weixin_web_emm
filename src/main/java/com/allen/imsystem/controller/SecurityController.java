@@ -33,8 +33,6 @@ public class SecurityController {
     @RequestMapping(value = "/getCodeImage",method = RequestMethod.GET)
     public void getCodeImage(HttpSession session, HttpServletResponse response) throws IOException {
 
-
-
         Map<String,Object> codeImage = VertifyCodeUtil.getCodeImage();
         String code = (String) codeImage.get("code");
         BufferedImage image = (BufferedImage) codeImage.get("image");

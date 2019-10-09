@@ -19,7 +19,7 @@ public class GlobalConst {
     public static class RegExp {
 
         public static final String EMAIL = "^[\\w]+@[a-zA-z\\d]+\\.[a-zA-z0-9]+$";
-        public static final String PASSWORD = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{6,12}$";
+        public static final String PASSWORD = "^*$";
     }
 
     public static class MQ {

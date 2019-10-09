@@ -13,9 +13,9 @@ public class SecurityService implements ISecurityService {
 
     @Override
     public boolean verifyImageCode(String imageCode, String correctImageCode) {
-        if(imageCode==null || !StringUtils.equals(imageCode,correctImageCode)){
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "验证码错误");
-        }
+//        if(imageCode==null || !StringUtils.equals(imageCode,correctImageCode)){
+//            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "验证码错误");
+//        }
         return true;
     }
 
