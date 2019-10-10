@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Map;
 @Repository
-public class SerachDao {
+public class SearchDao {
 
     @Autowired
     private SearchMapper searchMapper;

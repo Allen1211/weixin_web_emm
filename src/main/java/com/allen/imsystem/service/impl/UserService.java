@@ -107,7 +107,7 @@ public class UserService implements IUserService {
         /**
          * 分发、刷新token
          */
-        String newToken = JWTUtil.createLoginToken(user.getUid());
+        String newToken = JWTUtil.createLoginToken(user.getUid(),user.getId());
         Map<String,Object> map = new HashMap<>(2);
         map.put("newToken",newToken);
         map.put("user",user);

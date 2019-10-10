@@ -1,5 +1,6 @@
 package com.allen.imsystem.controller;
 
+import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.VertifyCodeUtil;
@@ -7,6 +8,7 @@ import com.allen.imsystem.model.dto.JSONResponse;
 import com.allen.imsystem.service.IMailService;
 import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +32,10 @@ public class SecurityController {
     @Autowired
     private IMailService mailService;
 
+    @Qualifier("defaultCacheHolder")
+    @Autowired
+    private ICacheHolder cacheHolder;
+
     @RequestMapping(value = "/getCodeImage",method = RequestMethod.GET)
     public void getCodeImage(HttpSession session, HttpServletResponse response) throws IOException {
 
@@ -38,6 +44,7 @@ public class SecurityController {
         BufferedImage image = (BufferedImage) codeImage.get("image");
         // 验证码保存到session
         session.setAttribute("imageCode", code);
+
         System.out.println("new ImageCode:"+code);
         //浏览器不要缓存，防止验证码图片不能刷新
         response.setDateHeader("expries", -1);
@@ -69,7 +76,7 @@ public class SecurityController {
         if(sendSuccess){
             Long expriedTime = System.currentTimeMillis() + 20*60*1000; // 过期时间20分钟
             String emailCodeToken = emailCode + "#" + expriedTime;  // 拼接
-            session.setAttribute(email,emailCodeToken);
+            cacheHolder.setEmailCode(email,emailCodeToken);
             return new JSONResponse(1);
         }else{
             throw new BusinessException(ExceptionType.SERVER_ERROR);

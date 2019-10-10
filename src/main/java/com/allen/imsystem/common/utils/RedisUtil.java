@@ -22,7 +22,7 @@ public class RedisUtil {
     @Autowired
     private JedisPool jedisPool;
 
-    private static final int EXPRIED_TIME = 60 * 60 * 24;    // 一天
+    private static final int EXPRIED_TIME = 60 * 60 * 3;    // 三小时
 
     /**
      * 获取jedis

@@ -1,15 +1,13 @@
 package com.allen.imsystem.test;
 
 import com.allen.imsystem.dao.FriendDao;
-import com.allen.imsystem.dao.SerachDao;
+import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
-import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.dto.UserSearchResult;
-import com.allen.imsystem.service.impl.UserService;
+import com.allen.imsystem.model.pojo.User;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -25,7 +23,7 @@ public class TestMyBatis {
     UserDao userDao;
 
     @Autowired
-    SerachDao serachDao;
+    SearchDao searchDao;
 
     @Autowired
     FriendDao friendDao;
@@ -33,12 +31,13 @@ public class TestMyBatis {
     @Test
     public void test1(){
 //        Assert.assertEquals(0,userDao.countUid("12345").intValue());
-        userDao.findUserWithEmail("837806944@qq.com");
+        User user = userDao.findUserWithEmail("234@23.com");
+        System.out.println(user.getTel());
     }
 
     @Test
     public void test2(){
-        Map<String, UserSearchResult> map = serachDao.searchUserByKeyword("1");
+        Map<String, UserSearchResult> map = searchDao.searchUserByKeyword("1");
         List<String> friendId = friendDao.getAllFriendId("63374315");
         List<String> requiredId = friendDao.getAllRequiredToId("63374315");
         for(String id:friendId){

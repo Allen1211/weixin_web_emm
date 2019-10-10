@@ -2,11 +2,14 @@ package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.EmailServiceMessageConsumer;
+import com.allen.imsystem.common.ICacheHolder;
+import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.common.utils.RedisUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import redis.clients.jedis.Jedis;
@@ -84,4 +87,35 @@ public class TestRedis {
 //        },"producer2").start();
     }
 
+    @Qualifier("defaultCacheHolder")
+    @Autowired
+    private ICacheHolder cacheHolder;
+
+    @Test
+    public void testCache1(){
+        Assert.assertTrue(cacheHolder.setImageCode("abcd","12345678"));
+        Assert.assertTrue(cacheHolder.setImageCode("test","12345"));
+        Assert.assertEquals("abcd",cacheHolder.getImageCode("12345678"));
+        Assert.assertEquals("test",cacheHolder.getImageCode("12345"));
+        Assert.assertEquals(null,cacheHolder.getEmailCode("12345678"));
+        cacheHolder.removeImageCode("12345678");
+        Assert.assertEquals(null,cacheHolder.getImageCode("12345678"));
+    }
+
+    @Test
+    public void testCache2(){
+        String token = JWTUtil.createLoginToken("123",555,60*60);
+
+        long a = System.currentTimeMillis();
+
+        String uid = JWTUtil.getMsgFromToken(token,"uid",String.class);
+        int userId = JWTUtil.getMsgFromToken(token,"userId",Integer.class);
+
+        long b = System.currentTimeMillis();
+
+        System.out.println(b-a + " ms");
+
+        Assert.assertEquals("123",uid);
+        Assert.assertEquals(555,userId);
+    }
 }

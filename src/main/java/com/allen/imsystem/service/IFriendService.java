@@ -1,6 +1,7 @@
 package com.allen.imsystem.service;
 
 import com.allen.imsystem.model.dto.*;
+import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public interface IFriendService {
     /**
      * 新建一个好友分组
      */
-    boolean addFriendGroup(String uid,String groupName);
+    Integer addFriendGroup(Integer userId, String uid, String groupName);
 
     /**
      * 获取好友列表
@@ -58,5 +59,15 @@ public interface IFriendService {
     /**
      * 更改好友分组组名
      */
-    boolean updateFriendGroupName(Integer groupId, String groupName);
+    boolean updateFriendGroupName(Integer groupId, String groupName,Integer userId);
+
+    /**
+     * 删除一个好友分组，内部如果有好友则全移到默认分组
+     */
+    boolean deleteFriendGroup(Integer groupId,String uid);
+
+    /**
+     * 移动好友到另一个分组
+     */
+    boolean moveFriendToOtherGroup(String uid,String friendId, Integer oldGroupId, Integer newGroupId);
 }

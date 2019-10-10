@@ -52,6 +52,10 @@
         SELECT id,fri_group_name FROM friend_group where uid=#{uid}
     </select>
 
+    <select id="selectGroupId" resultType="java.lang.Integer">
+        SELECT id FROM friend_group where uid=#{uid} and fri_group_name=#{groupName}
+    </select>
+
     <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
         SELECT id,fri_group_name,
         (SELECT count(*) from friend
@@ -97,6 +101,16 @@
         WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </select>
 
+    <select id="selectGroupSize" resultType="java.lang.Integer">
+        SELECT (SELECT count(*) from friend
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE friend.uid_a = #{uid} AND b_in_a_fgroup_id = #{groupId})
+        +
+        (SELECT count(*) from friend
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = #{groupId}) as 'size'
+    </select>
+
     <insert id="addFriendApply" >
         INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
         values (#{fromUid},#{toUid},#{groupId},#{reason})
@@ -106,16 +120,43 @@
         UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW() WHERE from_uid=#{fromUid} and to_uid=#{toUid}
     </update>
 
+    <update id="updateFriendGroupName" >
+        UPDATE friend_group set fri_group_name=#{groupName} WHERE user_id=#{userId} and id=#{groupId}
+    </update>
+
+    <update id="deleteFriendGroup">
+        UPDATE friend_group SET status=0 WHERE id=#{groupId} and uid=#{uid}
+    </update>
+
+    <update id="moveFriendToGroup" >
+    </update>
+
+    <update id="moveGroupFriendToDefaultGroup">
+        update friend as f set f.b_in_a_fgroup_id=1 WHERE f.b_in_a_fgroup_id= #{groupId} and f.uid_a = #{uid};
+        update friend as f set f.a_in_b_fgroup_id=1 WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid}
+    </update>
+
+<!--    <update id="moveFriendToAnotherGroup">-->
+<!--        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId};-->
+<!--&#45;&#45;         update friend as f set f.a_in_b_fgroup_id=#{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id= #{oldGroupId}-->
+<!--    </update>-->
+    <update id="moveFriendToAnotherGroup">
+        update friend as f set b_in_a_fgroup_id = #{newGroupId} WHERE uid_a = #{uid} and uid_b = #{friendId} and b_in_a_fgroup_id = #{oldGroupId};
+--         update friend as f set f.a_in_b_fgroup_id=#{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id= #{oldGroupId}
+    </update>
+
     <insert id="insertNewFriend" >
         INSERT INTO friend (uid_a, uid_b, a_in_b_fgroup_id, b_in_a_fgroup_id)
         VALUES (#{uidA},#{uidB},#{abGroupId},#{baGroupId});
     </insert>
 
     <insert id="insertNewFriendGroup">
-        INSERT INTO friend_group (uid,fri_group_name) VALUES (#{uid},#{groupName})
+        INSERT INTO friend_group (user_id,uid,fri_group_name) VALUES (#{userId},#{uid},#{groupName})
     </insert>
 
     <delete id="deleteFriend">
         DELETE FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </delete>
+
+
 </mapper>

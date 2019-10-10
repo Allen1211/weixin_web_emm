@@ -22,6 +22,10 @@ public class FriendDao {
         return friendMapper.selectAquiredId(uid);
     }
 
+    public Integer selectGroupId(@Param("uid")String uid, @Param("groupName")String groupName){
+        return friendMapper.selectGroupId(uid,groupName);
+    }
+
     public Integer selectApplyGruopId(String fromUid, String toUid){
         return friendMapper.selectApplyGroupId(fromUid,toUid);
     }
@@ -42,6 +46,14 @@ public class FriendDao {
         return friendMapper.checkIsFriend(uid,friendId);
     }
 
+    public Integer selectGroupSize(Integer groupId,String uid){
+        return friendMapper.selectGroupSize(groupId,uid);
+    }
+
+    public Integer deleteFriendGroup(Integer groupId,String uid){
+        return friendMapper.deleteFriendGroup(groupId, uid);
+    }
+
     public Integer addFriendApply(String fromUid,String toUid,Integer groupId,String reason){
         return friendMapper.addFriendApply(fromUid,toUid,groupId,reason);
     }
@@ -58,11 +70,24 @@ public class FriendDao {
         return friendMapper.selectFriendGroupListWithSize(uid);
     }
 
-    public Integer insertNewFriendGroup(String uid, String groupName){
-        return friendMapper.insertNewFriendGroup(uid,groupName);
+    public Integer insertNewFriendGroup(Integer userId,String uid, String groupName){
+        return friendMapper.insertNewFriendGroup(userId,uid,groupName);
     }
 
     public Integer deleteFriend(String uid,String friendId){
         return friendMapper.deleteFriend(uid,friendId);
+    }
+
+    public Integer updateFriendGroupName(Integer groupId,String groupName,Integer userId){
+        return friendMapper.updateFriendGroupName(groupId,groupName,userId);
+    }
+
+    public Integer moveGroupFriendToDefaultGroup(Integer groupId, String uid){
+        return friendMapper.moveGroupFriendToDefaultGroup(groupId,uid);
+    }
+
+    public Integer moveFriendToAnotherGroup(String uid, String friendId,
+                                            Integer oldGroupId, Integer newGroupId){
+        return friendMapper.moveFriendToAnotherGroup(uid,friendId,oldGroupId,newGroupId);
     }
 }

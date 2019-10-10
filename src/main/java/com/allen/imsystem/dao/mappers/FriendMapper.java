@@ -13,6 +13,8 @@ public interface FriendMapper {
 
     List<String> selectAquiredId(String uid);
 
+    Integer selectGroupId(@Param("uid")String uid, @Param("groupName")String groupName);
+
     Integer  selectApplyGroupId(@Param("fromUid") String fromUid, @Param("toUid") String toUid);
 
     List<FriendApplicationDTO> selectLatestApply(@Param("uid") String uid,@Param("limit") Integer limit);
@@ -26,6 +28,8 @@ public interface FriendMapper {
     Integer addFriendApply(@Param("fromUid") String fromUid,@Param("toUid")String toUid
             ,@Param("groupId")Integer groupId,@Param("reason")String reason);
 
+    Integer selectGroupSize(@Param("groupId") Integer groupId,@Param("uid") String uid);
+
     Integer updateFriendApplyPass(@Param("pass") boolean pass,@Param("fromUid") String fromUid,@Param("toUid") String toUid);
 
     Integer insertNewFriend(@Param("uidA") String aUid,@Param("uidB") String bUid,
@@ -33,7 +37,17 @@ public interface FriendMapper {
 
     List<FriendGroup> selectFriendGroupListWithSize(@Param("uid")String uid);
 
-    Integer insertNewFriendGroup(@Param("uid")String uid, @Param("groupName")String groupName);
+    Integer insertNewFriendGroup(@Param("userId")Integer userId,@Param("uid")String uid, @Param("groupName")String groupName);
 
     Integer deleteFriend(@Param("uid")String uid, @Param("friendId")String friendId);
+
+    Integer deleteFriendGroup(@Param("groupId") Integer groupId,@Param("uid") String uid);
+
+    Integer updateFriendGroupName(@Param("groupId")Integer groupId, @Param("groupName")String groupName,
+                                  @Param("userId")Integer userId);
+
+    Integer moveGroupFriendToDefaultGroup(@Param("groupId") Integer groupId,@Param("uid") String uid);
+
+    Integer moveFriendToAnotherGroup(@Param("uid")String uid, @Param("friendId")String friendId,
+                                     @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
 }

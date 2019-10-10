@@ -3,7 +3,7 @@ package com.allen.imsystem.service.impl;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.dao.FriendDao;
-import com.allen.imsystem.dao.SerachDao;
+import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.service.IFriendService;
@@ -19,7 +19,7 @@ import java.util.Map;
 public class FriendService implements IFriendService {
 
     @Autowired
-    private SerachDao serachDao;
+    private SearchDao searchDao;
 
     @Autowired
     private FriendDao friendDao;
@@ -29,7 +29,7 @@ public class FriendService implements IFriendService {
 
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
-        Map<String, UserSearchResult> map = serachDao.searchUserByKeyword(keyword);
+        Map<String, UserSearchResult> map = searchDao.searchUserByKeyword(keyword);
         if(map == null)
             new ArrayList<UserSearchResult>();
         List<String> friendId = friendDao.getAllFriendId(uid);
@@ -93,13 +93,18 @@ public class FriendService implements IFriendService {
     }
 
     @Override
-    public boolean addFriendGroup(String uid, String groupName) {
+    public Integer addFriendGroup(Integer userId, String uid, String groupName) {
         if(groupName == null){
             throw new BusinessException(ExceptionType.MISSING_PARAMETER_ERROR);
         }
         if(groupName.length() >10)
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名长度应小于10");
-        return friendDao.insertNewFriendGroup(uid,groupName) > 0;
+        Integer affect = friendDao.insertNewFriendGroup(userId, uid,groupName);
+        Integer groupId = 0;
+        if(affect > 0){
+            groupId = friendDao.selectGroupId(uid,groupName);
+        }
+        return groupId;
     }
 
     @Override
@@ -119,6 +124,40 @@ public class FriendService implements IFriendService {
     @Override
     public boolean deleteFriend(String uid, String friendId) {
         return friendDao.deleteFriend(uid,friendId)>0;
+    }
+
+    @Override
+    public boolean updateFriendGroupName(Integer groupId, String groupName,Integer userId) {
+        if(StringUtils.isEmpty(groupName)){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名不能为空");
+        }
+        if(groupName.trim().equals("好友")){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能与默认组名重复");
+        }
+        return friendDao.updateFriendGroupName(groupId,groupName,userId)>0;
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteFriendGroup(Integer groupId, String uid) {
+        // 1 判断该分组下是否有好友，如果没有直接删除组，结束
+        Integer size = friendDao.selectGroupSize(groupId,uid);
+        // 2 若有好友，将该分组下所有好友转至默认分组
+        boolean moveSuccess = true;
+        if(size != 0){
+            moveSuccess =  friendDao.moveGroupFriendToDefaultGroup(groupId,uid) > 0;
+        }
+        // 3 删除掉该分组
+        boolean deleteSuccess = friendDao.deleteFriendGroup(groupId, uid)>0;
+
+        return moveSuccess&&deleteSuccess;
+    }
+
+    @Override
+    @Transactional
+    public boolean moveFriendToOtherGroup(String uid, String friendId, Integer oldGroupId, Integer newGroupId) {
+        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid,friendId,oldGroupId,newGroupId)==1;
+        return isSuccess;
     }
 
 

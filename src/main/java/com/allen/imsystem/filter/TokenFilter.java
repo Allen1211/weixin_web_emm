@@ -34,21 +34,7 @@ public class TokenFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        Cookie[] cookiess = request.getCookies();
-        HttpSession session = request.getSession();
-        System.out.println(new SimpleDateFormat("yyyy:MM:dd HH:mm:ss").format(new Date())
-                + "->" + request.getRequestURI());
-        System.out.println(request.getMethod());
-        if(request.getMethod().equals("OPTIONS")){
-        }
 
-        if(cookiess != null){
-            for(Cookie cookie :cookiess){
-                if(cookie.getName().equals("token")){
-                    System.out.println(cookie.getValue());
-                }
-            }
-        }
         String URI = request.getRequestURI();
         for(String pass : passURIs){
             if(pass.equals(URI)){
@@ -69,11 +55,11 @@ public class TokenFilter implements Filter {
         if(success)
             filterChain.doFilter(request,response);
         else{
-            //销毁cookie
-            Cookie cookie = new Cookie("token",null);
-            cookie.setMaxAge(0);
-            cookie.setPath(request.getContextPath());
-            response.addCookie(cookie);
+//            //销毁cookie
+//            Cookie cookie = new Cookie("token",null);
+//            cookie.setMaxAge(0);
+//            cookie.setPath(request.getContextPath());
+//            response.addCookie(cookie);
             //销毁session
             request.getSession().invalidate();
             JSONResponse jsonResponse = new JSONResponse(0,1004,new ErrMsg("登录信，请重新登录"));

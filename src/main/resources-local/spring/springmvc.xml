@@ -21,11 +21,6 @@
         <!-- 启用annotation -->
         <mvc:annotation-driven />
 
-        <mvc:interceptors>
-            <!-- 使用bean定义一个Interceptor，直接定义在mvc:interceptors根下面的Interceptor将拦截所有的请求 -->
-            <bean class="com.allen.imsystem.filter.CrossInterceptor"/>
-        </mvc:interceptors>
-
     <!-- 配置视图解析器 如何把handler 方法返回值解析为实际的物理视图 -->
         <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
             <property name="prefix" value="/WEB-INF/views/jsp/"/>

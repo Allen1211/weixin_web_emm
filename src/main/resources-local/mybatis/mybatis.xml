@@ -23,7 +23,7 @@
             <dataSource type="com.allen.imsystem.dao.C3p0DataSourceFactory">
                 <!-- 配置与数据库交互的4个必要属性 -->
                 <property name="driverClass" value="${mysql.driver}"/>
-                <property name="jdbcUrl" value="jdbc:mysql://120.77.42.156:3306/emm_im"/>
+                <property name="jdbcUrl" value="${mysql.url}"/>
                 <property name="user" value="${mysql.username}"/>
                 <property name="password" value="${mysql.password}"/>
             </dataSource>

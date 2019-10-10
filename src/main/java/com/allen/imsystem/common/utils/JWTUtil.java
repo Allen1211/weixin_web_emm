@@ -46,12 +46,13 @@ public class JWTUtil {
      * @param expireTime
      * @return
      */
-    public static String createLoginToken(String uid, long expireTime){
+    public static String createLoginToken(String uid,Integer userId, long expireTime){
         return JWT.create()
                 .withHeader(createHeader())
                 .withIssuer(DEFAULT_ISSUSER)
                 .withIssuedAt(new Date())
                 .withClaim("uid",uid)
+                .withClaim("userId",userId)
                 .withExpiresAt(createExpireDate(expireTime))
                 .sign(DEFAULT_ALGORITHM);
     }
@@ -61,8 +62,8 @@ public class JWTUtil {
      * @param uid
      * @return
      */
-    public static String createLoginToken(String uid){
-        return createLoginToken(uid,DEFAULT_EXPIRE_TIME);
+    public static String createLoginToken(String uid,Integer userId){
+        return createLoginToken(uid,userId,DEFAULT_EXPIRE_TIME);
     }
 
     /**
@@ -82,6 +83,12 @@ public class JWTUtil {
         return builder.withExpiresAt(createExpireDate(expireTime)).sign(DEFAULT_ALGORITHM);
     }
 
+    public static <T> T getMsgFromToken(String token, String name, Class<T> clazz){
+        JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
+        DecodedJWT decodedJWT = verifier.verify(token);
+        return decodedJWT.getClaim(name).as(clazz);
+    }
+
     /**
      * 校验登录token
      * @param token
@@ -99,6 +106,7 @@ public class JWTUtil {
         }
     }
 
+
     private static Map<String,Object> createHeader(){
         Map<String ,Object> header = new HashMap<>(2);
         header.put("typ","JWT");
@@ -112,7 +120,9 @@ public class JWTUtil {
         return new Date(System.currentTimeMillis() + expireTime);
     }
 
+    public static void main(String[] args) {
 
+    }
 
 
 }

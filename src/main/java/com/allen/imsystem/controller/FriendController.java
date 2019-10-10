@@ -1,15 +1,18 @@
 package com.allen.imsystem.controller;
 
+import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.common.utils.SessionUtil;
+import com.allen.imsystem.common.utils.HTTPUtil;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.service.IFriendService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,10 @@ public class FriendController {
     @Autowired
     private IFriendService friendService;
 
+    @Qualifier("defaultCacheHolder")
+    @Autowired
+    private ICacheHolder cacheHolder;
+
     /**
      * 用户搜索功能
      *
@@ -29,8 +36,8 @@ public class FriendController {
      */
     @RequestMapping("/searchStranger")
     @ResponseBody
-    public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpSession session) {
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         String keyword = params.get("keyword");
         List<UserSearchResult> resultList = friendService.searchStranger(uid, keyword);
         JSONResponse jsonResponse = new JSONResponse(1);
@@ -46,9 +53,9 @@ public class FriendController {
      */
     @RequestMapping("/acceptFriendApplication")
     @ResponseBody
-    public JSONResponse acceptFriendApplication(@RequestBody Map<String, Object> params, HttpSession session) {
+    public JSONResponse acceptFriendApplication(@RequestBody Map<String, Object> params, HttpServletRequest request) {
         // 1、更新数据库
-        String uid = SessionUtil.getUidFromSession(session);
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         String friendId = (String) params.get("friendId");
         Integer groupId = Integer.valueOf((String) params.get("groupId"));
         boolean updateSuccess = friendService.passFriendApply(uid, friendId, groupId);
@@ -70,8 +77,8 @@ public class FriendController {
      */
     @RequestMapping("/applyAddFriend")
     @ResponseBody
-    public JSONResponse addFriendApply(@RequestBody @Validated ApplyAddFriendDTO params, HttpSession session) {
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse addFriendApply(@RequestBody @Validated ApplyAddFriendDTO params, HttpServletRequest request) {
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         // 更新数据库
         boolean isSuccess = friendService.addFriendApply(params, uid);
 
@@ -91,8 +98,8 @@ public class FriendController {
      */
     @RequestMapping(value = "/getFriendApplication")
     @ResponseBody
-    public JSONResponse getFriendApplication(HttpSession session) {
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse getFriendApplication(HttpServletRequest request) {
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         // 更新数据库
         List<FriendApplicationDTO> applicationList = friendService.getFriendApplicationList(uid);
 
@@ -108,8 +115,8 @@ public class FriendController {
      */
     @RequestMapping(value = "/getFriendGroup", method = RequestMethod.GET)
     @ResponseBody
-    public JSONResponse getFriendGroup(HttpSession session) {
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse getFriendGroup(HttpServletRequest request) {
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         List<FriendGroup> friendGroupList = friendService.getFriendGroupList(uid);
         JSONResponse jsonResponse = new JSONResponse(1);
         jsonResponse.putData("groupList", friendGroupList);
@@ -121,12 +128,15 @@ public class FriendController {
      */
     @RequestMapping(value = "/addFriendGroup", method = RequestMethod.POST)
     @ResponseBody
-    public JSONResponse addFriendGroup(@RequestBody Map<String, Object> params, HttpSession session) {
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse addFriendGroup(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
+        Integer userId = cacheHolder.getUserId(HTTPUtil.getTokenFromHeader(request));
         String groupName = (String) params.get("groupName");
-        boolean success = friendService.addFriendGroup(uid, groupName);
-        if (success) {
-            return new JSONResponse(1);
+        Integer groupId = friendService.addFriendGroup(userId,uid, groupName);
+        if (groupId != 0) {
+            JSONResponse jsonResponse = new JSONResponse(1);
+            jsonResponse.putData("groupId",groupId);
+            return jsonResponse;
         } else {
             throw new BusinessException(ExceptionType.SERVER_ERROR, "新建失败");
         }
@@ -137,8 +147,8 @@ public class FriendController {
      */
     @RequestMapping("/getFriendList")
     @ResponseBody
-    public JSONResponse getFriendList(HttpSession session){
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse getFriendList(HttpServletRequest request){
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         List<UserInfoDTO> friendList = friendService.getFriendList(uid);
         JSONResponse jsonResponse = new JSONResponse(1);
         jsonResponse.putData("friendList",friendList);
@@ -147,8 +157,8 @@ public class FriendController {
 
     @RequestMapping("/getFriendInfo")
     @ResponseBody
-    public JSONResponse getFriendInfo(@RequestParam("friendId")String friendId,HttpSession session){
-        String uid = SessionUtil.getUidFromSession(session);
+    public JSONResponse getFriendInfo(@RequestParam("friendId")String friendId,HttpServletRequest request){
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         UserInfoDTO friendInfo = friendService.getFriendInfo(uid,friendId);
         JSONResponse jsonResponse = new JSONResponse(1);
         jsonResponse.putData("friendInfo",friendInfo);
@@ -157,9 +167,9 @@ public class FriendController {
 
     @RequestMapping("/deleteFriend")
     @ResponseBody
-    public JSONResponse deleteFriendInfo(@RequestBody Map<String,String> params,HttpSession session){
+    public JSONResponse deleteFriendInfo(@RequestBody Map<String,String> params,HttpServletRequest request){
         String friendId = params.get("friendId");
-        String uid = SessionUtil.getUidFromSession(session);
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
         boolean success = friendService.deleteFriend(uid,friendId);
         System.out.println("try to delete a friend that not your friend");
         return new JSONResponse(1);
@@ -167,12 +177,46 @@ public class FriendController {
 
     @RequestMapping("/updateFriendGroupName")
     @ResponseBody
-    public JSONResponse updateFriendGroupName(@RequestBody Map<String,String> params,HttpSession session){
-        String groupId = params.get("groupId");
+    public JSONResponse updateFriendGroupName(@RequestBody Map<String,String> params,HttpServletRequest request){
+        Integer groupId = Integer.valueOf(params.get("groupId"));
         String newGroupName = params.get("newGroupName");
-        Integer userId = SessionUtil.getUserIdFromSession(session);
-        return null;
+        Integer userId = cacheHolder.getUserId(HTTPUtil.getTokenFromHeader(request));
+        boolean success = friendService.updateFriendGroupName(groupId,newGroupName,userId);
+        if (success) {
+            return new JSONResponse(1);
+        } else {
+            throw new BusinessException(ExceptionType.SERVER_ERROR, "更改失败");
+        }
     }
+
+    @RequestMapping("/deleteFriendGroup")
+    @ResponseBody
+    public JSONResponse deleteFriendGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
+        Integer groupId = Integer.valueOf(params.get("groupId"));
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
+        boolean success = friendService.deleteFriendGroup(groupId,uid);
+        if (success) {
+            return new JSONResponse(1);
+        } else {
+            throw new BusinessException(ExceptionType.SERVER_ERROR, "删除失败");
+        }
+    }
+
+    @RequestMapping("/moveFriendToOtherGroup")
+    @ResponseBody
+    public JSONResponse moveFriendToOtherGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
+        Integer oldGroupId = Integer.valueOf(params.get("oldGroupId"));
+        Integer newGroupId = Integer.valueOf(params.get("newGroupId"));
+        String friendId = params.get("friendId");
+        String uid = cacheHolder.getUid(HTTPUtil.getTokenFromHeader(request));
+        boolean isSucess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
+        if (isSucess) {
+            return new JSONResponse(1);
+        } else {
+            throw new BusinessException(ExceptionType.SERVER_ERROR, "更改失败");
+        }
+    }
+
 
     @RequestMapping("/*")
     public void urlWrong(){

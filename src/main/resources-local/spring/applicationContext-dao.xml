@@ -22,7 +22,7 @@
 
     <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
         <property name="driverClass" value="${mysql.driver}"/>
-        <property name="jdbcUrl" value="jdbc:mysql://120.77.42.156:3306/emm_im"/>
+        <property name="jdbcUrl" value="${mysql.url}"/>
         <property name="user" value="${mysql.username}"/>
         <property name="password" value="${mysql.password}"/>
         <property name="initialPoolSize" value="3"/>
@@ -45,12 +45,12 @@
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.UserMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
     </bean>
-    <bean id="friendMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
-        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.FriendMapper" />
-        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
-    </bean>
     <bean id="searchMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.SearchMapper" />
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+    </bean>
+    <bean id="friendMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.FriendMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
     </bean>
 
