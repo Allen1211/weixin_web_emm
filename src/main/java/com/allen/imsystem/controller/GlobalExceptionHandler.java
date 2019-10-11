@@ -7,6 +7,7 @@ import com.allen.imsystem.model.dto.ErrMsg;
 import com.allen.imsystem.model.dto.JSONResponse;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import org.apache.ibatis.binding.BindingException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -29,13 +30,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvocationTargetException.class)
     @ResponseBody
     public JSONResponse handleInvocationTargetException(InvocationTargetException ex){
-        Throwable target = ex.getTargetException();
+        Exception target = (Exception)ex.getTargetException();
         try{
-            BusinessException be = (BusinessException) target;
-            return handleBusinessException(be);
+            if(target instanceof BusinessException){
+                return handleBusinessException((BusinessException) target);
+            }else if (target instanceof DataIntegrityViolationException){
+                return handleBusinessException(new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL));
+            }else if ( target instanceof HttpRequestMethodNotSupportedException){
+                return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));
+            }else if(target instanceof  HttpMediaTypeNotSupportedException){
+                return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));
+            }else if(target instanceof MethodArgumentNotValidException || target instanceof BindingException){
+                return handleValidationException(target);
+            }
         }catch (Exception e){
-            return handleUnKnownException(ex);
+            return handleUnKnownException((Exception) ex.getTargetException());
         }
+        return null;
+    }
+
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    @ResponseBody
+    public JSONResponse handleDataIntegrityViolationException(DataIntegrityViolationException ex){
+        throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -43,14 +61,6 @@ public class GlobalExceptionHandler {
     public JSONResponse handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex){
         throw new BusinessException(ExceptionType.REQUEST_METHOD_WRONG);
     }
-
-    @ExceptionHandler(MySQLIntegrityConstraintViolationException.class)
-    @ResponseBody
-    public JSONResponse handleMySQLIntegrityConstraintViolationException(MySQLIntegrityConstraintViolationException ex){
-        throw new BusinessException(ExceptionType.DATA_NOT_UNIQUE);
-    }
-
-
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseBody
@@ -75,7 +85,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindingException.class})
     @ResponseBody
-    public JSONResponse handleValidationException(Exception ex, HttpServletResponse response){
+    public JSONResponse handleValidationException(Exception ex){
         BindingResult bindingResult = null;
         if (ex instanceof MethodArgumentNotValidException) {
             bindingResult = ((MethodArgumentNotValidException) ex).getBindingResult();
@@ -108,12 +118,15 @@ public class GlobalExceptionHandler {
         }
     }
 
+
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public JSONResponse handleUnKnownException(Exception e){
         e.printStackTrace();
         if(e instanceof MissingServletRequestParameterException){   //缺少参数
             return handleBusinessException(new BusinessException(ExceptionType.MISSING_PARAMETER_ERROR));
+        }else if(e instanceof com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException){
+            return handleBusinessException(new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL));
         }
         JSONResponse jsonResponse = new JSONResponse();
         jsonResponse.setStatus(0);

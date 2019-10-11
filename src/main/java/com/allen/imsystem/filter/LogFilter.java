@@ -15,9 +15,13 @@ public class LogFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        logRequest(request,response);
+        System.out.println("request time: "+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        System.out.println("request url: " + request.getRequestURI());
+        System.out.println("request mehtod: "+request.getMethod());
+        System.out.println();
+        //        logRequest(request,response);
         filterChain.doFilter(request,response);
-        logResponse(request,response);
+//        logResponse(request,response);
     }
 
     private void logRequest(HttpServletRequest request, HttpServletResponse resposne){

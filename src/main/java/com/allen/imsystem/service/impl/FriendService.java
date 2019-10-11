@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 @Service
 public class FriendService implements IFriendService {
 
@@ -108,7 +110,7 @@ public class FriendService implements IFriendService {
     }
 
     @Override
-    public List<UserInfoDTO> getFriendList(String uid) {
+    public Set<UserInfoDTO> getFriendList(String uid) {
         return friendDao.selectFriendList(uid);
     }
 

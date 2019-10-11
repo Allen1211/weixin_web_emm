@@ -16,6 +16,7 @@
         <result property="uid" column="uid"/>
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
     </resultMap>
 
     <resultMap id="friendGroupMap" type="com.allen.imsystem.model.dto.FriendGroup">
@@ -49,11 +50,11 @@
     </select>
 
     <select id="selectFriendGroupList" resultMap="friendGroupMap">
-        SELECT id,fri_group_name FROM friend_group where uid=#{uid}
+        SELECT id,fri_group_name FROM status = 1 and friend_group where uid=#{uid}
     </select>
 
     <select id="selectGroupId" resultType="java.lang.Integer">
-        SELECT id FROM friend_group where uid=#{uid} and fri_group_name=#{groupName}
+        SELECT id FROM friend_group where status = 1 and uid=#{uid} and fri_group_name=#{groupName}
     </select>
 
     <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
@@ -83,11 +84,11 @@
     </select>
 
     <select id="selectFriendList" resultMap="userInfoMap">
-        SELECT uid_b as uid, username, icon_id from friend
+        SELECT uid_b as uid, username, icon_id, "desc" from friend
         INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid}
         UNION ALL
-        SELECT uid_a as uid, username ,icon_id from friend
+        SELECT uid_a as uid, username ,icon_id, "desc" from friend
         INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid}
     </select>
@@ -121,29 +122,32 @@
     </update>
 
     <update id="updateFriendGroupName" >
-        UPDATE friend_group set fri_group_name=#{groupName} WHERE user_id=#{userId} and id=#{groupId}
+        UPDATE friend_group set status = 1 and fri_group_name=#{groupName} WHERE user_id=#{userId} and id=#{groupId}
     </update>
 
     <update id="deleteFriendGroup">
         UPDATE friend_group SET status=0 WHERE id=#{groupId} and uid=#{uid}
     </update>
 
-    <update id="moveFriendToGroup" >
-    </update>
 
     <update id="moveGroupFriendToDefaultGroup">
-        update friend as f set f.b_in_a_fgroup_id=1 WHERE f.b_in_a_fgroup_id= #{groupId} and f.uid_a = #{uid};
-        update friend as f set f.a_in_b_fgroup_id=1 WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid}
+        update friend as f set f.a_in_b_fgroup_id= 1 WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid};
+        update friend as f set f.b_in_a_fgroup_id= 1 WHERE f.b_in_a_fgroup_id= #{groupId} AND f.uid_a = #{uid}
     </update>
 
-<!--    <update id="moveFriendToAnotherGroup">-->
-<!--        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId};-->
-<!--&#45;&#45;         update friend as f set f.a_in_b_fgroup_id=#{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id= #{oldGroupId}-->
-<!--    </update>-->
     <update id="moveFriendToAnotherGroup">
-        update friend as f set b_in_a_fgroup_id = #{newGroupId} WHERE uid_a = #{uid} and uid_b = #{friendId} and b_in_a_fgroup_id = #{oldGroupId};
---         update friend as f set f.a_in_b_fgroup_id=#{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id= #{oldGroupId}
+        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId};
+        update friend as f set f.a_in_b_fgroup_id = #{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id = #{oldGroupId}
     </update>
+
+    <update id="moveFriendToAnotherGroup1">
+        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId}
+    </update>
+
+    <update id="moveFriendToAnotherGroup2">
+        update friend as f set f.a_in_b_fgroup_id = #{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id = #{oldGroupId}
+    </update>
+
 
     <insert id="insertNewFriend" >
         INSERT INTO friend (uid_a, uid_b, a_in_b_fgroup_id, b_in_a_fgroup_id)

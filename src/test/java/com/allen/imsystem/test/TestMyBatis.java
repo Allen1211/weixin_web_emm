@@ -56,4 +56,10 @@ public class TestMyBatis {
         List<UserSearchResult> resultList = new ArrayList<>(map.values());
 
     }
+
+    @Test
+    public void test3(){
+       friendDao.moveFriendToAnotherGroup("1","2",1,2);
+//       friendDao.moveGroupFriendToDefaultGroup(1,"2");
+    }
 }

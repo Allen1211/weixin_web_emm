@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
+
 @Repository
 public class FriendDao {
     @Autowired
@@ -34,7 +36,7 @@ public class FriendDao {
         return friendMapper.selectLatestApply(uid,limit);
     }
 
-    public List<UserInfoDTO> selectFriendList(String uid){
+    public Set<UserInfoDTO> selectFriendList(String uid){
         return friendMapper.selectFriendList(uid);
     }
 

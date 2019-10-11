@@ -5,6 +5,8 @@ import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+
 @Service
 public interface IFriendService {
 
@@ -44,7 +46,7 @@ public interface IFriendService {
     /**
      * 获取好友列表
      */
-    List<UserInfoDTO> getFriendList(String uid);
+    Set<UserInfoDTO> getFriendList(String uid);
 
     /**
      * 获取好友信息

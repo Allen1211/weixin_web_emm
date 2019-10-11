@@ -13,7 +13,7 @@ public enum ExceptionType {
     EMAIL_HAS_BEEN_REGISTED(1007,"邮箱已被注册"),
     EMAIL_CODE_WRONG(1008,"输入的邮箱验证码错误或已过期"),
     REQUEST_METHOD_WRONG(1009,"请求方法错误"),
-    DATA_NOT_UNIQUE(1010,"不满足数据唯一性约束，数据已存在")
+    DATA_CONSTRAINT_FAIL(1010,"不满足数据约束。可能破坏外键约束，唯一性约束")
     ;
 
     private Integer code;

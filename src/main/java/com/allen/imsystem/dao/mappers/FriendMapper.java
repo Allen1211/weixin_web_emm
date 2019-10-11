@@ -6,6 +6,7 @@ import com.allen.imsystem.model.dto.UserInfoDTO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Set;
 
 public interface FriendMapper {
 
@@ -19,7 +20,7 @@ public interface FriendMapper {
 
     List<FriendApplicationDTO> selectLatestApply(@Param("uid") String uid,@Param("limit") Integer limit);
 
-    List<UserInfoDTO> selectFriendList(@Param("uid")String uid);
+    Set<UserInfoDTO> selectFriendList(@Param("uid")String uid);
 
     UserInfoDTO selectFriendInfo(@Param("friendId")String friendId);
 
@@ -50,4 +51,10 @@ public interface FriendMapper {
 
     Integer moveFriendToAnotherGroup(@Param("uid")String uid, @Param("friendId")String friendId,
                                      @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
+
+    Integer moveFriendToAnotherGroup1(@Param("uid")String uid, @Param("friendId")String friendId,
+                                     @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
+    Integer moveFriendToAnotherGroup2(@Param("uid")String uid, @Param("friendId")String friendId,
+                                     @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
+
 }

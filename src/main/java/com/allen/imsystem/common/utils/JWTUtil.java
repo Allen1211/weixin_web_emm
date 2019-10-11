@@ -1,11 +1,15 @@
 package com.allen.imsystem.common.utils;
 
+import com.allen.imsystem.common.exception.BusinessException;
+import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.service.IUserService;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.exceptions.SignatureVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import java.util.Date;
@@ -38,7 +42,7 @@ public class JWTUtil {
     /**
      * 默认过期时间 60分钟
      */
-    private static final long DEFAULT_EXPIRE_TIME = 60 * 60 *1000;    //单位毫秒
+    private static final long DEFAULT_EXPIRE_TIME = 3 * 60 * 60 *1000;    //单位毫秒
 
 
     /**
@@ -84,9 +88,13 @@ public class JWTUtil {
     }
 
     public static <T> T getMsgFromToken(String token, String name, Class<T> clazz){
-        JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
-        DecodedJWT decodedJWT = verifier.verify(token);
-        return decodedJWT.getClaim(name).as(clazz);
+        try {
+            JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
+            DecodedJWT decodedJWT = verifier.verify(token);
+            return decodedJWT.getClaim(name).as(clazz);
+        }catch(JWTVerificationException e){
+            throw new BusinessException(ExceptionType.TOKEN_EXPIRED_ERROR);
+        }
     }
 
     /**
@@ -102,7 +110,7 @@ public class JWTUtil {
             Date current = new Date();
             return current.before(expiresAt);
         }catch (JWTVerificationException exception){
-            return false;
+            throw new BusinessException(ExceptionType.TOKEN_EXPIRED_ERROR);
         }
     }
 
