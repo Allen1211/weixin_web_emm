@@ -61,6 +61,10 @@
         SELECT COUNT(*) FROM `user` WHERE email = #{email}
     </select>
 
+    <select id="selectNextUnUsedUid" resultType="com.allen.imsystem.model.pojo.UidPool">
+        SELECT * FROM uid_pool WHERE has_used = 0 LIMIT 1
+    </select>
+
     <insert id="insertUser" parameterType="com.allen.imsystem.model.pojo.User" >
         INSERT INTO `user` (uid,password,salt,email)
         VALUES (#{uid},#{password},#{salt},#{email})
@@ -71,23 +75,33 @@
         VALUES (#{uid},#{username},#{iconId})
     </insert>
 
+    <update id="sortDeleteUsedUid" parameterType="java.lang.Integer">
+        UPDATE uid_pool SET has_used = 1 WHERE id=#{id}
+    </update>
+
     <update id="updateUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo">
         UPDATE `user`
         SET username = #{username},icon_id = #{iconId},
         gender = #{gender},age=#{age}, `desc`=#{desc},region_id=#{regionId},update_time=#{updateTime}
-        WHERE uid=#{uid};
+        WHERE uid=#{uid}
     </update>
 
     <update id="updateUser" parameterType="com.allen.imsystem.model.pojo.User">
         UPDATE `user`
         SET password = #{password},salt = #{salt},
         email=#{email},tel=#{tel}, status=#{status},role_id=#{roleId},update_time=#{updateTime}
-        WHERE uid=#{uid};
+        WHERE uid=#{uid}
     </update>
 
-    <delete id="deleteUser" parameterType="java.lang.String">
-        DELETE FROM `user` WHERE username = #{username}
-    </delete>
+    <insert id="insertBatchIntoUidPool" parameterType="java.util.List" useGeneratedKeys="false">
+        insert into uid_pool
+        (uid)
+        values
+        <foreach collection="list" item="str"  separator=",">
+            (#{str})
+        </foreach>
+    </insert>
+
 </mapper>
 
 

@@ -2,6 +2,7 @@ package com.allen.imsystem.dao;
 
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.FriendGroup;
+import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import org.apache.ibatis.annotations.Param;
@@ -27,6 +28,10 @@ public class UserDao {
         return userMapper.selectUserInfo(uid);
     }
 
+    public UidPool selectNextUnUsedUid(){
+        return userMapper.selectNextUnUsedUid();
+    }
+
     public Integer countUid(String uid){
         return userMapper.selectCountUid(uid);
     }
@@ -50,5 +55,11 @@ public class UserDao {
         return userMapper.updateUserInfo(userInfo);
     }
 
+    public Integer insertBatchIntoUidPool(List<String> list){
+        return userMapper.insertBatchIntoUidPool(list);
+    }
 
+    public Integer sortDeleteUsedUid(Integer id){
+        return userMapper.sortDeleteUsedUid(id);
+    }
 }

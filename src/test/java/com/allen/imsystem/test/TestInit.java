@@ -1,6 +1,8 @@
 package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.utils.SpringBeanUtil;
+import com.allen.imsystem.common.utils.UidGenerator;
+import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.service.IMailService;
 import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.service.impl.MailService;
@@ -21,6 +23,14 @@ public class TestInit {
 
     @Autowired
     MailService mailService;
+
+    @Autowired
+    UserDao userDao;
+
+    @Autowired
+    UidGenerator uidGenerator;
+
+
     @Test
     public void testSpringBeanUtil(){
         System.out.println(SpringBeanUtil.getBean(IUserService.class));
@@ -33,5 +43,10 @@ public class TestInit {
 //        System.out.println(mailService.getENCODING());
 //        System.out.println(mailService.getJavaMailSender());
 //        System.out.println(mailService.getVelocityEngine());
+    }
+
+    @Test
+    public void testIdGenerator(){
+        uidGenerator.generateUid();
     }
 }

@@ -4,12 +4,14 @@ import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.model.dto.UserSearchResult;
+import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +62,15 @@ public class TestMyBatis {
     @Test
     public void test3(){
        friendDao.moveFriendToAnotherGroup("1","2",1,2);
+//       friendDao.moveGroupFriendToDefaultGroup(1,"2");
+    }
+
+    @Test
+    public void test4(){
+       UidPool uidPool = userDao.selectNextUnUsedUid();
+       System.out.println(uidPool.getId() + "   " +uidPool.getUid());
+       Integer affected = userDao.sortDeleteUsedUid(uidPool.getId());
+       System.out.println(affected);
 //       friendDao.moveGroupFriendToDefaultGroup(1,"2");
     }
 }

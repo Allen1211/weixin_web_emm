@@ -6,6 +6,7 @@ import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.ParamValidator;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IUserService;
@@ -52,16 +53,10 @@ public class UserService implements IUserService {
     public void regist(String email, String password, String username){
 
         /**
-         * 生成8位纯数字账号，不与已有的账号重复
+         * 从uid池里获取一个未使用的uid
          */
-        String uid;
-        Random random = new Random(System.currentTimeMillis());
-        do{
-            int randomId = random.nextInt(89999999) + 10000000 ;
-            uid = String.valueOf(randomId);
-        }while (!userDao.countUid(uid).equals(0));
-
-
+        UidPool uidPool = userDao.selectNextUnUsedUid();
+        String uid = uidPool.getUid();
         //对密码加密
         String salt = UUID.randomUUID().toString();
         password = HashSaltUtil.getHashSaltPwd(password,salt);
@@ -73,7 +68,7 @@ public class UserService implements IUserService {
 
         userDao.insertUser(user);
         userDao.insertUserInfo(userInfo);
-
+        userDao.sortDeleteUsedUid(uidPool.getId());
         return;
     }
 

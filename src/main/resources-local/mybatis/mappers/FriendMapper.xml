@@ -12,6 +12,8 @@
         <association property="applicationInfo" resultMap="userInfoMap"/>
     </resultMap>
 
+
+
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
         <result property="uid" column="uid"/>
         <result property="username" column="username"/>
@@ -67,7 +69,7 @@
         INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = fg.id)
         as fri_group_size
-        FROM friend_group as fg where uid= '0' or uid = #{uid}
+        FROM friend_group as fg where friend_group.status=1 and(uid= '0' or uid = #{uid})
     </select>
 
     <select id="selectLatestApply" resultMap="FriendApplicationMap">
