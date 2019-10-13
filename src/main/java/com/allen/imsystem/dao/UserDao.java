@@ -1,6 +1,7 @@
 package com.allen.imsystem.dao;
 
 import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
@@ -30,6 +31,10 @@ public class UserDao {
 
     public UidPool selectNextUnUsedUid(){
         return userMapper.selectNextUnUsedUid();
+    }
+
+    public EditUserInfoDTO selectSelfInfo(Integer userId){
+        return userMapper.selectSelfInfo(userId);
     }
 
     public Integer countUid(String uid){

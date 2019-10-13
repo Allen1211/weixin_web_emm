@@ -40,6 +40,16 @@
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
+    <resultMap id="selfInfoMap" type="com.allen.imsystem.model.dto.EditUserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+        <result property="email" column="email"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+    </resultMap>
+
     <!-- SQL语句 -->
     <select id="selectUserWithUid" resultMap="UserMap">
         SELECT * FROM `user` WHERE uid = #{uid}
@@ -51,6 +61,16 @@
 
     <select id="selectAllUser" resultMap="UserMap">
         SELECT * FROM `user`
+    </select>
+
+    <select id="selectSelfInfo" resultMap="selfInfoMap">
+        SELECT u.uid,u.email,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        ui.`desc`,ui.age,ui.gender
+        FROM user as u
+        INNER JOIN user_info as ui
+        ON ui.uid = u.uid
+        WHERE u.id = #{userId}
     </select>
 
     <select id="selectCountUid" resultType="java.lang.Integer">
@@ -65,14 +85,79 @@
         SELECT * FROM uid_pool WHERE has_used = 0 LIMIT 1
     </select>
 
-    <insert id="insertUser" parameterType="com.allen.imsystem.model.pojo.User" >
-        INSERT INTO `user` (uid,password,salt,email)
-        VALUES (#{uid},#{password},#{salt},#{email})
+    <insert id="insertUser" parameterType="com.allen.imsystem.model.pojo.User" useGeneratedKeys="true">
+        INSERT INTO `user` (
+            <trim suffixOverrides=",">
+                <if test="uid!=null">
+                    uid,
+                </if>
+                <if test="password!=null">
+                    password,
+                </if>
+                <if test="salt!=null">
+                    salt,
+                </if>
+                <if test="email!=null">
+                    email,
+                </if>
+                <if test="tel!=null">
+                    tel,
+                </if>
+                <if test="roleId!=null">
+                    role_id,
+                </if>
+                <if test="status!=null">
+                    status,
+                </if>
+            </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">
+                #{uid},
+            </if>
+            <if test="password!=null">
+                #{password},
+            </if>
+            <if test="salt!=null">
+                #{salt},
+            </if>
+            <if test="email!=null">
+                #{email},
+            </if>
+            <if test="tel!=null">
+                #{tel},
+            </if>
+            <if test="roleId!=null">
+                #{roleId},
+            </if>
+            <if test="status!=null">
+                #{status},
+            </if>
+        </trim>)
     </insert>
 
-    <insert id="insertUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo" >
-        INSERT INTO `user_info` (uid,username,icon_id)
-        VALUES (#{uid},#{username},#{iconId})
+    <insert id="insertUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo" useGeneratedKeys="true">
+        INSERT INTO `user_info` (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">uid,</if>
+            <if test="username!=null">username,</if>
+            <if test="iconId!=null">icon_id,</if>
+            <if test="gender!=null">gender,</if>
+            <if test="age!=null">age,</if>
+            <if test="desc!=null">desc,</if>
+            <if test="regionId!=null">region_id,</if>
+        </trim>)
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">#{uid},</if>
+            <if test="username!=null">#{username},</if>
+            <if test="iconId!=null">#{iconId},</if>
+            <if test="gender!=null">#{gender},</if>
+            <if test="age!=null">#{age},</if>
+            <if test="desc!=null">#{desc},</if>
+            <if test="regionId!=null">#{regionId},</if>
+        </trim>)
     </insert>
 
     <update id="sortDeleteUsedUid" parameterType="java.lang.Integer">
@@ -80,17 +165,32 @@
     </update>
 
     <update id="updateUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo">
-        UPDATE `user`
-        SET username = #{username},icon_id = #{iconId},
-        gender = #{gender},age=#{age}, `desc`=#{desc},region_id=#{regionId},update_time=#{updateTime}
-        WHERE uid=#{uid}
+        UPDATE `user_info`
+        <set>
+            <if test="username!=null">username=#{username},</if>
+            <if test="iconId!=null">icon_id=#{iconId},</if>
+            <if test="gender!=null">gender=#{gender},</if>
+            <if test="age!=null">age=#{age},</if>
+            <if test="desc!=null">`desc`=#{desc},</if>
+            <if test="regionId!=null">region_id=#{regionId},</if>
+            <if test="updateTime!=null">update_time=#{updateTime},</if>
+        </set>
+        WHERE id=#{id}
     </update>
 
     <update id="updateUser" parameterType="com.allen.imsystem.model.pojo.User">
         UPDATE `user`
-        SET password = #{password},salt = #{salt},
-        email=#{email},tel=#{tel}, status=#{status},role_id=#{roleId},update_time=#{updateTime}
-        WHERE uid=#{uid}
+        <set>
+            <if test="password!=null">password=#{password},</if>
+            <if test="salt!=null">salt=#{salt},</if>
+            <if test="email!=null">email=#{email},</if>
+            <if test="tel!=null">tel=#{tel},</if>
+            <if test="status!=null">status=#{status},</if>
+            <if test="roleId!=null">role_id=#{roleId},</if>
+            <if test="updateTime!=null">update_time=#{updateTime},</if>
+        </set>
+        WHERE id=#{id}
+
     </update>
 
     <insert id="insertBatchIntoUidPool" parameterType="java.util.List" useGeneratedKeys="false">

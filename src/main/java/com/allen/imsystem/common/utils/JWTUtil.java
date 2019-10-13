@@ -10,6 +10,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import java.util.Date;
@@ -100,18 +101,26 @@ public class JWTUtil {
     /**
      * 校验登录token
      * @param token
-     * @return 校验成功返回true
+     * @return 校验成功返回解密出的参数
      */
-    public static boolean verifyLoginToken(String token, String correctUid){
+    public static Map<String, Claim> verifyLoginToken(String token, String correctUid){
         try {
             JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
             DecodedJWT decodedJWT = verifier.verify(token);
             Date expiresAt = decodedJWT.getExpiresAt();
             Date current = new Date();
-            return current.before(expiresAt);
+            boolean valid = current.before(expiresAt);
+            if(valid){
+                return decodedJWT.getClaims();
+            }else{
+                return null;
+            }
         }catch (JWTVerificationException exception){
-            throw new BusinessException(ExceptionType.TOKEN_EXPIRED_ERROR);
+            return null;
+        }catch (Exception e){
+            e.printStackTrace();
         }
+        return null;
     }
 
 

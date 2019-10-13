@@ -1,7 +1,6 @@
 package com.allen.imsystem.service;
 
 import com.allen.imsystem.model.dto.*;
-import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,6 +37,10 @@ public interface IFriendService {
      */
     List<FriendGroup> getFriendGroupList(String uid);
 
+    /**
+     * 按分组获取好友列表
+     */
+     List<FriendListByGroupDTO> getFriendListByGroup(String uid);
     /**
      * 新建一个好友分组
      */

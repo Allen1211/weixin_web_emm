@@ -2,11 +2,10 @@ package com.allen.imsystem.model.dto;
 
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class FriendGroup {
+public class FriendListByGroupDTO {
 
     private String groupId;
 
@@ -14,6 +13,5 @@ public class FriendGroup {
 
     private Integer groupSize;
 
-    List list = new ArrayList<>();
-
+    private List<UserInfoDTO> members;
 }

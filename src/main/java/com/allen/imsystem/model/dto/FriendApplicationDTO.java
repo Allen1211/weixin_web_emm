@@ -9,5 +9,5 @@ public class FriendApplicationDTO {
 
     private Boolean hasAccept;
 
-    private UserInfoDTO applicationInfo;
+    private UserInfoDTO applicantInfo;
 }

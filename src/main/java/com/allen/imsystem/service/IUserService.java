@@ -1,8 +1,10 @@
 package com.allen.imsystem.service;
 
+import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -41,4 +43,20 @@ public interface IUserService {
      * @param uid 用户账号
      */
     void logout(String uid);
+
+    /**
+     * 头像上传/更换
+     */
+    String uploadAvatar(MultipartFile multipartFile, String uid);
+
+    /**
+     * 用户信息更改
+     */
+    boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,Integer userId);
+
+
+    /**
+     * 获取自己的信息
+     */
+    EditUserInfoDTO getSelfInfo(Integer userId);
 }

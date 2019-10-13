@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
@@ -32,7 +33,7 @@ public class SecurityController {
     @Autowired
     private IMailService mailService;
 
-    @Qualifier("defaultCacheHolder")
+    @Qualifier("AttrCacheHolder")
     @Autowired
     private ICacheHolder cacheHolder;
 
@@ -84,5 +85,8 @@ public class SecurityController {
 
     }
 
-
+    @RequestMapping("verifyLocalStorageData")
+    public JSONResponse verifyLocalStorageData(){
+        return new JSONResponse(1);
+    }
 }

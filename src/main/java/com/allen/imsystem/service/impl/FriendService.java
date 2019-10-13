@@ -6,7 +6,9 @@ import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFriendService;
+import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,60 +34,60 @@ public class FriendService implements IFriendService {
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
         Map<String, UserSearchResult> map = searchDao.searchUserByKeyword(keyword);
-        if(map == null)
+        if (map == null)
             new ArrayList<UserSearchResult>();
         List<String> friendId = friendDao.getAllFriendId(uid);
         List<String> requiredId = friendDao.getAllRequiredToId(uid);
-        for(String id:friendId){
+        for (String id : friendId) {
             UserSearchResult result = map.get(id);
-            if(result!=null){
+            if (result != null) {
                 result.setApplicable(false);
                 result.setReason("已是好友");
-                map.put(id,result);
+                map.put(id, result);
             }
         }
-        for(String id:requiredId){
+        for (String id : requiredId) {
             UserSearchResult result = map.get(id);
-            if(result!=null){
+            if (result != null) {
                 result.setApplicable(false);
                 result.setReason("已申请");
-                map.put(id,result);
+                map.put(id, result);
             }
         }
         UserSearchResult result = map.get(uid);
-        if(result!=null){
+        if (result != null) {
             result.setApplicable(false);
             result.setReason("是自己");
-            map.put(uid,result);
+            map.put(uid, result);
         }
         return new ArrayList<>(map.values());
     }
 
     @Override
     @Transactional
-    public boolean addFriendApply(ApplyAddFriendDTO params,String uid) {
+    public boolean addFriendApply(ApplyAddFriendDTO params, String uid) {
         String fromUId = uid;
         String toUId = params.getFriendId();
         String reason = params.getApplicationReason();
-        Integer groupId = params.getGroupId()==null? 1:Integer.valueOf(params.getGroupId()) ;
-        return friendDao.addFriendApply(fromUId,toUId,groupId,reason) > 0;
+        Integer groupId = params.getGroupId() == null ? 1 : Integer.valueOf(params.getGroupId());
+        return friendDao.addFriendApply(fromUId, toUId, groupId, reason) > 0;
     }
 
     @Override
     @Transactional
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
         // 1 更新用户申请表，将pass改成1
-        boolean successUpdate = friendDao.updateFriendApplyPass(true,friendId,uid) > 0;
+        boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0;
         // 2 查询对方要把ta放到什么组
-        Integer bePutInGroupId = friendDao.selectApplyGruopId(friendId,uid);
+        Integer bePutInGroupId = friendDao.selectApplyGruopId(friendId, uid);
         // 2 插入好友表
-        boolean successInsert = friendDao.insertNewFriend(uid,friendId,bePutInGroupId,groupId) > 0;
-        return successInsert&&successUpdate;
+        boolean successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
+        return successInsert && successUpdate;
     }
 
     @Override
     public List<FriendApplicationDTO> getFriendApplicationList(String uid) {
-        List<FriendApplicationDTO> friendApplicationDTOList = friendDao.selectLatestApply(uid,50);
+        List<FriendApplicationDTO> friendApplicationDTOList = friendDao.selectLatestApply(uid, 50);
         return friendApplicationDTOList;
     }
 
@@ -95,16 +97,44 @@ public class FriendService implements IFriendService {
     }
 
     @Override
+    public List<FriendListByGroupDTO> getFriendListByGroup(String uid) {
+        // 按组id升序排列的 好友列表
+        List<UserInfoDTO> friendListOrderByGroup = friendDao.selectFriendListOrderByGroupId(uid);
+        // 按组id升序排列的 分组列表
+        List<FriendGroup> friendGroupList = friendDao.selectFriendGroupListWithSize(uid);
+        // 按组id升序排列的 分组好友列表
+        List<FriendListByGroupDTO> resultList = new ArrayList<>(friendGroupList.size());
+        int begin = 0;
+        for (FriendGroup friendGroup : friendGroupList) {
+            FriendListByGroupDTO dto = new FriendListByGroupDTO();
+            dto.setGroupId(friendGroup.getGroupId());
+            dto.setGroupName(friendGroup.getGroupName());
+            dto.setGroupSize(friendGroup.getGroupSize());
+            // 根据每一个组的大小
+            int groupSize = friendGroup.getGroupSize();
+
+            if(groupSize != 0){
+                dto.setMembers(friendListOrderByGroup.subList(begin , begin+friendGroup.getGroupSize()));
+                begin += friendGroup.getGroupSize();
+            }else{
+                dto.setMembers(new ArrayList<>());
+            }
+            resultList.add(dto);
+        }
+        return resultList;
+    }
+
+    @Override
     public Integer addFriendGroup(Integer userId, String uid, String groupName) {
-        if(groupName == null){
+        if (groupName == null) {
             throw new BusinessException(ExceptionType.MISSING_PARAMETER_ERROR);
         }
-        if(groupName.length() >10)
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名长度应小于10");
-        Integer affect = friendDao.insertNewFriendGroup(userId, uid,groupName);
+        if (groupName.length() > 10)
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名长度应小于10");
+        Integer affect = friendDao.insertNewFriendGroup(userId, uid, groupName);
         Integer groupId = 0;
-        if(affect > 0){
-            groupId = friendDao.selectGroupId(uid,groupName);
+        if (affect > 0) {
+            groupId = friendDao.selectGroupId(uid, groupName);
         }
         return groupId;
     }
@@ -116,49 +146,49 @@ public class FriendService implements IFriendService {
 
     @Override
     public UserInfoDTO getFriendInfo(String uid, String friendId) {
-        boolean isNotFriend = friendDao.checkIsFriend(uid,friendId)==0;
-        if(isNotFriend){
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"这不是你的好友");
+        boolean isNotFriend = friendDao.checkIsFriend(uid, friendId) == 0;
+        if (isNotFriend) {
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "这不是你的好友");
         }
         return friendDao.selectFriendInfo(friendId);
     }
 
     @Override
     public boolean deleteFriend(String uid, String friendId) {
-        return friendDao.deleteFriend(uid,friendId)>0;
+        return friendDao.deleteFriend(uid, friendId) > 0;
     }
 
     @Override
-    public boolean updateFriendGroupName(Integer groupId, String groupName,Integer userId) {
-        if(StringUtils.isEmpty(groupName)){
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名不能为空");
+    public boolean updateFriendGroupName(Integer groupId, String groupName, Integer userId) {
+        if (StringUtils.isEmpty(groupName)) {
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能为空");
         }
-        if(groupName.trim().equals("好友")){
+        if (groupName.trim().equals("好友")) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能与默认组名重复");
         }
-        return friendDao.updateFriendGroupName(groupId,groupName,userId)>0;
+        return friendDao.updateFriendGroupName(groupId, groupName, userId) > 0;
     }
 
     @Override
     @Transactional
     public boolean deleteFriendGroup(Integer groupId, String uid) {
         // 1 判断该分组下是否有好友，如果没有直接删除组，结束
-        Integer size = friendDao.selectGroupSize(groupId,uid);
+        Integer size = friendDao.selectGroupSize(groupId, uid);
         // 2 若有好友，将该分组下所有好友转至默认分组
         boolean moveSuccess = true;
-        if(size != 0){
-            moveSuccess =  friendDao.moveGroupFriendToDefaultGroup(groupId,uid) > 0;
+        if (size != 0) {
+            moveSuccess = friendDao.moveGroupFriendToDefaultGroup(groupId, uid) > 0;
         }
         // 3 删除掉该分组
-        boolean deleteSuccess = friendDao.deleteFriendGroup(groupId, uid)>0;
+        boolean deleteSuccess = friendDao.deleteFriendGroup(groupId, uid) > 0;
 
-        return moveSuccess&&deleteSuccess;
+        return moveSuccess && deleteSuccess;
     }
 
     @Override
     @Transactional
     public boolean moveFriendToOtherGroup(String uid, String friendId, Integer oldGroupId, Integer newGroupId) {
-        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid,friendId,oldGroupId,newGroupId)==1;
+        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) == 1;
         return isSuccess;
     }
 

@@ -42,11 +42,12 @@ public class GlobalExceptionHandler {
                 return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));
             }else if(target instanceof MethodArgumentNotValidException || target instanceof BindingException){
                 return handleValidationException(target);
+            }else{
+                return handleUnKnownException(target);
             }
         }catch (Exception e){
             return handleUnKnownException((Exception) ex.getTargetException());
         }
-        return null;
     }
 
 

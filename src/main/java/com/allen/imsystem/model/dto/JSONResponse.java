@@ -40,10 +40,11 @@ public class JSONResponse {
         this.data = data;
     }
 
-    public void putData(String key, Object value){
+    public JSONResponse putData(String key, Object value){
         if(data == null){
             data = new HashMap<>();
         }
         data.put(key,value);
+        return this;
     }
 }

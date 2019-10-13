@@ -12,8 +12,8 @@ public class User {
     private String salt;
     private String email;
     private String tel;
-    private int roleId;
-    private boolean status;
+    private Integer roleId;
+    private Boolean status;
     private Date createdTime;
     private Date updateTime;
 
@@ -26,4 +26,5 @@ public class User {
         this.salt = salt;
         this.email = email;
     }
+
 }

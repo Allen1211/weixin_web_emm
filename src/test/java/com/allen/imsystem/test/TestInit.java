@@ -49,4 +49,8 @@ public class TestInit {
     public void testIdGenerator(){
         uidGenerator.generateUid();
     }
+
+    @Test
+    public  void testNIO(){
+    }
 }

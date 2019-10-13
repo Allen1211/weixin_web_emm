@@ -6,20 +6,20 @@ import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.ParamValidator;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
+import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.common.utils.HashSaltUtil;
 import com.allen.imsystem.common.utils.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService implements IUserService {
@@ -29,6 +29,9 @@ public class UserService implements IUserService {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private IFileService fileService;
 
     @Override
     public User findUserAccountWithUid(String uid) {
@@ -64,8 +67,9 @@ public class UserService implements IUserService {
         // 插入数据库
         User user = new User(uid,password,salt,email);
         UserInfo userInfo = new UserInfo(uid,username);
-        userInfo.setIconId(userInfo.getUid());
-
+        Random random = new Random(System.currentTimeMillis());
+        int defaultIconId = random.nextInt(13) + 1;
+        userInfo.setIconId(GlobalConst.Path.AVATAR_URL+"default/"+defaultIconId+".jpg");
         userDao.insertUser(user);
         userDao.insertUserInfo(userInfo);
         userDao.sortDeleteUsedUid(uidPool.getId());
@@ -117,5 +121,43 @@ public class UserService implements IUserService {
         }
         redisUtil.hset("user_status",uid,GlobalConst.UserStatus.OFFLINE);
     }
+
+    @Override
+    @Transactional
+    public String uploadAvatar(MultipartFile multipartFile, String uid) {
+        String avatarURL = fileService.uploadAvatar(multipartFile,uid);
+        if(avatarURL != null){
+            UserInfo userInfo = new UserInfo();
+            userInfo.setUid(uid);
+            userInfo.setIconId(avatarURL);
+            userDao.updateUserInfo(userInfo);
+        }else {
+            throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE);
+        }
+        return avatarURL;
+    }
+
+    @Override
+    public boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,Integer userId) {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setId(userId);
+        userInfo.setUpdateTime(new Date());
+        userInfo.setDesc(editUserInfoDTO.getSignWord());
+        userInfo.setIconId(editUserInfoDTO.getAvatar());
+        userInfo.setGender(editUserInfoDTO.getGender());
+        userInfo.setUsername(editUserInfoDTO.getUsername());
+
+        return userDao.updateUserInfo(userInfo)>0;
+    }
+
+    @Override
+    public EditUserInfoDTO getSelfInfo(Integer userId) {
+        if(userId == null){
+            throw new BusinessException(ExceptionType.NO_LOGIN_ERROR);
+        }
+        return userDao.selectSelfInfo(userId);
+    }
+
+
 
 }

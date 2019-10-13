@@ -40,6 +40,14 @@ public class FriendDao {
         return friendMapper.selectFriendList(uid);
     }
 
+    public List<UserInfoDTO> selectFriendListOrderByGroupId(String uid){
+        return friendMapper.selectFriendListOrderByGroupId(uid);
+    }
+
+    public List<FriendGroup> selectFriendGroupListWithSize(String uid){
+        return friendMapper.selectFriendGroupListWithSize(uid);
+    }
+
     public UserInfoDTO selectFriendInfo(String friendId){
         return friendMapper.selectFriendInfo(friendId);
     }
@@ -66,10 +74,6 @@ public class FriendDao {
 
     public Integer insertNewFriend(String aUid,String bUid, Integer abGroupId,Integer baGroupId){
         return friendMapper.insertNewFriend(aUid,bUid,abGroupId,baGroupId);
-    }
-
-    public List<FriendGroup> selectFriendGroupListWithSize(String uid){
-        return friendMapper.selectFriendGroupListWithSize(uid);
     }
 
     public Integer insertNewFriendGroup(Integer userId,String uid, String groupName){

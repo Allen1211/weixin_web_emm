@@ -1,9 +1,13 @@
 package com.allen.imsystem.common;
 
+import com.allen.imsystem.common.exception.BusinessException;
+import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.common.utils.RedisUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.http.HttpServletRequest;
 
 @Component("defaultCacheHolder")
 public class CacheHolder implements ICacheHolder {
@@ -15,14 +19,22 @@ public class CacheHolder implements ICacheHolder {
 
     @Override
     public String getUid(Object source) {
-        String jwtToken = (String)source;
+        HttpServletRequest request = (HttpServletRequest)source;
+        String jwtToken = request.getHeader("token");
+        if(jwtToken==null){
+            throw new BusinessException(ExceptionType.NO_LOGIN_ERROR, "没有token信息，请登录");
+        }
         String uid = JWTUtil.getMsgFromToken(jwtToken,"uid",String.class);
         return uid;
     }
 
     @Override
     public Integer getUserId(Object source) {
-        String jwtToken = (String)source;
+        HttpServletRequest request = (HttpServletRequest)source;
+        String jwtToken = request.getHeader("token");
+        if(jwtToken==null){
+            throw new BusinessException(ExceptionType.NO_LOGIN_ERROR, "没有token信息，请登录");
+        }
         Integer userId = JWTUtil.getMsgFromToken(jwtToken,"userId",Integer.class);
         return userId;
     }

@@ -2,10 +2,12 @@ package com.allen.imsystem.filter;
 
 
 import com.alibaba.fastjson.JSONObject;
+import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.model.dto.ErrMsg;
 import com.allen.imsystem.model.dto.JSONResponse;
 import com.allen.imsystem.model.pojo.User;
+import com.auth0.jwt.interfaces.Claim;
 
 import javax.servlet.*;
 import javax.servlet.http.Cookie;
@@ -15,6 +17,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 public class TokenFilter implements Filter {
 
@@ -42,37 +45,35 @@ public class TokenFilter implements Filter {
                 return;
             }
         }
-        boolean success = false;
-        Cookie[] cookies = request.getCookies();
-        if(cookies != null){
-            for(Cookie cookie :cookies){
-                if(cookie.getName().equals("token")){
-                    success = checkAuth(cookie.getValue(),request.getHeader("token"),request.getSession());
-                    break;
-                }
-            }
+        String token = request.getHeader("token");
+        if(token == null){
+            handleFail(response,"请求无token信息，请重新登录");
+            return;
         }
-        if(success)
+        try {
+            Map<String, Claim> claims = JWTUtil.verifyLoginToken(token,null);
+            if(claims == null){
+                handleFail(response, "token解析错误，请重新登录");
+                return;
+            }
+            String uid = claims.get("uid").asString();
+            Integer userId = claims.get("userId").asInt();
+            request.setAttribute("uid",uid);
+            request.setAttribute("userId",userId);
+
             filterChain.doFilter(request,response);
-        else{
-//            //销毁cookie
-//            Cookie cookie = new Cookie("token",null);
-//            cookie.setMaxAge(0);
-//            cookie.setPath(request.getContextPath());
-//            response.addCookie(cookie);
-            //销毁session
-            request.getSession().invalidate();
-            JSONResponse jsonResponse = new JSONResponse(0,1004,new ErrMsg("登录信，请重新登录"));
-            response.setContentType("application/json; charset=UTF-8");
-            response.getWriter().write(JSONObject.toJSONString(jsonResponse));
+        }catch(Exception e){
+            handleFail(response, "token解析错误，请重新登录");
         }
     }
 
-    private boolean checkAuth(String cookieToken,String paramToken, HttpSession session){
-        User loginUser = (User) session.getAttribute("user");
-//        return loginUser!=null && cookieToken.equals(paramToken) && JWTUtil.verifyLoginToken(cookieToken,loginUser.getUid());
-        return loginUser!=null &&  JWTUtil.verifyLoginToken(cookieToken,loginUser.getUid());
+    private void handleFail(HttpServletResponse response, String errMsg) throws IOException {
+        JSONResponse jsonResponse = new JSONResponse(0,1004,new ErrMsg(errMsg));
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.getWriter().write(JSONObject.toJSONString(jsonResponse));
     }
+
 
     @Override
     public void destroy() {

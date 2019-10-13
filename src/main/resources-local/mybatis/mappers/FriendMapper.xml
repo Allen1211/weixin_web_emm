@@ -9,7 +9,7 @@
         <id column="uid" />
         <result property="applicationReason" column="reason"/>
         <result property="hasAccept" column="pass" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
-        <association property="applicationInfo" resultMap="userInfoMap"/>
+        <association property="applicantInfo" resultMap="userInfoMap"/>
     </resultMap>
 
 
@@ -31,7 +31,6 @@
         <result property="groupName" column="fri_group_name"/>
         <result property="groupSize" column="fri_group_size"/>
     </resultMap>
-
 
     <select id="selectFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
@@ -69,16 +68,21 @@
         INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = fg.id)
         as fri_group_size
-        FROM friend_group as fg where friend_group.status=1 and(uid= '0' or uid = #{uid})
+        FROM friend_group as fg where fg.status=1 and (uid= '0' or uid = #{uid})
+        order by id
     </select>
 
     <select id="selectLatestApply" resultMap="FriendApplicationMap">
-        (SELECT uid,username,icon_id,reason,pass,fa.created_time,fa.has_read FROM user_info as ui
+        (SELECT uid,username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        reason,pass,fa.created_time,fa.has_read FROM user_info as ui
         INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
         WHERE fa.to_uid = #{uid} and fa.has_read=0
         ORDER BY fa.created_time DESC)
         UNION ALL
-        (SELECT uid,username,icon_id,reason,pass,fa.created_time,fa.has_read FROM user_info as ui
+        (SELECT uid,username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        reason,pass,fa.created_time,fa.has_read FROM user_info as ui
         INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
         WHERE fa.to_uid = #{uid} and fa.has_read=1 and (TO_DAYS(NOW()) - TO_DAYS(fa.created_time)) &lt;=30
         ORDER BY fa.created_time DESC)
@@ -86,7 +90,9 @@
     </select>
 
     <select id="selectFriendList" resultMap="userInfoMap">
-        SELECT uid_b as uid, username, icon_id, "desc" from friend
+        SELECT uid_b as uid, username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        "desc" from friend
         INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid}
         UNION ALL
@@ -95,8 +101,24 @@
         WHERE friend.uid_b = #{uid}
     </select>
 
+    <select id="selectFriendListOrderByGroupId" resultMap="userInfoMap">
+        SELECT uid_b as uid, username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+         "desc", b_in_a_fgroup_id as group_id from friend as f
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE f.uid_a = #{uid}
+        UNION ALL
+        SELECT uid_a as uid, username ,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        "desc", a_in_b_fgroup_id as group_id from friend as f
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE f.uid_b = #{uid}
+        order by group_id
+    </select>
+
     <select id="selectFriendInfo" resultMap="userInfoMap">
-        SELECT uid,username,icon_id,"desc" from user_info where uid=#{friendId}
+        SELECT uid,username,CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,"desc"
+        from user_info where uid=#{friendId}
     </select>
 
     <select id="checkIsFriend" resultType="java.lang.Integer">
@@ -124,7 +146,7 @@
     </update>
 
     <update id="updateFriendGroupName" >
-        UPDATE friend_group set status = 1 and fri_group_name=#{groupName} WHERE user_id=#{userId} and id=#{groupId}
+        UPDATE friend_group set status = 1, fri_group_name=#{groupName} WHERE id=#{groupId} and user_id=#{userId}
     </update>
 
     <update id="deleteFriendGroup">

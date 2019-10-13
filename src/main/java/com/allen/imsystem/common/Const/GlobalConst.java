@@ -3,6 +3,17 @@ package com.allen.imsystem.common.Const;
 public class GlobalConst {
     public static final String ENCODING = "UTF-8";
 
+
+    /**
+     * 路径类
+     */
+    public static class Path{
+        public static final String API_SERVER_IP = "120.77.42.156";
+        public static final String RESOURCES_URL = "http://120.77.42.156:8088/imsystem/static/";
+        public static final String AVATAR_URL = "http://120.77.42.156:8088/imsystem/static/avatar/";
+        public static final String AVATAR_PATH = "/usr/resources/imsystem/static/avatar/";
+        public static final String MSG_RECORD_PATH = "/usr/resources/imsystem/static/msg_record/";
+    }
     /**
      *  用户在线状态
      */

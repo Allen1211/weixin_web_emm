@@ -22,6 +22,8 @@ public interface FriendMapper {
 
     Set<UserInfoDTO> selectFriendList(@Param("uid")String uid);
 
+    List<UserInfoDTO> selectFriendListOrderByGroupId(@Param("uid")String uid);
+
     UserInfoDTO selectFriendInfo(@Param("friendId")String friendId);
 
     Integer checkIsFriend(@Param("uid")String uid, @Param("friendId")String friendId);
@@ -50,11 +52,6 @@ public interface FriendMapper {
     Integer moveGroupFriendToDefaultGroup(@Param("groupId") Integer groupId,@Param("uid") String uid);
 
     Integer moveFriendToAnotherGroup(@Param("uid")String uid, @Param("friendId")String friendId,
-                                     @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
-
-    Integer moveFriendToAnotherGroup1(@Param("uid")String uid, @Param("friendId")String friendId,
-                                     @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
-    Integer moveFriendToAnotherGroup2(@Param("uid")String uid, @Param("friendId")String friendId,
                                      @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
 
 }
