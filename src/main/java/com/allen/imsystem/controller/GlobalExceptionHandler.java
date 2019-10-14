@@ -35,6 +35,7 @@ public class GlobalExceptionHandler {
             if(target instanceof BusinessException){
                 return handleBusinessException((BusinessException) target);
             }else if (target instanceof DataIntegrityViolationException){
+                target.printStackTrace();
                 return handleBusinessException(new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL));
             }else if ( target instanceof HttpRequestMethodNotSupportedException){
                 return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));

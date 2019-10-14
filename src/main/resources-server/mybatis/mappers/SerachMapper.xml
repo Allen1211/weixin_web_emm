@@ -4,9 +4,9 @@
 
 <mapper namespace="com.allen.imsystem.dao.mappers.SearchMapper">
     <resultMap id="searchResultMap" type="com.allen.imsystem.model.dto.UserSearchResult" >
-        <association property="userInfo" resultMap="userInfoDTOMap"></association>
+        <association property="userInfo" resultMap="userInfoDTOMapForSearch"></association>
     </resultMap>
-    <resultMap id="userInfoDTOMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
+    <resultMap id="userInfoDTOMapForSearch" type="com.allen.imsystem.model.dto.UserInfoDTO">
         <result property="uid" column="uid"/>
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
@@ -14,7 +14,9 @@
     </resultMap>
 
     <select id="search" resultMap="searchResultMap"  >
-        SELECT uid,username,icon_id,`desc` FROM user_info
+        SELECT uid,username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc` FROM user_info
         WHERE username like CONCAT('%',#{keyword},'%') OR uid=#{keyword};
     </select>
 

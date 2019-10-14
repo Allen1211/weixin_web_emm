@@ -73,6 +73,7 @@ public class UserService implements IUserService {
         userDao.insertUser(user);
         userDao.insertUserInfo(userInfo);
         userDao.sortDeleteUsedUid(uidPool.getId());
+        userDao.insertLoginRecord(uid,new Date());
         return;
     }
 
@@ -98,8 +99,8 @@ public class UserService implements IUserService {
         if(!hashPassword.equals(HashSaltUtil.getHashSaltPwd(password,salt)))
             throw new BusinessException(ExceptionType.USERNAME_PASSWORD_ERROR);
 
-        //TODO LOG
-
+        // 更新最后一次登录时间
+        userDao.updateLoginRecord(user.getUid(),new Date());
         // redis更新该用户的在线状态 至在线
         redisUtil.hset("user_status",user.getUid(), GlobalConst.UserStatus.ONLINE);
 
@@ -120,6 +121,7 @@ public class UserService implements IUserService {
             throw new BusinessException(ExceptionType.USER_NOT_FOUND);
         }
         redisUtil.hset("user_status",uid,GlobalConst.UserStatus.OFFLINE);
+
     }
 
     @Override
@@ -134,13 +136,13 @@ public class UserService implements IUserService {
         }else {
             throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE);
         }
-        return avatarURL;
+        return GlobalConst.Path.AVATAR_URL+avatarURL;
     }
 
     @Override
-    public boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,Integer userId) {
+    public boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,String uid) {
         UserInfo userInfo = new UserInfo();
-        userInfo.setId(userId);
+        userInfo.setUid(uid);
         userInfo.setUpdateTime(new Date());
         userInfo.setDesc(editUserInfoDTO.getSignWord());
         userInfo.setIconId(editUserInfoDTO.getAvatar());
@@ -158,6 +160,16 @@ public class UserService implements IUserService {
         return userDao.selectSelfInfo(userId);
     }
 
+    @Override
+    public Date getUserLastLoginTime(String uid) {
+        return userDao.getUserLastLoginTime(uid);
+    }
 
+    @Override
+    public String getUserOnlineStatus(String uid) {
+        String onlineStatus = redisUtil.hget("user_status",uid);
+        if(onlineStatus == null) onlineStatus = "0";
+        return onlineStatus;
+    }
 
 }

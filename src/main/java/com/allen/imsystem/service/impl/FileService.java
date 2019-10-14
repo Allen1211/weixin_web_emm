@@ -39,6 +39,6 @@ public class FileService implements IFileService {
             throw new BusinessException(ExceptionType.SERVER_ERROR, "无法打开文件输入流");
         }
 
-        return GlobalConst.Path.AVATAR_URL + nameDotType;
+        return nameDotType;
     }
 }

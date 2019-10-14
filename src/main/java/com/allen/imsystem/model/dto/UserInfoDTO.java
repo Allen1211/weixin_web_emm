@@ -1,8 +1,10 @@
 package com.allen.imsystem.model.dto;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotEmpty;
+
+import java.util.Date;
 
 @Data
 public class UserInfoDTO {
@@ -15,5 +17,8 @@ public class UserInfoDTO {
 
     private String avatar;
 
+//    @JSONField(format = "yyyy-MM-dd HH:mm")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+    private Date lastLoginAt;
 
 }

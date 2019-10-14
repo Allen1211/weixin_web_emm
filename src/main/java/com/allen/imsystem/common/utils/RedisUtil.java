@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -24,6 +25,11 @@ public class RedisUtil {
 
     private static final int EXPRIED_TIME = 60 * 60 * 3;    // 三小时
 
+    /**
+     * Spring Data Redis
+     */
+    @Autowired
+    private RedisTemplate redisTemplate;
     /**
      * 获取jedis
      *

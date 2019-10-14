@@ -73,26 +73,5 @@
         </aop:config>-->
 
 
-    <!-- Redis   -->
-    <context:property-placeholder location="classpath:redis/redis.properties" file-encoding="utf-8" ignore-unresolvable="true"></context:property-placeholder>
-
-    <!--  Jedis config-->
-    <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
-        <property name="maxTotal" value="${redis.pool.maxTotal}"/>
-        <property name="maxIdle" value="${redis.pool.maxIdle}"/>
-        <property name="maxWaitMillis" value="${redis.pool.maxWaitMillis}"/>
-        <property name="testOnBorrow" value="${redis.pool.testOnBorrow}"/>
-
-    </bean>
-
-    <bean id="jedisPool" class="redis.clients.jedis.JedisPool">
-        <constructor-arg name="poolConfig" ref="jedisPoolConfig"/>
-        <constructor-arg name="host" value="${redis.host}"></constructor-arg>
-        <constructor-arg name="port" value="${redis.port}"></constructor-arg>
-        <constructor-arg name="password" value="${redis.password}"></constructor-arg>
-        <constructor-arg name="timeout" value="${redis.timeout}"></constructor-arg>
-        <constructor-arg name="database" value="${redis.database}"></constructor-arg>
-
-    </bean>
 
 </beans>

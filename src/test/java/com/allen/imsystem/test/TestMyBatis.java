@@ -3,10 +3,7 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
-import com.allen.imsystem.model.dto.EditUserInfoDTO;
-import com.allen.imsystem.model.dto.FriendGroup;
-import com.allen.imsystem.model.dto.FriendListByGroupDTO;
-import com.allen.imsystem.model.dto.UserSearchResult;
+import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
@@ -100,12 +97,7 @@ public class TestMyBatis {
 
     @Test
     public void test7() {
-        User user = new User();
-        user.setUid("66666666");
-        user.setStatus(false);
-
         UserInfo userInfo = new UserInfo("66666666","123");
-        userDao.updateUser(user);
         userDao.updateUserInfo(userInfo);
     }
 
@@ -121,4 +113,12 @@ public class TestMyBatis {
         EditUserInfoDTO result = userDao.selectSelfInfo(25);
         System.out.println(result.getAvatar());
     }
+
+    @Test
+    public void test10(){
+        UserInfoDTO userInfoDTO = friendDao.selectFriendInfo("12345678");
+        System.out.println(userInfoDTO);
+    }
+
+
 }

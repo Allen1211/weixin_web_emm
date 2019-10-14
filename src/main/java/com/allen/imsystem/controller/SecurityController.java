@@ -5,7 +5,9 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.VertifyCodeUtil;
 import com.allen.imsystem.model.dto.JSONResponse;
+import com.allen.imsystem.model.message.EmailMessage;
 import com.allen.imsystem.service.IMailService;
+import com.allen.imsystem.service.ISecurityService;
 import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,7 +33,7 @@ public class SecurityController {
     private IUserService userService;
 
     @Autowired
-    private IMailService mailService;
+    private ISecurityService securityService;
 
     @Qualifier("AttrCacheHolder")
     @Autowired
@@ -60,32 +62,24 @@ public class SecurityController {
 
     @RequestMapping(value = "/sendRegistEmailCode",method = RequestMethod.GET)
     @ResponseBody
-    public JSONResponse sendCheckCodeEmail(@RequestParam String email, HttpSession session){
+    public JSONResponse sendCheckCodeEmail(@RequestParam String email){
 
-        if(userService.isEmailRegisted(email)){
-            throw new BusinessException(ExceptionType.EMAIL_HAS_BEEN_REGISTED);
-        }
+//        if(userService.isEmailRegisted(email)){
+//            throw new BusinessException(ExceptionType.EMAIL_HAS_BEEN_REGISTED);
+//        }
 
-        Map<String, Object> model = new HashMap<>(2);
-        Random random = new Random(System.currentTimeMillis());
-        String emailCode = String.valueOf(random.nextInt(899999) + 100000);
-        model.put("emailCode",emailCode);
-        model.put("sendTime",new Date());
-        boolean sendSuccess = mailService.sendMailVelocity("Imsystem注册邮箱验证",null,email,model);
+        boolean sendSuccess = securityService.sendRegisterCheckEmail(email);
 
         // 发送成功的话, 将验证码和过期时间拼接添加到session
         if(sendSuccess){
-            Long expriedTime = System.currentTimeMillis() + 20*60*1000; // 过期时间20分钟
-            String emailCodeToken = emailCode + "#" + expriedTime;  // 拼接
-            cacheHolder.setEmailCode(email,emailCodeToken);
             return new JSONResponse(1);
         }else{
-            throw new BusinessException(ExceptionType.SERVER_ERROR);
+            throw new BusinessException(ExceptionType.SERVER_ERROR,"发送失败");
         }
 
     }
 
-    @RequestMapping("verifyLocalStorageData")
+    @RequestMapping("/verifyLocalStorageData")
     public JSONResponse verifyLocalStorageData(){
         return new JSONResponse(1);
     }

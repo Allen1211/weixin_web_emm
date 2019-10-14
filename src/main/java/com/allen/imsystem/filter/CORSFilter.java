@@ -27,12 +27,6 @@ public class CORSFilter implements Filter {
                 " X-Requested-With, X-Requested-By, If-Modified-Since, X-File-Name, X-File-Type, Cache-Control, Origin,token");
         response.addHeader("Access-Control-Max-Age", "3600");
         chain.doFilter(request, response);
-        response.setHeader("Access-Control-Allow-Origin", origin);
-        response.setHeader("Access-Control-Allow-Credentials", "true");
-        response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT,PATCH, HEAD");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Depth, User-Agent, X-File-Size," +
-                " X-Requested-With, X-Requested-By, If-Modified-Since, X-File-Name, X-File-Type, Cache-Control, Origin,token");
-        response.setHeader("Access-Control-Max-Age", "3600");
     }
 
 

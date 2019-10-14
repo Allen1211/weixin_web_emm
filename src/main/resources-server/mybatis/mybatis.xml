@@ -34,8 +34,8 @@
     </environments>
 
     <mappers>
-        <mapper resource="mappers/UserMapper.xml"/>
         <mapper resource="mappers/SearchMapper.xml"/>
+        <mapper resource="mappers/UserMapper.xml"/>
         <mapper resource="mappers/FriendMapper.xml"/>
     </mappers>
 

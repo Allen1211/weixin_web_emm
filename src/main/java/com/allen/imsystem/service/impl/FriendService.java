@@ -42,7 +42,7 @@ public class FriendService implements IFriendService {
             UserSearchResult result = map.get(id);
             if (result != null) {
                 result.setApplicable(false);
-                result.setReason("已是好友");
+                result.setReason("已添加");
                 map.put(id, result);
             }
         }
@@ -78,6 +78,9 @@ public class FriendService implements IFriendService {
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
         // 1 更新用户申请表，将pass改成1
         boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0;
+        if(!successUpdate){ // 如果更新行数为0，说明不存在此申请或者申请已经被同意
+            throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
+        }
         // 2 查询对方要把ta放到什么组
         Integer bePutInGroupId = friendDao.selectApplyGruopId(friendId, uid);
         // 2 插入好友表

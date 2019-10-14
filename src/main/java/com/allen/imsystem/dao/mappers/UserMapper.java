@@ -4,8 +4,10 @@ import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 @Component
 public interface UserMapper {
@@ -23,6 +25,8 @@ public interface UserMapper {
 
     EditUserInfoDTO selectSelfInfo(Integer userId);
 
+    Date getUserLastLoginTime(String uid);
+
     Integer insertUser(User user);
 
     Integer insertUserInfo(UserInfo userInfo);
@@ -34,4 +38,8 @@ public interface UserMapper {
     Integer insertBatchIntoUidPool(List<String> list);
 
     Integer sortDeleteUsedUid(Integer id);
+
+    Integer updateLoginRecord(@Param("uid") String uid,@Param("loginTime")Date loginTime);
+
+    Integer insertLoginRecord(@Param("uid") String uid,@Param("loginTime")Date loginTime);
 }

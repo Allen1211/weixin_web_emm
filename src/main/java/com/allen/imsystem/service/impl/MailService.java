@@ -1,5 +1,8 @@
 package com.allen.imsystem.service.impl;
 
+import com.allen.imsystem.common.exception.BusinessException;
+import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.model.message.EmailMessage;
 import com.allen.imsystem.service.IMailService;
 import javafx.fxml.Initializable;
 import org.apache.commons.io.FileUtils;
@@ -7,6 +10,10 @@ import org.apache.velocity.app.VelocityEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.redis.connection.Message;
+import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -23,14 +30,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 @Service
-public class MailService implements IMailService{
+public class MailService implements IMailService, MessageListener {
 
     @Autowired
     private JavaMailSender javaMailSender;
     @Autowired
     private VelocityEngine velocityEngine;
     @Autowired
-    private SimpleMailMessage simpleMailMessage;
+    private RedisTemplate<String,Object> redisTemplate;
 
     private static final String PROP_FILE_LOCATION = "classpath:mail/mail.properties";
     private static final String TEMPLATE_LOCATION = "velocity.vm";
@@ -40,6 +47,17 @@ public class MailService implements IMailService{
     @Value("${mail.smtp.defaultEncoding}")
     private String ENCODING;
 
+
+    @Override
+    public void onMessage(Message message, byte[] pattern) {
+        RedisSerializer<EmailMessage> serializer = (RedisSerializer<EmailMessage>) redisTemplate.getDefaultSerializer();
+        EmailMessage emailMessage = serializer.deserialize(message.getBody());
+        boolean success = this.sendMailVelocity(emailMessage.getSubject(),emailMessage.getFileLocation(),
+                emailMessage.getEmailAddress(),emailMessage.getModel());
+        if(!success){
+            throw new BusinessException(ExceptionType.SERVER_ERROR, "发送邮件失败");
+        }
+    }
 
     @Override
     public boolean sendMailVelocity(String subject, String location, String emailAddress, Map<String,Object> model) {
@@ -69,20 +87,5 @@ public class MailService implements IMailService{
         return true;
     }
 
-//    public void sendHtml(String subject, String emailAddress, Map<String,Object> model){
-//        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-//        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
-//        try {
-//            helper.setTo(emailAddress);
-//            helper.setFrom(FROM);
-//            helper.setSubject(subject);
-//            String content = VelocityEngineUtils.mergeTemplateIntoString(velocityEngine,TEMPLATE_LOCATION,ENCODING, model);
-//            helper.setText(content);
-//        } catch (MessagingException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//        javaMailSender.send(mimeMessage);
-//    }
 
 }

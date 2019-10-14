@@ -38,7 +38,7 @@ public class FriendController {
     @ResponseBody
     public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        String keyword = params.get("keyword");
+        String keyword = params.get("keyWord");
         List<UserSearchResult> resultList = friendService.searchStranger(uid, keyword);
         JSONResponse jsonResponse = new JSONResponse(1);
         jsonResponse.putData("selectList", resultList);
@@ -57,7 +57,10 @@ public class FriendController {
         // 1、更新数据库
         String uid = cacheHolder.getUid(request);
         String friendId = (String) params.get("friendId");
-        Integer groupId = Integer.valueOf(params.get("groupId"));
+        Integer groupId = 1;    // 不传groupId，默认放到默认组
+        if(params.get("groupId") != null){
+            groupId = Integer.valueOf(params.get("groupId"));
+        }
         boolean updateSuccess = friendService.passFriendApply(uid, friendId, groupId);
 
         // TODO 2、通知申请的用户，申请已通过
@@ -230,6 +233,8 @@ public class FriendController {
             throw new BusinessException(ExceptionType.SERVER_ERROR, "更改失败，数据不匹配");
         }
     }
+
+
 
 
     @RequestMapping("/*")

@@ -175,7 +175,7 @@
             <if test="regionId!=null">region_id=#{regionId},</if>
             <if test="updateTime!=null">update_time=#{updateTime},</if>
         </set>
-        WHERE id=#{id}
+        WHERE uid=#{uid}
     </update>
 
     <update id="updateUser" parameterType="com.allen.imsystem.model.pojo.User">
@@ -191,6 +191,18 @@
         </set>
         WHERE id=#{id}
 
+    </update>
+
+    <select id="getUserLastLoginTime" resultType="java.util.Date">
+        SELECT last_login_time FROM login_record WHERE uid=#{uid} LIMIT 1
+    </select>
+
+    <insert id="insertLoginRecord" useGeneratedKeys="true">
+        INSERT INTO `login_record` SET (uid,last_login_time) VALUES(#{uid},#{loginTime})
+    </insert>
+
+    <update id="updateLoginRecord" >
+        UPDATE `login_record` SET last_login_time = #{loginTime} WHERE uid=#{uid}
     </update>
 
     <insert id="insertBatchIntoUidPool" parameterType="java.util.List" useGeneratedKeys="false">

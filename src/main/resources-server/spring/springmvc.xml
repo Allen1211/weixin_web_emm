@@ -18,8 +18,8 @@
         <!-- DispatcherServlet不处理静态资源,交给服务器默认的servlet处理 -->
         <mvc:default-servlet-handler />
 
-        <!-- 启用annotation -->
-        <mvc:annotation-driven />
+<!--        &lt;!&ndash; 启用annotation &ndash;&gt;-->
+<!--        <mvc:annotation-driven />-->
 
     <!-- 配置视图解析器 如何把handler 方法返回值解析为实际的物理视图 -->
         <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
@@ -27,6 +27,13 @@
             <property name="suffix" value=".jsp"/>
         </bean>
         <!-- 视图解析器配置结束       -->
+
+        <!-- 使用fastjson作为Spring MVC 的json转换器           -->
+        <mvc:annotation-driven>
+<!--            <mvc:message-converters>-->
+<!--                <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter"/>-->
+<!--            </mvc:message-converters>-->
+        </mvc:annotation-driven>
 
         <!-- 配置文件上传处理器          -->
         <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">

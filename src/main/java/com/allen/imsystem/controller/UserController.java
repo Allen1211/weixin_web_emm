@@ -128,16 +128,23 @@ public class UserController {
     @RequestMapping(value = "/updateUserInfo", method = RequestMethod.POST)
     @ResponseBody
     public JSONResponse updateUserInfo(@RequestBody EditUserInfoDTO editUserInfoDTO, HttpServletRequest request) {
-        Integer userId = cacheHolder.getUserId(request);
-        userService.updateUserInfo(editUserInfoDTO, userId);
+        String uid = cacheHolder.getUid(request);
+        editUserInfoDTO.setUid(uid);
+        userService.updateUserInfo(editUserInfoDTO, uid);
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "getSelfInfo", method = RequestMethod.GET)
+    @RequestMapping(value = "/getSelfInfo", method = RequestMethod.GET)
     public JSONResponse getSelfInfo(HttpServletRequest request) {
         Integer userId = cacheHolder.getUserId(request);
         EditUserInfoDTO selfInfo = userService.getSelfInfo(userId);
         return new JSONResponse(1).putData("userInfo", selfInfo);
+    }
+
+    @RequestMapping(value = "/getUserOnlineStatus",method = RequestMethod.GET)
+    public JSONResponse getUserOnlineStatus(@RequestParam("uid")String uid){
+        String onlineStatus = userService.getUserOnlineStatus(uid);
+        return new JSONResponse(1).putData("onlineStatus",onlineStatus);
     }
 
     @RequestMapping("/*")

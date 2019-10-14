@@ -6,6 +6,7 @@ import com.allen.imsystem.model.pojo.UserInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
 import java.util.Map;
 
 @Service
@@ -52,11 +53,21 @@ public interface IUserService {
     /**
      * 用户信息更改
      */
-    boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,Integer userId);
+    boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO,String uid);
 
 
     /**
      * 获取自己的信息
      */
     EditUserInfoDTO getSelfInfo(Integer userId);
+
+    /**
+     * 获取用户的最后一次的登录时间
+     */
+    Date getUserLastLoginTime(String uid);
+
+    /**
+     * 获取用户在线状态
+     */
+    String getUserOnlineStatus(String uid);
 }

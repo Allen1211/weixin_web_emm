@@ -19,6 +19,7 @@
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
         <result property="signWord" column="desc"/>
+        <result property="lastLoginAt" column="last_login_time"/>
     </resultMap>
 
     <resultMap id="friendGroupMap" type="com.allen.imsystem.model.dto.FriendGroup">
@@ -96,7 +97,9 @@
         INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid}
         UNION ALL
-        SELECT uid_a as uid, username ,icon_id, "desc" from friend
+        SELECT uid_a as uid, username ,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        "desc" from friend
         INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid}
     </select>
@@ -117,8 +120,14 @@
     </select>
 
     <select id="selectFriendInfo" resultMap="userInfoMap">
-        SELECT uid,username,CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,"desc"
-        from user_info where uid=#{friendId}
+        SELECT user_info.uid,
+        username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        "desc",
+        last_login_time
+        from user_info
+        LEFT JOIN `login_record` ON login_record.uid = user_info.uid
+        where user_info.uid=#{friendId}
     </select>
 
     <select id="checkIsFriend" resultType="java.lang.Integer">
@@ -142,7 +151,8 @@
     </insert>
 
     <update id="updateFriendApplyPass" >
-        UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW() WHERE from_uid=#{fromUid} and to_uid=#{toUid}
+        UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW()
+        WHERE from_uid=#{fromUid} and to_uid=#{toUid} and pass != 1
     </update>
 
     <update id="updateFriendGroupName" >
@@ -161,14 +171,6 @@
 
     <update id="moveFriendToAnotherGroup">
         update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId};
-        update friend as f set f.a_in_b_fgroup_id = #{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id = #{oldGroupId}
-    </update>
-
-    <update id="moveFriendToAnotherGroup1">
-        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId}
-    </update>
-
-    <update id="moveFriendToAnotherGroup2">
         update friend as f set f.a_in_b_fgroup_id = #{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id = #{oldGroupId}
     </update>
 

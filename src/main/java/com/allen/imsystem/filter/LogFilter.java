@@ -18,10 +18,13 @@ public class LogFilter implements Filter {
         System.out.println("request time: "+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
         System.out.println("request url: " + request.getRequestURI());
         System.out.println("request mehtod: "+request.getMethod());
+        System.out.println("request origin: "+request.getHeader("Origin"));
         System.out.println();
-        //        logRequest(request,response);
+//        logRequest(request,response);
         filterChain.doFilter(request,response);
-//        logResponse(request,response);
+        System.out.println("Response: Access-Control-Allow-Origin: "+response.getHeader("Access-Control-Allow-Origin"));
+        System.out.println();
+        //        logResponse(request,response);
     }
 
     private void logRequest(HttpServletRequest request, HttpServletResponse resposne){
