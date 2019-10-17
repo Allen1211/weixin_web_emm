@@ -59,6 +59,10 @@
         SELECT id FROM friend_group where status = 1 and uid=#{uid} and fri_group_name=#{groupName}
     </select>
 
+    <select id="isGroupValid" resultType="java.lang.Boolean">
+        SELECT status FROM friend_group WHERE id = #{groupId}
+    </select>
+
     <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
         SELECT id,fri_group_name,
         (SELECT count(*) from friend

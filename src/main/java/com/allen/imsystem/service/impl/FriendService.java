@@ -76,15 +76,25 @@ public class FriendService implements IFriendService {
     @Override
     @Transactional
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
-        // 1 更新用户申请表，将pass改成1
-        boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0;
+        // 1 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
+        boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0
+                || friendDao.updateFriendApplyPass(true,uid,friendId)>0;
         if(!successUpdate){ // 如果更新行数为0，说明不存在此申请或者申请已经被同意
             throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
         }
         // 2 查询对方要把ta放到什么组
         Integer bePutInGroupId = friendDao.selectApplyGruopId(friendId, uid);
-        // 2 插入好友表
-        boolean successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
+
+        // 2 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
+        boolean successInsert = false;
+        if(uid.compareTo(friendId)<0){
+            successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
+        }else if(uid.compareTo(friendId)>0){
+            successInsert = friendDao.insertNewFriend(friendId, uid, groupId, bePutInGroupId) > 0;
+        }else{
+            throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL,"不能添加自己为好友");
+        }
+
         return successInsert && successUpdate;
     }
 
@@ -191,7 +201,11 @@ public class FriendService implements IFriendService {
     @Override
     @Transactional
     public boolean moveFriendToOtherGroup(String uid, String friendId, Integer oldGroupId, Integer newGroupId) {
-        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) == 1;
+        Boolean isGroupValid = friendDao.isGroupValid(newGroupId);
+        if(isGroupValid == null || isGroupValid.booleanValue()==false){
+            throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL, "要移动到的组不存在或已被删除");
+        }
+        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) > 0;
         return isSuccess;
     }
 

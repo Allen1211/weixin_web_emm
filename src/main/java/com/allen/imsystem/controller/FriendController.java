@@ -3,7 +3,6 @@ package com.allen.imsystem.controller;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.common.utils.HTTPUtil;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.service.IFriendService;
 import org.springframework.beans.factory.annotation.Autowired;

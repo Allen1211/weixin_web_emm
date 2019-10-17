@@ -16,9 +16,10 @@
             http://www.springframework.org/schema/tx
             http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 
-    <import resource="applicationContext-dao.xml" />
     <import resource="applicationContext-mail.xml" />
+    <import resource="applicationContext-dao.xml" />
     <import resource="applicationContext-redis.xml"/>
+
     <bean id="springBeanFactory" class="com.allen.imsystem.common.utils.SpringBeanUtil"/>
 
     <context:component-scan base-package="com.allen.imsystem.*"/>

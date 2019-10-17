@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import javax.annotation.Resource;
 import java.util.Map;
 
 @Component
@@ -25,11 +26,12 @@ public class RedisUtil {
 
     private static final int EXPRIED_TIME = 60 * 60 * 3;    // 三小时
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     /**
      * Spring Data Redis
      */
-    @Autowired
-    private RedisTemplate redisTemplate;
     /**
      * 获取jedis
      *

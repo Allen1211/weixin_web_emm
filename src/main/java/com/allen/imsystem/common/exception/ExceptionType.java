@@ -16,7 +16,8 @@ public enum ExceptionType {
     DATA_CONSTRAINT_FAIL(1010,"不满足数据约束。可能破坏外键约束，唯一性约束"),
     FILE_TYPE_NOT_SUPPORT(1011,"文件类型不支持"),
     FILE_NOT_RECEIVE(1012,"文件接收失败，文件为空"),
-    APPLY_HAS_BEEN_HANDLER(1013,"申请已经被处理，申请已过期")
+    APPLY_HAS_BEEN_HANDLER(1013,"申请已经被处理，申请已过期"),
+    HTTP_REQUEST_ERROR(1014,"HTTP请求解析错误，请检查是否缺少body参数")
     ;
 
     private Integer code;

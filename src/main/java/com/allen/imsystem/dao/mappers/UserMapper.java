@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
-@Component
+
 public interface UserMapper {
     User selectUserWithUid(String uid);
 

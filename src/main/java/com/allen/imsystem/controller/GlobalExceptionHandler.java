@@ -8,6 +8,7 @@ import com.allen.imsystem.model.dto.JSONResponse;
 import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import org.apache.ibatis.binding.BindingException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -43,7 +44,10 @@ public class GlobalExceptionHandler {
                 return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));
             }else if(target instanceof MethodArgumentNotValidException || target instanceof BindingException){
                 return handleValidationException(target);
-            }else{
+            }else if(target instanceof HttpMessageNotReadableException){
+                return handleBusinessException(new BusinessException(ExceptionType.HTTP_REQUEST_ERROR));
+            }
+            else{
                 return handleUnKnownException(target);
             }
         }catch (Exception e){

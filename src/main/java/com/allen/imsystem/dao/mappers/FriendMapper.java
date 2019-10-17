@@ -18,6 +18,8 @@ public interface FriendMapper {
 
     Integer  selectApplyGroupId(@Param("fromUid") String fromUid, @Param("toUid") String toUid);
 
+    Boolean isGroupValid(Integer groupId);
+
     List<FriendApplicationDTO> selectLatestApply(@Param("uid") String uid,@Param("limit") Integer limit);
 
     Set<UserInfoDTO> selectFriendList(@Param("uid")String uid);

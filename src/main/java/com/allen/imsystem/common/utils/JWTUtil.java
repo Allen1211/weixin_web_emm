@@ -43,7 +43,7 @@ public class JWTUtil {
     /**
      * 默认过期时间 60分钟
      */
-    private static final long DEFAULT_EXPIRE_TIME = 3 * 60 * 60 *1000;    //单位毫秒
+    private static final long DEFAULT_EXPIRE_TIME = 48 * 60 * 60 *1000;    //单位毫秒
 
 
     /**

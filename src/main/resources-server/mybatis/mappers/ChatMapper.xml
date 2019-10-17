@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.ChatMapper">
+
+    <resultMap id="privateChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
+        <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="talkTitle" column="username" />
+        <result property="avatar" column="icon_id" />
+        <result property="lastMessage" column="content"/>
+        <result property="isGroup" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="lastMessageTime" column="created_time" />
+        <result property="friendId" column="uid"/>
+    </resultMap>
+
+    <resultMap id="chatNewMsgSizeMap" type="com.allen.imsystem.model.dto.ChatNewMsgSizeDTO">
+        <result property="talkId" column="chat_id"/>
+        <result property="size" column="new_msg_size"/>
+    </resultMap>
+
+<!--    <resultMap id="groupChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">-->
+<!--        <result property="charId" column="chat_id" jdbcType="bigint" javaType="java.lang.Long"/>-->
+<!--        <result property="avatar" column="icon_id" jdbcType="varchar" javaType="java.lang.String"/>-->
+<!--        <result property="lastMsgContent" column="content"/>-->
+<!--        <result property="isGroupChat" column="isGroup" jdbcType="tinyint" javaType="java.lang.Boolean"/>-->
+<!--        <result property="lastMsgTime" column="created_time" jdbcType="datetime" javaType="java.util.Date"/>-->
+<!--    </resultMap>-->
+
+
+    <select id="selectPrivateChatList" resultMap="privateChatMap">
+        (SELECT pc.chat_id, ui.username,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        pmr.content, pmr.created_time, 0 as is_group
+        FROM private_chat as pc
+        INNER JOIN user_info as ui ON pc.uid_b = ui.uid
+        INNER JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        WHERE (pc.uid_a = #{uid} AND pc.user_a_status=1) )
+        UNION ALL
+        (SELECT pc.chat_id,ui.username,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        pmr.content, pmr.created_time, 0 as is_group
+        FROM private_chat as pc
+        INNER JOIN user_info as ui ON pc.uid_a = ui.uid
+        INNER JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        WHERE (pc.uid_b = #{uid} AND pc.user_b_status=1) )
+        ORDER BY created_time DESC
+    </select>
+
+    <select id="selectPrivateChatNewMsgSize" parameterType="com.allen.imsystem.model.dto.ChatSessionDTO" resultMap="chatNewMsgSizeMap">
+        SELECT chat_id, COUNT(*) as new_msg_size FROM pri_msg_record WHERE to_uid=#{uid} AND has_read=0
+        AND chat_id in
+        <foreach item="chat" index="index" collection="chatList" open="(" separator="," close=")">
+            #{chat.talkId}
+        </foreach>
+        GROUP BY chat_id
+    </select>
+
+
+
+
+    <!--插入一条私聊消息到私聊消息记录    -->
+    <insert id="insertPrivateMsgToRecord" parameterType="com.allen.imsystem.model.pojo.PrivateMsgRecord" >
+        INSERT INTO msg_record (
+            <trim prefixOverrides=",">
+                <if test="msgId!=null">msg_id,</if>
+                <if test="msgType!=null">msg_type,</if>
+                <if test="charId!=null">chat_id,</if>
+                <if test="fromUid!=null">from_uid,</if>
+                <if test="toUid!=null">to_uid,</if>
+                <if test="content!=null">content,</if>
+                <if test="hasRead!=null">has_read,</if>
+                <if test="status!=null">status,</if>
+                <if test="createdTime!=null">created_time,</if>
+                <if test="updateTime!=null">update_time</if>
+            </trim>
+        ) VALUES (
+            <trim prefixOverrides=",">
+                <if test="msgId!=null">#{msgId},</if>
+                <if test="msgType!=null">#{msgType},</if>
+                <if test="charId!=null">#{charId},</if>
+                <if test="fromUid!=null">#{fromUid},</if>
+                <if test="toUid!=null">#{toUid},</if>
+                <if test="content!=null">#{content},</if>
+                <if test="hasRead!=null">#{hasRead},</if>
+                <if test="status!=null">#{status},</if>
+                <if test="createdTime!=null">#{createdTime},</if>
+                <if test="updateTime!=null">#{updateTime}</if>
+            </trim>
+        )
+    </insert>
+
+<!--    更新某一会话的所有聊天记录-->
+    <update id="updatePrivateMsgRecordByChatId">
+        UPDATE msg_record
+        <set>
+            <if test="hasRead!=null">has_read=#{hasRead},</if>
+            <if test="status!=null">status=#{status},</if>
+            <if test="updateTime!=null">update_time=#{updateTime},</if>
+        </set>
+        WHERE chat_id=#{chatId}
+    </update>
+
+
+</mapper>

@@ -41,6 +41,7 @@
         <constructor-arg index="0" ref="sqlSessionFactory" />
     </bean>
 
+
     <bean id="userMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.UserMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
@@ -49,9 +50,15 @@
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.SearchMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
     </bean>
+
     <bean id="friendMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.FriendMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+    </bean>
+
+    <bean id="chatMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.ChatMapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
     </bean>
 
 

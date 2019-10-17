@@ -28,6 +28,10 @@ public class FriendDao {
         return friendMapper.selectGroupId(uid,groupName);
     }
 
+    public Boolean isGroupValid(Integer groupId){
+        return friendMapper.isGroupValid(groupId);
+    }
+
     public Integer selectApplyGruopId(String fromUid, String toUid){
         return friendMapper.selectApplyGroupId(fromUid,toUid);
     }
