@@ -4,6 +4,7 @@ import com.allen.imsystem.dao.mappers.FriendMapper;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.pojo.FriendRelation;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,11 @@ public class FriendDao {
 
     public Integer selectGroupId(@Param("uid")String uid, @Param("groupName")String groupName){
         return friendMapper.selectGroupId(uid,groupName);
+    }
+
+
+    public FriendRelation selectFriendRelation(@Param("uid")String uid, @Param("friendId")String friendId){
+        return friendMapper.selectFriendRelation(uid,friendId);
     }
 
     public Boolean isGroupValid(Integer groupId){
@@ -99,5 +105,13 @@ public class FriendDao {
     public Integer moveFriendToAnotherGroup(String uid, String friendId,
                                             Integer oldGroupId, Integer newGroupId){
         return friendMapper.moveFriendToAnotherGroup(uid,friendId,oldGroupId,newGroupId);
+    }
+
+    public Integer sortDeleteFriendA2B(@Param("uid")String uid, @Param("friendId")String friendId){
+        return friendMapper.sortDeleteFriendA2B(uid,friendId);
+    }
+
+    public Integer sortDeleteFriendB2A(@Param("uid")String uid, @Param("friendId")String friendId){
+        return friendMapper.sortDeleteFriendB2A(uid,friendId);
     }
 }

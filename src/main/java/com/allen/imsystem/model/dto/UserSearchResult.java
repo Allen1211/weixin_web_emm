@@ -8,7 +8,7 @@ import java.io.Serializable;
 @Data
 public class UserSearchResult implements Serializable {
 
-    private boolean applicable;
+    private boolean applicable = true;
 
     private String reason;
 

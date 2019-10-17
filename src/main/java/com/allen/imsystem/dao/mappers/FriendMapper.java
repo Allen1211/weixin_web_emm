@@ -3,6 +3,7 @@ package com.allen.imsystem.dao.mappers;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.pojo.FriendRelation;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -28,6 +29,8 @@ public interface FriendMapper {
 
     UserInfoDTO selectFriendInfo(@Param("friendId")String friendId);
 
+    FriendRelation selectFriendRelation(@Param("uid")String uid, @Param("friendId")String friendId);
+
     Integer checkIsFriend(@Param("uid")String uid, @Param("friendId")String friendId);
 
     Integer addFriendApply(@Param("fromUid") String fromUid,@Param("toUid")String toUid
@@ -43,6 +46,10 @@ public interface FriendMapper {
     List<FriendGroup> selectFriendGroupListWithSize(@Param("uid")String uid);
 
     Integer insertNewFriendGroup(@Param("userId")Integer userId,@Param("uid")String uid, @Param("groupName")String groupName);
+
+    Integer sortDeleteFriendA2B(@Param("uid")String uid, @Param("friendId")String friendId);
+
+    Integer sortDeleteFriendB2A(@Param("uid")String uid, @Param("friendId")String friendId);
 
     Integer deleteFriend(@Param("uid")String uid, @Param("friendId")String friendId);
 

@@ -79,7 +79,8 @@ public class SecurityController {
 
     }
 
-    @RequestMapping("/verifyLocalStorageData")
+    @RequestMapping(value = "/verifyLocalStorageData",method = RequestMethod.GET)
+    @ResponseBody
     public JSONResponse verifyLocalStorageData(){
         return new JSONResponse(1);
     }

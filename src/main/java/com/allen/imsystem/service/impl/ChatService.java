@@ -38,6 +38,7 @@ public class ChatService implements IChatService {
         if(privateChatList != null){
             for(int i=0;i<privateChatList.size();i++){
                 ChatSessionDTO privateChat = privateChatList.get(i);
+
                 // 填充新消息条数
                 ChatNewMsgSizeDTO sizeDTO = sizeMap.get(privateChat.getTalkId());
                 privateChat.setNewMessageCount(sizeDTO == null ? 0:sizeDTO.getSize());

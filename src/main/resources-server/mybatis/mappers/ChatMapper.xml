@@ -56,7 +56,10 @@
         GROUP BY chat_id
     </select>
 
-
+    <insert id="insertNewPrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
+        INSERT INTO private_chat (chat_id, uid_a, uid_b, user_a_status, user_b_status, last_msg_id,last_sender_id, created_time, update_time)
+        VALUES (#{chatId},#{uidA},#{uidB},#{userAStatus},#{userBStatus},#{lastMsgId},#{createdTime},#{lastSenderId},NOW(),NOW())
+    </insert>
 
 
     <!--插入一条私聊消息到私聊消息记录    -->

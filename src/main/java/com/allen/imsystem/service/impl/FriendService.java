@@ -6,6 +6,7 @@ import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.FriendRelation;
 import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFriendService;
 import com.sun.org.apache.regexp.internal.RE;
@@ -168,7 +169,24 @@ public class FriendService implements IFriendService {
 
     @Override
     public boolean deleteFriend(String uid, String friendId) {
-        return friendDao.deleteFriend(uid, friendId) > 0;
+        FriendRelation friendRelation = friendDao.selectFriendRelation(uid,friendId);
+        Boolean isDeletedByFriend;
+        if(friendRelation == null){
+            isDeletedByFriend = false;
+        }else if(uid.compareTo(friendId) < 0){
+            isDeletedByFriend = friendRelation.getBDeleteA();
+        }else{
+            isDeletedByFriend = friendRelation.getADeleteB();
+        }
+        if(isDeletedByFriend)//如果已经被对方删除，则执行物理删除
+            return friendDao.deleteFriend(uid, friendId) > 0;
+        else{   // 否则执行逻辑删除
+            if(uid.compareTo(friendId) < 0){
+                return friendDao.sortDeleteFriendA2B(uid,friendId)>0;
+            }else{
+                return friendDao.sortDeleteFriendB2A(uid,friendId)>0;
+            }
+        }
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.service.IFriendService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -164,7 +165,7 @@ public class FriendController {
     @ResponseBody
     public JSONResponse getFriendListByGroup(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        List<FriendListByGroupDTO> result = friendService.getFriendListByGroup("28661270");
+        List<FriendListByGroupDTO> result = friendService.getFriendListByGroup(uid);
         JSONResponse jsonResponse = new JSONResponse(1);
         jsonResponse.putData("groupList",result);
         return jsonResponse;

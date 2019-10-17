@@ -36,4 +36,13 @@ public class GlobalConst {
     public static class MQ {
         public static final String EMAIL_MESSAGE_KEY = "EMAIL_MESSAGE_QUEUE";
     }
+
+    /**
+     * redis相关的常量
+     */
+    public static class Redis{
+        public static final String KEY_USER_STATUS = "user_status";
+        public static final String KEY_CHAT_TYPE = "chat_type";
+        public static final String KEY_CHAT_REMOVE = "chat_remove";
+    }
 }

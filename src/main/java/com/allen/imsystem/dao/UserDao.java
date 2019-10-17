@@ -83,4 +83,5 @@ public class UserDao {
     public Integer insertLoginRecord(@Param("uid") String uid, @Param("loginTime") Date loginTime) {
         return userMapper.insertLoginRecord(uid, loginTime);
     }
+
 }
