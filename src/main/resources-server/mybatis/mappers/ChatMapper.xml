@@ -4,7 +4,7 @@
 
 <mapper namespace="com.allen.imsystem.dao.mappers.ChatMapper">
 
-    <resultMap id="privateChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
+    <resultMap id="privateChatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
         <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="talkTitle" column="username" />
         <result property="avatar" column="icon_id" />
@@ -14,9 +14,53 @@
         <result property="friendId" column="uid"/>
     </resultMap>
 
+    <resultMap id="privateChatInfoMap" type="com.allen.imsystem.model.pojo.PrivateChat">
+        <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="uidA" column="uid_a" />
+        <result property="uidA" column="uid_b" />
+        <result property="userAStatus" column="user_a_status" />
+        <result property="userBStatus" column="user_b_status" />
+        <result property="lastMsgId" column="last_msg_id"/>
+        <result property="lastSenderId" column="last_sender_id" />
+        <result property="createdTIme" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="chatGroupInfoMap" type="com.allen.imsystem.model.pojo.ChatGroup">
+        <result property="groupId" column="group_id"/>
+        <result property="groupName" column="group_name"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="avatar" column="avatar"/>
+        <result property="chatId" column="chatId" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="status" column="status" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="createdTIme" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
     <resultMap id="chatNewMsgSizeMap" type="com.allen.imsystem.model.dto.ChatNewMsgSizeDTO">
         <result property="talkId" column="chat_id"/>
         <result property="size" column="new_msg_size"/>
+    </resultMap>
+
+    <resultMap id="privateMsgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
+        <result property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
+        <result property="msgType" column="msg_type"/>
+        <result property="messageText" column="content"/>
+        <result property="msgTimeDate" column="created_time"/>
+        <result property="messageImgUrl" column="resource_url"/>
+        <association property="userInfo" resultMap="userInfoMap"/>
+        <association property="fileInfo" resultMap="fileInfoMap"/>
+    </resultMap>
+
+    <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+    </resultMap>
+
+    <resultMap id="fileInfoMap" type="com.allen.imsystem.model.dto.MsgFileInfo">
+        <result property="fileName" column="content"/>
+        <result property="downloadUrl" column="resource_url"/>
     </resultMap>
 
 <!--    <resultMap id="groupChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">-->
@@ -28,7 +72,7 @@
 <!--    </resultMap>-->
 
 
-    <select id="selectPrivateChatList" resultMap="privateChatMap">
+    <select id="selectPrivateChatList" resultMap="privateChatSessionDTOMap">
         (SELECT pc.chat_id, ui.username,ui.uid,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
         pmr.content, pmr.created_time, 0 as is_group
@@ -47,13 +91,46 @@
         ORDER BY created_time DESC
     </select>
 
-    <select id="selectPrivateChatNewMsgSize" parameterType="com.allen.imsystem.model.dto.ChatSessionDTO" resultMap="chatNewMsgSizeMap">
+    <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">
+        SELECT msg_id , msg_type, content, resource_url, mr.created_time ,ui.uid, ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
+        FROM pri_msg_record as mr
+        INNER JOIN user_info as ui ON ui.uid = mr.from_uid
+        WHERE mr.chat_id = #{chatId} AND mr.to_uid = #{uid}
+        ORDER BY mr.created_time DESC
+        LIMIT #{pageBean.from},#{pageBean.offset}
+    </select>
+
+    <select id="selectPrivateChatInfoByUid" resultMap="privateChatInfoMap">
+        SELECT * FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB} LIMIT 1
+    </select>
+
+    <select id="selectPrivateChatInfoByChatId" resultMap="privateChatInfoMap">
+        SELECT * FROM private_chat WHERE chat_id = #{chatId} LIMIT 1
+    </select>
+
+    <select id="selectPrivateChatNewMsgSize" resultMap="chatNewMsgSizeMap">
         SELECT chat_id, COUNT(*) as new_msg_size FROM pri_msg_record WHERE to_uid=#{uid} AND has_read=0
         AND chat_id in
         <foreach item="chat" index="index" collection="chatList" open="(" separator="," close=")">
             #{chat.talkId}
         </foreach>
         GROUP BY chat_id
+    </select>
+
+    <select id="selectPrivateChatTitleName" resultType="java.lang.String">
+        SELECT username FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_a
+        WHERE chat_id=#{chatId} AND uid_b = #{uid}
+        UNION ALL
+        SELECT username FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_b
+        WHERE chat_id=#{chatId} AND uid_a = #{uid}
+        LIMIT 1
+    </select>
+
+    <select id="selectChatGroupInfoByChatId" resultMap="chatGroupInfoMap">
+        SELECT * FROM chat_group WHERE chat_id = #{chatId} AND status=1
     </select>
 
     <insert id="insertNewPrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
@@ -93,6 +170,22 @@
         )
     </insert>
 
+    <update id="updatePrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
+        UPDATE private_chat
+        <set>
+            <if test="chatId!=null">chat_id=#{chatId},</if>
+            <if test="uidA!=null">uid_a=#{uidA},</if>
+            <if test="uidB!=null">uid_b=#{uidB},</if>
+            <if test="userAStatus!=null">user_a_status=#{userAStatus},</if>
+            <if test="userBStatus!=null">user_b_status=#{userBStatus},</if>
+            <if test="lastMsgId!=null">last_msg_id=#{lastMsgId},</if>
+            <if test="lastSenderId!=null">last_sender_id=#{lastSenderId}</if>
+            <if test="createdTime!=null">created_time=#{createdTime},</if>
+            <if test="updateTime!=null">update_time=#{updateTime}</if>
+        </set>
+        WHERE chat_id=#{chatId}
+    </update>
+
 <!--    更新某一会话的所有聊天记录-->
     <update id="updatePrivateMsgRecordByChatId">
         UPDATE msg_record
@@ -104,5 +197,9 @@
         WHERE chat_id=#{chatId}
     </update>
 
+<!--    标记所有某私聊所有信息已读-->
+    <update id="setAllPrivateChatMsgHasRead">
+        UPDATE pri_msg_record SET has_read = 1 WHERE chat_id=#{chatId} AND to_uid=#{uid}
+    </update>
 
 </mapper>

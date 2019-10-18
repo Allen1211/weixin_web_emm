@@ -7,9 +7,7 @@ import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.FriendRelation;
-import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFriendService;
-import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -70,6 +68,7 @@ public class FriendService implements IFriendService {
         String fromUId = uid;
         String toUId = params.getFriendId();
         String reason = params.getApplicationReason();
+        if(reason == null) reason = "";
         Integer groupId = params.getGroupId() == null ? 1 : Integer.valueOf(params.getGroupId());
         return friendDao.addFriendApply(fromUId, toUId, groupId, reason) > 0;
     }
@@ -77,16 +76,19 @@ public class FriendService implements IFriendService {
     @Override
     @Transactional
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
-        // 1 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
+        // 1 查询对方要把ta放到什么组
+        Integer bePutInGroupId = friendDao.selectApplyGroupId(friendId,uid);
+        if(groupId == null){
+            groupId = 1;
+        }
+        // 2 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
         boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0
                 || friendDao.updateFriendApplyPass(true,uid,friendId)>0;
         if(!successUpdate){ // 如果更新行数为0，说明不存在此申请或者申请已经被同意
             throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
         }
-        // 2 查询对方要把ta放到什么组
-        Integer bePutInGroupId = friendDao.selectApplyGruopId(friendId, uid);
 
-        // 2 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
+        // 3 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
         boolean successInsert = false;
         if(uid.compareTo(friendId)<0){
             successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;

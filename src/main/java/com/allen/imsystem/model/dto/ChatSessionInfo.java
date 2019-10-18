@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class TalkInfo implements Serializable {
+public class ChatSessionInfo implements Serializable {
     private Long talkId;
     private String title;
     private Boolean isGroup;

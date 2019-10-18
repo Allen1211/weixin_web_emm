@@ -17,7 +17,8 @@ public enum ExceptionType {
     FILE_TYPE_NOT_SUPPORT(1011,"文件类型不支持"),
     FILE_NOT_RECEIVE(1012,"文件接收失败，文件为空"),
     APPLY_HAS_BEEN_HANDLER(1013,"申请已经被处理，申请已过期"),
-    HTTP_REQUEST_ERROR(1014,"HTTP请求解析错误，请检查是否缺少body参数")
+    HTTP_REQUEST_ERROR(1014,"HTTP请求解析错误，请检查是否缺少body参数"),
+    TALK_NOT_VALID(1015,"该会话所对应的聊天不存在或已被删除")
     ;
 
     private Integer code;

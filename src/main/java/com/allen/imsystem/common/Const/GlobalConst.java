@@ -45,4 +45,9 @@ public class GlobalConst {
         public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
     }
+
+    public static class ChatType{
+        public static final String PRIVATE_CHAT = "0";
+        public static final String GROUP_CHAT = "1";
+    }
 }

@@ -38,7 +38,7 @@ public class FriendDao {
         return friendMapper.isGroupValid(groupId);
     }
 
-    public Integer selectApplyGruopId(String fromUid, String toUid){
+    public Integer selectApplyGroupId(String fromUid, String toUid){
         return friendMapper.selectApplyGroupId(fromUid,toUid);
     }
 

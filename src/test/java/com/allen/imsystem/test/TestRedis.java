@@ -118,4 +118,11 @@ public class TestRedis {
         Assert.assertEquals("123",uid);
         Assert.assertEquals(555,userId);
     }
+
+    @Test
+    public void setChatType(){
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633785817805881344",GlobalConst.ChatType.PRIVATE_CHAT);
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475138",GlobalConst.ChatType.PRIVATE_CHAT);
+
+    }
 }

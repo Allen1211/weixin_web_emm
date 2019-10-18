@@ -1,11 +1,51 @@
 package com.allen.imsystem.common.utils;
 
+import java.util.Random;
+
 public class SnowFlakeUtil {
 
-    private static SnowflakeIdWorker snowflakeIdWorker = new SnowflakeIdWorker(0,0);
+    private static SnowflakeIdWorker snowflakeIdWorker = new SnowflakeIdWorker(12,23);
 
     public static Long getNextSnowFlakeId(){
         return snowflakeIdWorker.nextId();
+    }
+
+
+    /**
+     * 把long 64位数转化为长度为64的字节数组，数组每一项代表一个位,0或1
+     * @return
+     */
+    private static Byte[] longToBitArray(Long num){
+
+        String s = "";
+        while(num > 0)
+        {
+            s += String.valueOf(num % 2);
+            num = num /2;
+        }
+        for(int i=0;i<64-s.length();i++){
+            System.out.print("0");
+        }
+        for(int i = s.length()-1; i >= 0 ; i--)
+        {
+
+            System.out.print(s.charAt(i));
+        }
+
+        System.out.println(num);
+        long src = num;
+        for(int i=0;i<12;i++){
+            int n = (int) (src & 31);
+            src = src>>5;
+        }
+        int lastFourBit = (int) (src & 16);
+        System.out.println(lastFourBit);
+        Random random = new Random();
+        int lowBits = random.nextInt(65535) << 4;    // 最大16位,左移四位空出低4位
+        System.out.println(lowBits);
+        int twentyBit = lowBits | lastFourBit;  // 拼接成20位
+        System.out.println(twentyBit);
+        return null;
     }
 
     public static void main(String[] args) {

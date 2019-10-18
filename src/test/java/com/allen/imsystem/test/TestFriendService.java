@@ -1,5 +1,6 @@
 package com.allen.imsystem.test;
 
+import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.model.dto.ApplyAddFriendDTO;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.service.IFriendService;
@@ -18,6 +19,9 @@ public class TestFriendService {
     @Autowired
     private IFriendService friendService;
 
+    @Autowired
+    private FriendDao friendDao;
+
     @Test
     public void test1(){
         List<FriendApplicationDTO> list = friendService.getFriendApplicationList("63374315");
@@ -35,7 +39,17 @@ public class TestFriendService {
 //    }
     @Test
     public void test3(){
-        boolean success = friendService.passFriendApply("63374315","97554417",1);
-        System.out.println(success);
+        System.out.println(friendDao.selectApplyGroupId("28661270","10547348"));;
+        boolean success = friendService.passFriendApply("10547348","28661270",1);
+//        System.out.println(success);
     }
+
+    @Test
+    public void test4(){
+        Integer a = friendDao.selectApplyGroupId("28661270","10547348");;
+//        boolean success = friendService.passFriendApply("10547348","28661270",1);
+//        System.out.println(success);
+        System.out.println(a);
+    }
+
 }
