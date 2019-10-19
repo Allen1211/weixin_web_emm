@@ -1,5 +1,8 @@
 package com.allen.imsystem.model.dto;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.alibaba.fastjson.serializer.ToStringSerializer;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -14,7 +17,12 @@ public class ChatSessionDTO implements Serializable {
     // 会话的头像，好友会话就好友头像，群会话就是群头像
     private String avatar;
     // 最后一条消息的时间
-    private Date lastMessageTime;
+    @JSONField(format = "yy/MM/dd")
+    private Date lastMessageDate;
+
+    // 最后一条消息的时间,前端显示的字符串
+    private String lastMessageTime;
+
     // 最后一条消息内容， 如果是图片则为 [图片], 文件则为 [文件]
     private String lastMessage;
     //新消息条数

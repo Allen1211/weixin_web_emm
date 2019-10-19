@@ -94,7 +94,7 @@
         INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
         WHERE fa.to_uid = #{uid} and fa.has_read=0
         ORDER BY fa.created_time DESC)
-        UNION ALL
+        UNION
         (SELECT uid,username,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
         reason,pass,fa.created_time,fa.has_read FROM user_info as ui

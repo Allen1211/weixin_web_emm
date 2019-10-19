@@ -9,6 +9,7 @@ import com.allen.imsystem.model.pojo.PrivateChat;
 import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -27,10 +28,17 @@ public interface ChatMapper {
 
     PrivateChat selectPrivateChatInfoByChatId(String chatId);
 
-    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,
+
+    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
+
+    Integer countAllHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+
+    Integer insertNewPrivateChat(PrivateChat privateChat);
 
     Integer updatePrivateChat(PrivateChat privateChat);
 
     Integer setAllPrivateChatMsgHasRead(@Param("chatId")Long chatId, @Param("uid")String uid);
+
+    Integer hardDeletePrivateChat(@Param("uidA")String uidA,@Param("uidB")String uidB);
 }

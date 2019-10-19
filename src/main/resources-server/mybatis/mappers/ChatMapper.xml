@@ -10,19 +10,19 @@
         <result property="avatar" column="icon_id" />
         <result property="lastMessage" column="content"/>
         <result property="isGroup" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-        <result property="lastMessageTime" column="created_time" />
+        <result property="lastMessageDate" column="created_time" />
         <result property="friendId" column="uid"/>
     </resultMap>
 
     <resultMap id="privateChatInfoMap" type="com.allen.imsystem.model.pojo.PrivateChat">
         <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="uidA" column="uid_a" />
-        <result property="uidA" column="uid_b" />
+        <result property="uidB" column="uid_b" />
         <result property="userAStatus" column="user_a_status" />
         <result property="userBStatus" column="user_b_status" />
         <result property="lastMsgId" column="last_msg_id"/>
         <result property="lastSenderId" column="last_sender_id" />
-        <result property="createdTIme" column="created_time"/>
+        <result property="createdTime" column="created_time"/>
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
@@ -77,16 +77,16 @@
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
         pmr.content, pmr.created_time, 0 as is_group
         FROM private_chat as pc
-        INNER JOIN user_info as ui ON pc.uid_b = ui.uid
-        INNER JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        LEFT JOIN user_info as ui ON pc.uid_b = ui.uid
+        LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
         WHERE (pc.uid_a = #{uid} AND pc.user_a_status=1) )
         UNION ALL
         (SELECT pc.chat_id,ui.username,ui.uid,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
         pmr.content, pmr.created_time, 0 as is_group
         FROM private_chat as pc
-        INNER JOIN user_info as ui ON pc.uid_a = ui.uid
-        INNER JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        LEFT JOIN user_info as ui ON pc.uid_a = ui.uid
+        LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
         WHERE (pc.uid_b = #{uid} AND pc.user_b_status=1) )
         ORDER BY created_time DESC
     </select>
@@ -96,7 +96,7 @@
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
         FROM pri_msg_record as mr
         INNER JOIN user_info as ui ON ui.uid = mr.from_uid
-        WHERE mr.chat_id = #{chatId} AND mr.to_uid = #{uid}
+        WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}
         ORDER BY mr.created_time DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
     </select>
@@ -133,9 +133,15 @@
         SELECT * FROM chat_group WHERE chat_id = #{chatId} AND status=1
     </select>
 
+
+    <select id="countAllHistoryMsg" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM pri_msg_record
+        WHERE chat_id = #{chatId} AND status = 1 AND created_time &lt; #{beginTime}
+    </select>
+
     <insert id="insertNewPrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
         INSERT INTO private_chat (chat_id, uid_a, uid_b, user_a_status, user_b_status, last_msg_id,last_sender_id, created_time, update_time)
-        VALUES (#{chatId},#{uidA},#{uidB},#{userAStatus},#{userBStatus},#{lastMsgId},#{createdTime},#{lastSenderId},NOW(),NOW())
+        VALUES (#{chatId},#{uidA},#{uidB},#{userAStatus},#{userBStatus},#{lastMsgId},#{lastSenderId},NOW(),NOW())
     </insert>
 
 
@@ -179,7 +185,7 @@
             <if test="userAStatus!=null">user_a_status=#{userAStatus},</if>
             <if test="userBStatus!=null">user_b_status=#{userBStatus},</if>
             <if test="lastMsgId!=null">last_msg_id=#{lastMsgId},</if>
-            <if test="lastSenderId!=null">last_sender_id=#{lastSenderId}</if>
+            <if test="lastSenderId!=null">last_sender_id=#{lastSenderId},</if>
             <if test="createdTime!=null">created_time=#{createdTime},</if>
             <if test="updateTime!=null">update_time=#{updateTime}</if>
         </set>
@@ -202,4 +208,8 @@
         UPDATE pri_msg_record SET has_read = 1 WHERE chat_id=#{chatId} AND to_uid=#{uid}
     </update>
 
+    <delete id="hardDeletePrivateChat">
+        DELETE FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB}
+    </delete>
+    
 </mapper>

@@ -18,6 +18,22 @@ public interface IFriendService {
     List<UserSearchResult> searchStranger(String uid, String keyword);
 
     /**
+     * 检查对方是否是自己的好友
+     * @param uid
+     * @param friendId
+     * @return
+     */
+    Boolean checkIsMyFriend(String uid, String friendId);
+
+    /**
+     * 检查对方是否已经把自己删除
+     * @param uid
+     * @param friendId
+     * @return
+     */
+    Boolean checkIsDeletedByFriend(String uid,String friendId);
+
+    /**
      * 申请加好友
      */
     boolean addFriendApply(ApplyAddFriendDTO params, String uid);

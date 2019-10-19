@@ -4,7 +4,9 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.PageBean;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.common.utils.DateFomatter;
 import com.allen.imsystem.common.utils.RedisUtil;
+import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.dao.ChatDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.ChatNewMsgSizeDTO;
@@ -14,15 +16,13 @@ import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.pojo.ChatGroup;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ChatService implements IChatService {
@@ -37,6 +37,9 @@ public class ChatService implements IChatService {
     private IUserService userService;
 
     @Autowired
+    private IFriendService friendService;
+
+    @Autowired
     private RedisUtil redisUtil;
 
     @Override
@@ -49,25 +52,90 @@ public class ChatService implements IChatService {
         return getChatType(String.valueOf(talkId));
     }
 
+    @Transactional
+    public PrivateChat initNewPrivateChat(String uid,String friendId,Boolean status){
+        Long chatId = SnowFlakeUtil.getNextSnowFlakeId();
+        String uidA = getUidAUidB(uid,friendId)[0];
+        String uidB = getUidAUidB(uid,friendId)[1];
+        PrivateChat privateChat = new PrivateChat();
+        privateChat.setChatId(chatId);
+        privateChat.setUidA(uidA);
+        privateChat.setUidB(uidB);
+        if(uidA.equals(uid)){
+            privateChat.setUserAStatus(status);
+        }else{
+            privateChat.setUserBStatus(status);
+        }
+        privateChat.setCreatedTime(new Date());
+        privateChat.setUpdateTime(new Date());
+        chatMapper.insertNewPrivateChat(privateChat);
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,uid+chatId,status?"0":"1");
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,friendId+chatId,"1");
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,chatId.toString(),GlobalConst.ChatType.PRIVATE_CHAT);
+        return privateChat;
+    }
+
+
     @Override
-    public void openNewPrivateChat(String uid, String friendId) {
-        String uidA = uid.compareTo(friendId)<0? uid:friendId;
-        String uidB = uid.compareTo(friendId)<0? friendId:uid;
+    @Transactional
+    public Map<String, java.lang.Object> openNewPrivateChat(String uid, String friendId) {
+        String uidA = getUidAUidB(uid,friendId)[0];
+        String uidB = getUidAUidB(uid,friendId)[1];
+
         // 获取会话信息
         PrivateChat privateChat = chatMapper.selectPrivateChatInfoByUid(uidA,uidB);
+
+        //判断对方是否已经把自己删掉
+        Boolean isDeletedByFriend = friendService.checkIsDeletedByFriend(uid,friendId);
+//        if(isDeletedByFriend){  // 对方已经把自己删除，开启新对话应提示
+//            throw new BusinessException(ExceptionType.CANNOT_OPEN_PRIVATE_CHAT);
+//        }
+        if(isDeletedByFriend){   // 被删了
+            if(privateChat != null){    // 有会话信息，可以跳转
+                return doOpenPrivateChat(uid,friendId,privateChat);
+            }else { // 无会话信息，异常
+                throw new BusinessException(ExceptionType.TALK_NOT_VALID,"被好友删除，但会话信息也不存在，数据异常");
+            }
+        }else if(privateChat == null){  // 没被删，而且没有会话信息，为这对好友新建一个会话
+            Map<String, Object> result = new HashMap<>(2);
+            result.put("privateChat",initNewPrivateChat(uid,friendId,true));
+            result.put("isNewTalk",true);
+            return result;
+        }
+
+        // 没被删，有会话信息，可以跳转，更新会话对当前用户有效
+        return doOpenPrivateChat(uid,friendId,privateChat);
+    }
+
+    private Map<String, Object> doOpenPrivateChat(String uid,String friendId,PrivateChat privateChat){
+        String uidA = getUidAUidB(uid,friendId)[0];
+        String uidB = getUidAUidB(uid,friendId)[1];
+
+        boolean isNewTalk;
+        if(uidA.equals(uid)){
+            isNewTalk = ! privateChat.getUserAStatus();
+            privateChat.setUserAStatus(true);
+        }else{
+            isNewTalk = ! privateChat.getUserBStatus();
+            privateChat.setUserBStatus(true);
+        }
+
+        // 更新数据库
+        chatMapper.updatePrivateChat(privateChat);
         // 设置该用户对该会话的移除为否
         String userChatRemoveKey = uid + privateChat.getChatId();
         redisUtil.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,userChatRemoveKey,"0");
-        //
-        if(uidA.equals(uid)){
-            privateChat.setUserAStatus(true);
-        }else{
-            privateChat.setUserBStatus(true);
-        }
-        chatMapper.updatePrivateChat(privateChat);
+        // 绘画类型
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,privateChat.getChatId().toString(),GlobalConst.ChatType.PRIVATE_CHAT);
+
+        Map<String, Object> result = new HashMap<>(2);
+        result.put("privateChat",privateChat);
+        result.put("isNewTalk",isNewTalk);
+        return result;
     }
 
     @Override
+    @Transactional
     public void removePrivateChat(String uid, Long chatId) {
         // 设置该用户对该会话的移除为是
         String userChatRemoveKey = uid + chatId;
@@ -80,6 +148,23 @@ public class ChatService implements IChatService {
             privateChat.setUserBStatus(false);
         }
         chatMapper.updatePrivateChat(privateChat);
+    }
+
+    @Override
+    public void removePrivateChat(String uid, String friendId) {
+        String uidA = getUidAUidB(uid,friendId)[0];
+        String uidB = getUidAUidB(uid,friendId)[1];
+
+        PrivateChat privateChat = chatMapper.selectPrivateChatInfoByUid(uidA,uidB);
+        if(uid.equals(privateChat.getUidA())){
+            privateChat.setUserAStatus(false);
+        }else{
+            privateChat.setUserBStatus(false);
+        }
+        chatMapper.updatePrivateChat(privateChat);
+        // 设置该用户对该会话的移除为是
+        String userChatRemoveKey = uid + privateChat.getChatId();
+        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,userChatRemoveKey,"1");
     }
 
     @Override
@@ -98,6 +183,15 @@ public class ChatService implements IChatService {
                 // 填充在线信息
                 String onlineStatus = userService.getUserOnlineStatus(privateChat.getFriendId());
                 privateChat.setOnline(onlineStatus.equals("1"));
+
+                if(privateChat.getLastMessage() == null || privateChat.getLastMessageDate()==null){
+                    privateChat.setLastMessage("");
+                    privateChat.setLastMessageTime("");
+                }else{
+                    //日期时间格式化
+                    privateChat.setLastMessageTime(DateFomatter.formatChatSessionDate(privateChat.getLastMessageDate()));
+                }
+
             }
         }
         // 获取群会话
@@ -149,12 +243,22 @@ public class ChatService implements IChatService {
     }
 
     @Override
-    public List<MsgRecord> getMessageRecord(String uid, String talkId, Integer index, Integer pageSize) {
+    public List<MsgRecord> getMessageRecord(String uid, String talkId,Date beginTime, Integer index, Integer pageSize) {
+        if(beginTime == null){
+            beginTime = new Date();
+        }
+
         PageBean pageBean = new PageBean(index,pageSize);
 //        Date now = new Date();  // 只获取现在这个时间之前的
-        List<MsgRecord> msgRecordList = chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), uid,pageBean);
+        List<MsgRecord> msgRecordList =
+                chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), beginTime,uid,pageBean);
+        if(msgRecordList == null){
+            msgRecordList = new ArrayList<>();
+            return  msgRecordList;
+        }
         Long preMsgTime = null;
-        for(MsgRecord msgRecord : msgRecordList){
+        for(int i=msgRecordList.size()-1;i>=0;i--){
+            MsgRecord msgRecord = msgRecordList.get(i);
             // 是否显示
             msgRecord.setShowMsg(true);
 
@@ -184,30 +288,32 @@ public class ChatService implements IChatService {
             }
 
             // 发送的时间处理
-            // 首条或者相差十分钟的才显示时间
-//            Long now = System.currentTimeMillis();
+            // 首条或者相差五分钟的才显示时间
             Long thisMsgTime = msgRecord.getMsgTimeDate().getTime();
-            boolean showMsgTime = preMsgTime==null || (thisMsgTime-preMsgTime >= 1000*60*10);
+            boolean showMsgTime = preMsgTime==null || (thisMsgTime-preMsgTime >= 1000*60*5);
             msgRecord.setShowMsgTime(showMsgTime);
             if(showMsgTime){
-//                Date now = new Date();
-//                Calendar calendar = Calendar.getInstance();
-//                calendar.setTime(now);
-//                // 一天前
-//                if(now.getTime() - thisMsgTime > 1000*60*60*24){
-//                    // 大于零点
-//                    int date = calendar.get(Calendar.DATE);
-//
-//                }
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM-dd HH:mm");
-                msgRecord.setMsgTime(simpleDateFormat.format(thisMsgTime));
+                String format = DateFomatter.formatMessageDate(msgRecord.getMsgTimeDate());
+                msgRecord.setMsgTime(format);
             }
             preMsgTime = msgRecord.getMsgTimeDate().getTime();
 
             // 群昵称
         }
+        Collections.reverse(msgRecordList);
         return msgRecordList;
     }
 
+    @Override
+    public Integer getAllHistoryMessageSize(String talkId, String uid,Date beginTime) {
+        Integer totalSize = chatMapper.countAllHistoryMsg(Long.valueOf(talkId),beginTime);
+        return totalSize==null? 0 : totalSize;
+    }
+
+    private String[] getUidAUidB(String uid,String friendId){
+        String uidA = uid.compareTo(friendId)<0? uid:friendId;
+        String uidB = uid.compareTo(friendId)<0? friendId:uid;
+        return new String[]{uidA,uidB};
+    }
 
 }

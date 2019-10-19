@@ -125,4 +125,11 @@ public class TestRedis {
         redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475138",GlobalConst.ChatType.PRIVATE_CHAT);
 
     }
+    @Test
+    public void w(){
+        String type = redisUtil.hget(GlobalConst.Redis.KEY_CHAT_TYPE,"634923715161669632");
+        System.out.println(type);
+        Long a = 12345L;
+        System.out.println(a.toString());
+    }
 }

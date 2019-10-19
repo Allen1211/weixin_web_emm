@@ -22,9 +22,5 @@
 
     <bean id="springBeanFactory" class="com.allen.imsystem.common.utils.SpringBeanUtil"/>
 
-    <context:component-scan base-package="com.allen.imsystem.*"/>
-    <context:component-scan base-package="com.allen.imsystem.service"/>
-    <context:component-scan base-package="com.allen.imsystem.service.impl"/>
-    <context:component-scan base-package="com.allen.imsystem.*.*"/>
 
 </beans>

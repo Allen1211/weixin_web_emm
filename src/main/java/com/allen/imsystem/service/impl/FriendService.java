@@ -2,11 +2,14 @@ package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.dao.ChatDao;
 import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.FriendRelation;
+import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +31,10 @@ public class FriendService implements IFriendService {
     private FriendDao friendDao;
 
     @Autowired
-    private UserDao userDao;
+    private ChatMapper chatMapper;
+
+    @Autowired
+    private IChatService chatService;
 
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
@@ -63,12 +69,39 @@ public class FriendService implements IFriendService {
     }
 
     @Override
+    public Boolean checkIsMyFriend(String uid, String friendId) {
+        FriendRelation friendRelation = friendDao.selectFriendRelation(uid, friendId);
+        if (friendRelation == null) {
+            return false;
+        }
+        if (friendRelation.getUidA().equals(uid)) {
+            boolean deleteIt = friendRelation.getADeleteB();
+            return !deleteIt;
+        } else {
+            boolean deleteIt = friendRelation.getBDeleteA();
+            return !deleteIt;
+        }
+    }
+
+    public Boolean checkIsDeletedByFriend(String uid,String friendId){
+        FriendRelation friendRelation = friendDao.selectFriendRelation(uid, friendId);
+        if (friendRelation == null) {
+            return true;
+        }
+        if (friendRelation.getUidA().equals(uid)) {
+            return friendRelation.getBDeleteA();
+        } else {
+            return friendRelation.getADeleteB();
+        }
+    }
+
+    @Override
     @Transactional
     public boolean addFriendApply(ApplyAddFriendDTO params, String uid) {
         String fromUId = uid;
         String toUId = params.getFriendId();
         String reason = params.getApplicationReason();
-        if(reason == null) reason = "";
+        if (reason == null) reason = "";
         Integer groupId = params.getGroupId() == null ? 1 : Integer.valueOf(params.getGroupId());
         return friendDao.addFriendApply(fromUId, toUId, groupId, reason) > 0;
     }
@@ -77,26 +110,42 @@ public class FriendService implements IFriendService {
     @Transactional
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
         // 1 查询对方要把ta放到什么组
-        Integer bePutInGroupId = friendDao.selectApplyGroupId(friendId,uid);
-        if(groupId == null){
+        Integer bePutInGroupId = friendDao.selectApplyGroupId(friendId, uid);
+        if (groupId == null) {
             groupId = 1;
         }
         // 2 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
         boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0
-                || friendDao.updateFriendApplyPass(true,uid,friendId)>0;
-        if(!successUpdate){ // 如果更新行数为0，说明不存在此申请或者申请已经被同意
+                || friendDao.updateFriendApplyPass(true, uid, friendId) > 0;
+        if (!successUpdate) { // 如果更新行数为0，说明不存在此申请或者申请已经被同意
             throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
         }
 
-        // 3 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
-        boolean successInsert = false;
-        if(uid.compareTo(friendId)<0){
-            successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
-        }else if(uid.compareTo(friendId)>0){
-            successInsert = friendDao.insertNewFriend(friendId, uid, groupId, bePutInGroupId) > 0;
-        }else{
-            throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL,"不能添加自己为好友");
+        // 3.5 判定对方是否已经是自己的好友，如果是，删掉原来的关系，再执行插入关系。若不是，直接执行插入
+        boolean isMyFriend = checkIsMyFriend(uid,friendId);
+        if(isMyFriend){
+            // 删掉原有的好友关系
+            friendDao.deleteFriend(uid, friendId);
+            // 删除原有的会话
+            String uidA = uid.compareTo(friendId)<0? uid:friendId;
+            String uidB = uid.compareTo(friendId)<0? friendId:uid;
+            chatMapper.hardDeletePrivateChat(uidA,uidB);
         }
+
+        // 4 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
+        boolean successInsert = false;
+        if (uid.compareTo(friendId) < 0) {
+            successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
+        } else if (uid.compareTo(friendId) > 0) {
+            successInsert = friendDao.insertNewFriend(friendId, uid, groupId, bePutInGroupId) > 0;
+        } else {
+            throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL, "不能添加自己为好友");
+        }
+
+        // 4 为该对好友新建个会话
+        new Thread(() -> {
+            chatService.initNewPrivateChat(uid, friendId, false);
+        }).start();
 
         return successInsert && successUpdate;
     }
@@ -129,10 +178,10 @@ public class FriendService implements IFriendService {
             // 根据每一个组的大小
             int groupSize = friendGroup.getGroupSize();
 
-            if(groupSize != 0){
-                dto.setMembers(friendListOrderByGroup.subList(begin , begin+friendGroup.getGroupSize()));
+            if (groupSize != 0) {
+                dto.setMembers(friendListOrderByGroup.subList(begin, begin + friendGroup.getGroupSize()));
                 begin += friendGroup.getGroupSize();
-            }else{
+            } else {
                 dto.setMembers(new ArrayList<>());
             }
             resultList.add(dto);
@@ -170,23 +219,21 @@ public class FriendService implements IFriendService {
     }
 
     @Override
+    @Transactional
     public boolean deleteFriend(String uid, String friendId) {
-        FriendRelation friendRelation = friendDao.selectFriendRelation(uid,friendId);
-        Boolean isDeletedByFriend;
-        if(friendRelation == null){
-            isDeletedByFriend = false;
-        }else if(uid.compareTo(friendId) < 0){
-            isDeletedByFriend = friendRelation.getBDeleteA();
-        }else{
-            isDeletedByFriend = friendRelation.getADeleteB();
-        }
-        if(isDeletedByFriend)//如果已经被对方删除，则执行物理删除
+        // 1、移除掉与好友的会话
+        chatService.removePrivateChat(uid,friendId);
+        // 2、检查是否已经被好友删除
+        Boolean isDeletedByFriend = checkIsDeletedByFriend(uid,friendId);
+        if (isDeletedByFriend)//如果已经被对方删除，则执行物理删除
+        {
             return friendDao.deleteFriend(uid, friendId) > 0;
-        else{   // 否则执行逻辑删除
-            if(uid.compareTo(friendId) < 0){
-                return friendDao.sortDeleteFriendA2B(uid,friendId)>0;
-            }else{
-                return friendDao.sortDeleteFriendB2A(uid,friendId)>0;
+        }
+        else {   // 否则执行逻辑删除
+            if (uid.compareTo(friendId) < 0) {
+                return friendDao.sortDeleteFriendA2B(uid, friendId) > 0;
+            } else {
+                return friendDao.sortDeleteFriendB2A(uid, friendId) > 0;
             }
         }
     }
@@ -222,7 +269,7 @@ public class FriendService implements IFriendService {
     @Transactional
     public boolean moveFriendToOtherGroup(String uid, String friendId, Integer oldGroupId, Integer newGroupId) {
         Boolean isGroupValid = friendDao.isGroupValid(newGroupId);
-        if(isGroupValid == null || isGroupValid.booleanValue()==false){
+        if (isGroupValid == null || isGroupValid.booleanValue() == false) {
             throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL, "要移动到的组不存在或已被删除");
         }
         boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) > 0;

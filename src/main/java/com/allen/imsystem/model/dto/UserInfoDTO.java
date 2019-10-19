@@ -17,8 +17,7 @@ public class UserInfoDTO {
 
     private String avatar;
 
-//    @JSONField(format = "yyyy-MM-dd HH:mm")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
+    @JSONField(format = "yyyy-MM-dd HH:mm")
     private Date lastLoginAt;
 
     private Boolean online;

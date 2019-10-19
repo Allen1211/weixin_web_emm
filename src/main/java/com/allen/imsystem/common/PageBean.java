@@ -10,10 +10,10 @@ public class PageBean {
     private Integer offset;
 
     public PageBean(Integer index, Integer pageSize){
-        if(index<0 || pageSize <= 0){
+        if(pageSize == null || pageSize == 0) pageSize = 10;
+        if(index<=0 || pageSize <= 0){
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"不合法的分页参数");
         }
-        if(pageSize == null || pageSize == 0) pageSize = 10;
         from = (index-1)*pageSize;
         offset = pageSize;
     }

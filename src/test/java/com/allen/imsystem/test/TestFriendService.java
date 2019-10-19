@@ -39,8 +39,9 @@ public class TestFriendService {
 //    }
     @Test
     public void test3(){
-        System.out.println(friendDao.selectApplyGroupId("28661270","10547348"));;
-        boolean success = friendService.passFriendApply("10547348","28661270",1);
+        boolean success = friendService.passFriendApply("10547348","23456789",1);
+        success = friendService.passFriendApply("63374315","10547348",1);
+        success = friendService.passFriendApply("81309655","10547348",1);
 //        System.out.println(success);
     }
 
@@ -52,4 +53,9 @@ public class TestFriendService {
         System.out.println(a);
     }
 
+    @Test
+    public void Test5(){
+        boolean is = friendService.checkIsDeletedByFriend("81309655","28661270");
+        System.out.println(is);
+    }
 }
