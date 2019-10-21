@@ -19,6 +19,12 @@ public class CORSFilter implements Filter {
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse) res;
+
+        if(request.getRequestURI().equals("/imsystem/talk")){
+            chain.doFilter(request,response);
+            return;
+        }
+
         if(response.getHeader("Access-Control-Allow-Origin") == null){
             String origin = request.getHeader("Origin");
             response.setHeader("Access-Control-Allow-Origin", origin);

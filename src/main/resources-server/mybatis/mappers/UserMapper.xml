@@ -42,6 +42,20 @@
         <result property="age" column="age"/>
     </resultMap>
 
+    <resultMap id="userInfoDTOMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+    </resultMap>
+
+    <select id="selectSenderInfo" resultMap="userInfoDTOMap">
+        SELECT user_info.uid,
+        username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id
+        from user_info
+        where user_info.uid=#{uid}
+    </select>
+
     <!-- SQL语句 -->
     <select id="selectUserWithUid" resultMap="UserMap">
         SELECT * FROM `user` WHERE uid = #{uid}

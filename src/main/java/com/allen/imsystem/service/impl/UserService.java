@@ -29,7 +29,7 @@ public class UserService implements IUserService {
     private UserDao userDao;
 
     @Autowired
-    private RedisUtil redisUtil;
+    private RedisService redisService;
 
     @Autowired
     private IFileService fileService;
@@ -103,7 +103,7 @@ public class UserService implements IUserService {
         // 更新最后一次登录时间
         userDao.updateLoginRecord(user.getUid(),new Date());
         // redis更新该用户的在线状态 至在线
-        redisUtil.hset("user_status",user.getUid(), GlobalConst.UserStatus.ONLINE);
+        redisService.hset("user_status",user.getUid(), GlobalConst.UserStatus.ONLINE);
 
         /**
          * 分发、刷新token
@@ -121,7 +121,7 @@ public class UserService implements IUserService {
         if(user == null){
             throw new BusinessException(ExceptionType.USER_NOT_FOUND);
         }
-        redisUtil.hset("user_status",uid,GlobalConst.UserStatus.OFFLINE);
+        redisService.hset("user_status",uid,GlobalConst.UserStatus.OFFLINE);
 
     }
 
@@ -167,10 +167,17 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String getUserOnlineStatus(String uid) {
-        String onlineStatus = redisUtil.hget("user_status",uid);
-        if(onlineStatus == null) onlineStatus = "0";
+    public Integer getUserOnlineStatus(String uid) {
+        Integer onlineStatus = (Integer) redisService.hget("user_status",uid);
+        if(onlineStatus == null) onlineStatus = 1;
         return onlineStatus;
+    }
+
+    @Override
+    public boolean isOnline(String uid) {
+        if(uid==null) return false;
+        Integer onlineStatus = getUserOnlineStatus(uid);
+        return ! onlineStatus.equals(0);
     }
 
 }

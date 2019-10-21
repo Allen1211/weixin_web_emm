@@ -143,7 +143,7 @@ public class UserController {
 
     @RequestMapping(value = "/getUserOnlineStatus",method = RequestMethod.GET)
     public JSONResponse getUserOnlineStatus(@RequestParam("uid")String uid){
-        String onlineStatus = userService.getUserOnlineStatus(uid);
+        Integer onlineStatus = userService.getUserOnlineStatus(uid);
         return new JSONResponse(1).putData("onlineStatus",onlineStatus);
     }
 

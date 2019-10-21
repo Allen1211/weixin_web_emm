@@ -4,7 +4,7 @@
 
 <mapper namespace="com.allen.imsystem.dao.mappers.ChatMapper">
 
-    <resultMap id="privateChatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
+    <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
         <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="talkTitle" column="username" />
         <result property="avatar" column="icon_id" />
@@ -52,6 +52,13 @@
         <association property="fileInfo" resultMap="fileInfoMap"/>
     </resultMap>
 
+    <resultMap id="privateChatDataMap" type="com.allen.imsystem.model.dto.ChatSessionInfo">
+        <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="title" column="username"/>
+        <result property="srcId" column="src_id"/>
+        <result property="destId" column="dest_id"/>
+    </resultMap>
+
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
         <result property="uid" column="uid"/>
         <result property="username" column="username"/>
@@ -72,7 +79,7 @@
 <!--    </resultMap>-->
 
 
-    <select id="selectPrivateChatList" resultMap="privateChatSessionDTOMap">
+    <select id="selectPrivateChatList" resultMap="chatSessionDTOMap">
         (SELECT pc.chat_id, ui.username,ui.uid,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
         pmr.content, pmr.created_time, 0 as is_group
@@ -91,6 +98,24 @@
         ORDER BY created_time DESC
     </select>
 
+    <select id="selectNewMsgPrivateChatData" resultMap="chatSessionDTOMap">
+        SELECT pc.chat_id, ui.username,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        pmr.content, pmr.created_time, 0 as is_group
+        FROM private_chat as pc
+        LEFT JOIN user_info as ui ON ui.uid = #{friendId}
+        LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        WHERE pc.chat_id = #{chatId} AND pc.uid_a = #{uid}
+        UNION ALL
+        SELECT pc.chat_id, ui.username,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        pmr.content, pmr.created_time, 0 as is_group
+        FROM private_chat as pc
+        LEFT JOIN user_info as ui ON ui.uid = #{friendId}
+        LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
+        WHERE pc.chat_id = #{chatId} AND pc.uid_b = #{uid}
+    </select>
+
     <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">
         SELECT msg_id , msg_type, content, resource_url, mr.created_time ,ui.uid, ui.username,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
@@ -105,8 +130,24 @@
         SELECT * FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB} LIMIT 1
     </select>
 
+
     <select id="selectPrivateChatInfoByChatId" resultMap="privateChatInfoMap">
         SELECT * FROM private_chat WHERE chat_id = #{chatId} LIMIT 1
+    </select>
+
+    <select id="countPrivateChatUnReadMsgForUser" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM pri_msg_record WHERE chat_id = #{chatId} AND to_uid = #{uid} AND has_read=0
+    </select>
+
+    <select id="selectPrivateChatData" resultMap="privateChatDataMap">
+        SELECT pc.chat_id,pc.uid_a as dest_id,pc.uid_b as src_id ,ui.username,0 as isGroup FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_a
+        WHERE chat_id=#{chatId} AND uid_b = #{uid}
+        UNION ALL
+        SELECT pc.chat_id,pc.uid_b as dest_id,pc.uid_a as src_id,ui.username,0 as isGroup FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_b
+        WHERE chat_id=#{chatId} AND pc.uid_a = #{uid}
+        LIMIT 1
     </select>
 
     <select id="selectPrivateChatNewMsgSize" resultMap="chatNewMsgSizeMap">
@@ -147,33 +188,8 @@
 
     <!--插入一条私聊消息到私聊消息记录    -->
     <insert id="insertPrivateMsgToRecord" parameterType="com.allen.imsystem.model.pojo.PrivateMsgRecord" >
-        INSERT INTO msg_record (
-            <trim prefixOverrides=",">
-                <if test="msgId!=null">msg_id,</if>
-                <if test="msgType!=null">msg_type,</if>
-                <if test="charId!=null">chat_id,</if>
-                <if test="fromUid!=null">from_uid,</if>
-                <if test="toUid!=null">to_uid,</if>
-                <if test="content!=null">content,</if>
-                <if test="hasRead!=null">has_read,</if>
-                <if test="status!=null">status,</if>
-                <if test="createdTime!=null">created_time,</if>
-                <if test="updateTime!=null">update_time</if>
-            </trim>
-        ) VALUES (
-            <trim prefixOverrides=",">
-                <if test="msgId!=null">#{msgId},</if>
-                <if test="msgType!=null">#{msgType},</if>
-                <if test="charId!=null">#{charId},</if>
-                <if test="fromUid!=null">#{fromUid},</if>
-                <if test="toUid!=null">#{toUid},</if>
-                <if test="content!=null">#{content},</if>
-                <if test="hasRead!=null">#{hasRead},</if>
-                <if test="status!=null">#{status},</if>
-                <if test="createdTime!=null">#{createdTime},</if>
-                <if test="updateTime!=null">#{updateTime}</if>
-            </trim>
-        )
+        INSERT INTO pri_msg_record (msg_id, msg_type, chat_id, from_uid, to_uid, content, has_read, status)
+        values (#{msgId},#{msgType},#{chatId},#{fromUid},#{toUid},#{content},#{hasRead},#{status})
     </insert>
 
     <update id="updatePrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
@@ -190,6 +206,11 @@
             <if test="updateTime!=null">update_time=#{updateTime}</if>
         </set>
         WHERE chat_id=#{chatId}
+    </update>
+
+    <update id="updatePrivateChatLastMsg" >
+        UPDATE private_chat SET last_msg_id = #{msgId} ,last_sender_id = #{lastSenderId}, update_time=NOW()
+        WHERE chat_id = #{chatId}
     </update>
 
 <!--    更新某一会话的所有聊天记录-->

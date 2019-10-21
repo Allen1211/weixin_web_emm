@@ -24,7 +24,7 @@ public class TokenFilter implements Filter {
 
     private static String[] passURIs = {"/imsystem/api/user/login","/imsystem/api/user/regist",
             "/imsystem/api/user/logout","/imsystem/api/security/sendRegistEmailCode"
-            ,"/imsystem/api/security/getCodeImage"};
+            ,"/imsystem/api/security/getCodeImage","/imsystem/talk"};
 
 
 

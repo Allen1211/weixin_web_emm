@@ -32,6 +32,7 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public JSONResponse handleInvocationTargetException(InvocationTargetException ex){
         Exception target = (Exception)ex.getTargetException();
+        ex.printStackTrace();
         try{
             if(target instanceof BusinessException){
                 return handleBusinessException((BusinessException) target);
@@ -59,6 +60,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseBody
     public JSONResponse handleDataIntegrityViolationException(DataIntegrityViolationException ex){
+        ex.printStackTrace();
         throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL);
     }
 
@@ -78,6 +80,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public JSONResponse handleBusinessException(BusinessException be){
+        be.printStackTrace();
         JSONResponse jsonResponse = new JSONResponse();
         jsonResponse.setStatus(0);
         jsonResponse.setCode(be.getCode());

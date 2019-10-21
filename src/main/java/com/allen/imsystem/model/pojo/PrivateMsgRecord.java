@@ -8,7 +8,7 @@ import java.util.Date;
 public class PrivateMsgRecord {
     private Long msgId;
     private Integer msgType;
-    private String chatId;
+    private Long chatId;
     private String fromUid;
     private String toUid;
     private String content;

@@ -69,5 +69,7 @@ public interface IUserService {
     /**
      * 获取用户在线状态
      */
-    String getUserOnlineStatus(String uid);
+    Integer getUserOnlineStatus(String uid);
+
+    boolean isOnline(String uid);
 }

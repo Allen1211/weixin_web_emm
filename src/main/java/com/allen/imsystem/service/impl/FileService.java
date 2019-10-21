@@ -7,6 +7,7 @@ import com.allen.imsystem.service.IFileService;
 import jdk.nashorn.internal.objects.Global;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -40,5 +41,25 @@ public class FileService implements IFileService {
         }
 
         return nameDotType;
+    }
+
+
+    public String uploadMsgImg(byte[] imageBytes){
+        // 1、 计算图片md5
+        String md5 = getFileMD5(imageBytes);
+        // TODO 2、 到数据库查询该MD5是否已经存在
+        boolean hasSave = false;
+        if(!hasSave){
+            // 异步IO写入服务器硬盘
+
+        }
+        return null;
+
+    }
+
+
+    private String getFileMD5(byte[] fileBytes){
+        String md5 = new String(DigestUtils.md5Digest(fileBytes));
+        return md5;
     }
 }

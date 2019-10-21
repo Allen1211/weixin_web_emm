@@ -2,9 +2,11 @@ package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
+import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.MsgRecord;
+import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.service.IChatService;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,6 +29,9 @@ public class TestChat {
     @Autowired
     RedisTemplate<String,String> redisTemplate;
 
+    @Autowired
+    ChatMapper chatMapper;
+
 
     @Autowired
     RedisUtil redisUtil;
@@ -39,7 +44,7 @@ public class TestChat {
 
     @Test
     public void getChatInfo(){
-        ChatSessionInfo chatSessionInfo = chatService.getChatInfo("633786567424475138","28661270");
+        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(633786567424475138L,"28661270");
         System.out.println(chatSessionInfo);
     }
 
@@ -67,10 +72,25 @@ public class TestChat {
 //        chatService.openNewPrivateChat("10547348","23456789");
 //        chatService.openNewPrivateChat("23456789","10547348");
 //        chatService.removePrivateChat("23456789",635051814767476736L);
-        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"634923715161669632",GlobalConst.ChatType.PRIVATE_CHAT);
-        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"635051814767476736",GlobalConst.ChatType.PRIVATE_CHAT);
-        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475138",GlobalConst.ChatType.PRIVATE_CHAT);
-        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475137",GlobalConst.ChatType.PRIVATE_CHAT);
-        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633785817805881344",GlobalConst.ChatType.PRIVATE_CHAT);
+//        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"634923715161669632",GlobalConst.ChatType.PRIVATE_CHAT);
+//        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"635051814767476736",GlobalConst.ChatType.PRIVATE_CHAT);
+//        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475138",GlobalConst.ChatType.PRIVATE_CHAT);
+//        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633786567424475137",GlobalConst.ChatType.PRIVATE_CHAT);
+//        redisUtil.hset(GlobalConst.Redis.KEY_CHAT_TYPE,"633785817805881344",GlobalConst.ChatType.PRIVATE_CHAT);
+    }
+
+
+    @Test
+    public void insert(){
+        PrivateMsgRecord privateMsgRecord = new PrivateMsgRecord();
+        privateMsgRecord.setMsgId(12345L);
+        privateMsgRecord.setChatId(12345L);
+        privateMsgRecord.setStatus(1);
+        privateMsgRecord.setMsgType(1);
+        privateMsgRecord.setContent("");
+        privateMsgRecord.setFromUid("97554417");
+        privateMsgRecord.setToUid("28661270");
+        privateMsgRecord.setHasRead(false);
+        chatMapper.insertPrivateMsgToRecord(privateMsgRecord);
     }
 }

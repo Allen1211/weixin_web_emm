@@ -15,6 +15,13 @@ public class LogFilter implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
+
+        if(request.getRequestURI().equals("/imsystem/talk")){
+            filterChain.doFilter(request,response);
+            return;
+        }
+
+
         System.out.println("request time: "+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
         System.out.println("request url: " + request.getRequestURI());
         System.out.println("request mehtod: "+request.getMethod());

@@ -4,6 +4,7 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.common.utils.RedisUtil;
+import com.allen.imsystem.service.impl.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 public class CacheHolder implements ICacheHolder {
 
     @Autowired
-    private RedisUtil redisUtil;
+    private RedisService redisService;
 
     private static final Integer USER_LOGIN_EXPRIED = 60*60*3;
 
@@ -42,7 +43,7 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public boolean setImageCode(String imageCode, String key) {
         if(imageCode != null && key != null){
-            return redisUtil.set(key+"_image_code", imageCode, 5*60);
+            return redisService.set(key+"_image_code", imageCode, 5*60L);
         }
         return false;
     }
@@ -50,14 +51,14 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public void removeImageCode(String key) {
         if(key != null){
-            redisUtil.remove(key+"_image_code");
+            redisService.del(key+"_image_code");
         }
     }
 
     @Override
     public boolean setEmailCode(String emailCode, String key) {
         if(emailCode != null && key != null){
-            return redisUtil.set(key+"_email_code", emailCode, 20*60);
+            return redisService.set(key+"_email_code", emailCode, 20*60);
         }
         return false;
     }
@@ -65,14 +66,14 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public void removeEmailCode(String key) {
         if(key != null){
-            redisUtil.remove(key+"_email_code");
+            redisService.del(key+"_email_code");
         }
     }
 
     @Override
     public String getImageCode(String key) {
         if(key != null){
-            return redisUtil.get(key+"_image_code");
+            return (String) redisService.get(key+"_image_code");
         }
         return null;
     }
@@ -80,7 +81,7 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public String getEmailCode(String key) {
         if(key != null){
-            return redisUtil.get(key+"_email_code");
+            return (String) redisService.get(key+"_email_code");
         }
         return null;
     }

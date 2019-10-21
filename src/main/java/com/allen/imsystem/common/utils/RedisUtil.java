@@ -220,4 +220,25 @@ public class RedisUtil {
         return map;
     }
 
+    public Long hIncrBy(String key, String field,Long delta){
+        if (StringUtils.isEmpty(key) || StringUtils.isEmpty(field)) {
+            LOG.info("hset params empty");
+            return 0L;
+        }
+        Jedis jedis = jedisPool.getResource();
+        Long newVal = jedis.hincrBy(key,field,delta);
+        jedis.close();
+        return newVal;
+    }
+
+    public Long incr(String key,Long delta){
+        if (StringUtils.isEmpty(key)) {
+            LOG.info("hset params empty");
+            return 0L;
+        }
+        Jedis jedis = jedisPool.getResource();
+        Long newVal = jedis.incr(key);
+        jedis.close();
+        return newVal;
+    }
 }

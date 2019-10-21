@@ -1,13 +1,14 @@
 package com.allen.imsystem.controller;
 
+import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.ICacheHolder;
-import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.JSONResponse;
 import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.impl.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
@@ -29,18 +30,27 @@ public class TalkController {
     private IChatService chatService;
 
     @Autowired
-    private RedisUtil redisUtil;
+    private RedisService redisService;
 
+    /**
+     * 获取会话的一些信息
+     * @param talkIdStr
+     * @param request
+     * @return
+     */
     @RequestMapping(value = "/getTalkData", method = RequestMethod.GET)
     public JSONResponse getTalkData(@RequestParam("talkId") String talkIdStr, HttpServletRequest request) {
         Long talkId = Long.valueOf(talkIdStr);
         String uid = cacheHolder.getUid(request);
-        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkIdStr, uid);
+        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
         return new JSONResponse(1)
                 .putData("isGroup", chatSessionInfo.getIsGroup())
                 .putData("title", chatSessionInfo.getTitle())
                 .putData("isGroupOwner", chatSessionInfo.getIsGroupOwner())
-                .putData("talkId", chatSessionInfo.getTalkId().toString());
+                .putData("talkId", chatSessionInfo.getTalkId().toString())
+                .putData("srcId",chatSessionInfo.getSrcId())
+                .putData("destId",chatSessionInfo.getDestId())
+                .putData("avatar",chatSessionInfo.getAvatar());
     }
 
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
@@ -71,7 +81,7 @@ public class TalkController {
         // 如果是第一页，要获取一次总页数，记录一下统计的起始时间
         if (index == 1) {
             Long now = System.currentTimeMillis();
-            redisUtil.hset("MSG_RECORD_BEGIN_TIME", talkId, now.toString());
+            redisService.hset("MSG_RECORD_BEGIN_TIME", talkId, now.toString());
             Integer totalSize = chatService.getAllHistoryMessageSize(talkId, uid, new Date(now));
             Integer totalPage = 1;
             if (totalSize <= pageSize) {
@@ -84,7 +94,7 @@ public class TalkController {
             List<MsgRecord> result = chatService.getMessageRecord(uid, talkId, new Date(now), index, pageSize);
             return new JSONResponse(1).putData("messageList", result).putData("allPageSize", totalPage).putData("curPageIndex", index);
         } else {
-            String nowStr = redisUtil.hget("MSG_RECORD_BEGIN_TIME", talkId);
+            String nowStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_TIME, talkId);
             Date beginTime = null;
             if (nowStr != null) {
                 beginTime = new Date(Long.valueOf(nowStr));
@@ -93,6 +103,7 @@ public class TalkController {
             return new JSONResponse(1).putData("messageList", result).putData("curPageIndex", index);
         }
     }
+
 
     @RequestMapping("/openPrivateTalk")
     public JSONResponse openPrivateTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {

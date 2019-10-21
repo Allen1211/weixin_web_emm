@@ -3,7 +3,7 @@ package com.allen.imsystem.common.Const;
 public class GlobalConst {
     public static final String ENCODING = "UTF-8";
 
-
+    public static final Long MAX_NOT_SHOW_TIME_SPACE = 1000*60*5L;
     /**
      * 路径类
      */
@@ -18,10 +18,10 @@ public class GlobalConst {
      *  用户在线状态
      */
     public static class UserStatus{
-        public static final String OFFLINE = "0";   // 离线
-        public static final String ONLINE = "1";    // 在线
-        public static final String AFK = "2";       // 离开
-        public static final String HIDE = "3";      // 隐身
+        public static final Integer OFFLINE = 0;   // 离线
+        public static final Integer ONLINE = 1;    // 在线
+        public static final Integer AFK = 2;       // 离开
+        public static final Integer HIDE = 3;      // 隐身
     }
 
     /**
@@ -44,10 +44,13 @@ public class GlobalConst {
         public static final String KEY_USER_STATUS = "user_status";
         public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
+        public static final String KEY_RECORD_BEGIN_TIME = "msg_record_begin_time";
+        public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
+        public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
     }
 
     public static class ChatType{
-        public static final String PRIVATE_CHAT = "0";
-        public static final String GROUP_CHAT = "1";
+        public static final Integer PRIVATE_CHAT = 0;
+        public static final Integer GROUP_CHAT = 1;
     }
 }

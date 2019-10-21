@@ -1,6 +1,7 @@
 package com.allen.imsystem.dao.mappers;
 
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
+import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
@@ -14,6 +15,8 @@ public interface UserMapper {
     User selectUserWithUid(String uid);
 
     User selectUserWithEmail(String email);
+
+    UserInfoDTO selectSenderInfo(String uid);
 
     UserInfo selectUserInfo(String uid);
 
