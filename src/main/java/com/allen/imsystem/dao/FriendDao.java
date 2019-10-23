@@ -4,6 +4,7 @@ import com.allen.imsystem.dao.mappers.FriendMapper;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,10 @@ public class FriendDao {
         return friendMapper.selectFriendInfo(friendId);
     }
 
+    public FriendGroupPojo selectUserDefaultFriendGroup(@Param("uid")String uid){
+        return friendMapper.selectUserDefaultFriendGroup(uid);
+    }
+
     public Integer checkIsFriend(String uid, String friendId){
         return friendMapper.checkIsFriend(uid,friendId);
     }
@@ -86,20 +91,20 @@ public class FriendDao {
         return friendMapper.insertNewFriend(aUid,bUid,abGroupId,baGroupId);
     }
 
-    public Integer insertNewFriendGroup(Integer userId,String uid, String groupName){
-        return friendMapper.insertNewFriendGroup(userId,uid,groupName);
+    public Integer insertNewFriendGroup(String uid, String groupName, Boolean isDefault){
+        return friendMapper.insertNewFriendGroup(uid,groupName,isDefault);
     }
 
     public Integer deleteFriend(String uid,String friendId){
         return friendMapper.deleteFriend(uid,friendId);
     }
 
-    public Integer updateFriendGroupName(Integer groupId,String groupName,Integer userId){
-        return friendMapper.updateFriendGroupName(groupId,groupName,userId);
+    public Integer updateFriendGroupName(Integer groupId,String groupName,String uid){
+        return friendMapper.updateFriendGroupName(groupId,groupName,uid);
     }
 
-    public Integer moveGroupFriendToDefaultGroup(Integer groupId, String uid){
-        return friendMapper.moveGroupFriendToDefaultGroup(groupId,uid);
+    public Integer moveGroupFriendToDefaultGroup(Integer defaultGroupId,Integer groupId, String uid){
+        return friendMapper.moveGroupFriendToDefaultGroup(defaultGroupId,groupId,uid);
     }
 
     public Integer moveFriendToAnotherGroup(String uid, String friendId,

@@ -4,6 +4,10 @@ public class GlobalConst {
     public static final String ENCODING = "UTF-8";
 
     public static final Long MAX_NOT_SHOW_TIME_SPACE = 1000*60*5L;
+
+    public static final String DEFAULT_FRIEND_GROUP_NAME = "我的好友";
+
+    public static final Long BLOCK_SIZE = 512 * 1024L;
     /**
      * 路径类
      */
@@ -16,7 +20,8 @@ public class GlobalConst {
         public static final String AVATAR_PATH = "/usr/resources/imsystem/static/avatar/";
         public static final String MSG_IMG_PATH = "/usr/resources/imsystem/static/msg_img/";
 //        public static final String MSG_IMG_PATH = "E:/";
-        public static final String MSG_FILE_PATH = "/usr/resources/imsystem/static/msg_file/";
+//        public static final String MSG_FILE_PATH = "/usr/resources/imsystem/static/msg_file/";
+        public static final String MSG_FILE_PATH = "E:/";
         public static final String MSG_RECORD_PATH = "/usr/resources/imsystem/static/msg_record/";
     }
 

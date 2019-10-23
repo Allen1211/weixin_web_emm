@@ -1,5 +1,7 @@
 package com.allen.imsystem.service;
 
+import com.allen.imsystem.model.dto.MultiFileResponse;
+import com.allen.imsystem.model.dto.MultipartFileDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,4 +21,6 @@ public interface IFileService {
      * @return
      */
     String uploadMsgImg(MultipartFile multipartFile) throws IOException;
+
+    MultiFileResponse uploadMultipartFile(MultipartFileDTO param) throws IOException;
 }

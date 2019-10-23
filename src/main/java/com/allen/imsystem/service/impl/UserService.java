@@ -11,6 +11,7 @@ import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFileService;
+import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.common.utils.HashSaltUtil;
 import com.allen.imsystem.common.utils.JWTUtil;
@@ -27,6 +28,9 @@ public class UserService implements IUserService {
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private IFriendService friendService;
 
     @Autowired
     private RedisService redisService;
@@ -75,6 +79,8 @@ public class UserService implements IUserService {
         userDao.insertUserInfo(userInfo);
         userDao.sortDeleteUsedUid(uidPool.getId());
         userDao.insertLoginRecord(uid,new Date());
+        // 为新用户创建一个默认分组
+        friendService.addFriendGroup(uid,"我的好友",true);
         return;
     }
 

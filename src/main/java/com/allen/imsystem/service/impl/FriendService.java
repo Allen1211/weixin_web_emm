@@ -8,6 +8,7 @@ import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
@@ -102,7 +103,15 @@ public class FriendService implements IFriendService {
         String toUId = params.getFriendId();
         String reason = params.getApplicationReason();
         if (reason == null) reason = "";
-        Integer groupId = params.getGroupId() == null ? 1 : Integer.valueOf(params.getGroupId());
+
+        Integer groupId = null;
+
+        if(params.getGroupId() == null){
+            FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+            groupId = defaultGroup.getGroupId();
+        }else{
+            groupId = Integer.valueOf(params.getGroupId());
+        }
         return friendDao.addFriendApply(fromUId, toUId, groupId, reason) > 0;
     }
 
@@ -111,8 +120,10 @@ public class FriendService implements IFriendService {
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
         // 1 查询对方要把ta放到什么组
         Integer bePutInGroupId = friendDao.selectApplyGroupId(friendId, uid);
+        // 如果没有设定组，则默认放入默认组
         if (groupId == null) {
-            groupId = 1;
+            FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+            groupId = defaultGroup.getGroupId();
         }
         // 2 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
         boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0
@@ -175,6 +186,7 @@ public class FriendService implements IFriendService {
             dto.setGroupId(friendGroup.getGroupId());
             dto.setGroupName(friendGroup.getGroupName());
             dto.setGroupSize(friendGroup.getGroupSize());
+            dto.setIsDefault(friendGroup.getIsDefault());
             // 根据每一个组的大小
             int groupSize = friendGroup.getGroupSize();
 
@@ -190,13 +202,13 @@ public class FriendService implements IFriendService {
     }
 
     @Override
-    public Integer addFriendGroup(Integer userId, String uid, String groupName) {
+    public Integer addFriendGroup(String uid, String groupName,Boolean isDefault) {
         if (groupName == null) {
             throw new BusinessException(ExceptionType.MISSING_PARAMETER_ERROR);
         }
         if (groupName.length() > 10)
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名长度应小于10");
-        Integer affect = friendDao.insertNewFriendGroup(userId, uid, groupName);
+        Integer affect = friendDao.insertNewFriendGroup(uid, groupName,isDefault);
         Integer groupId = 0;
         if (affect > 0) {
             groupId = friendDao.selectGroupId(uid, groupName);
@@ -243,14 +255,11 @@ public class FriendService implements IFriendService {
     }
 
     @Override
-    public boolean updateFriendGroupName(Integer groupId, String groupName, Integer userId) {
+    public boolean updateFriendGroupName(Integer groupId, String groupName, String uid) {
         if (StringUtils.isEmpty(groupName)) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能为空");
         }
-        if (groupName.trim().equals("好友")) {
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能与默认组名重复");
-        }
-        return friendDao.updateFriendGroupName(groupId, groupName, userId) > 0;
+        return friendDao.updateFriendGroupName(groupId, groupName, uid) > 0;
     }
 
     @Override
@@ -258,10 +267,14 @@ public class FriendService implements IFriendService {
     public boolean deleteFriendGroup(Integer groupId, String uid) {
         // 1 判断该分组下是否有好友，如果没有直接删除组，结束
         Integer size = friendDao.selectGroupSize(groupId, uid);
-        // 2 若有好友，将该分组下所有好友转至默认分组
+        // 2 获取该用户的默认分组，若删除的是默认分组，报错。
+        FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+        if(groupId.equals(defaultGroup.getGroupId())){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"不能删除默认分组");
+        }
         boolean moveSuccess = true;
-        if (size != 0) {
-            moveSuccess = friendDao.moveGroupFriendToDefaultGroup(groupId, uid) > 0;
+        if (size > 0) {// 若有好友，将该分组下所有好友转至默认分组
+            moveSuccess = friendDao.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(),groupId, uid) > 0;
         }
         // 3 删除掉该分组
         boolean deleteSuccess = friendDao.deleteFriendGroup(groupId, uid) > 0;

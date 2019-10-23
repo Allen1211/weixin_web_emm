@@ -65,8 +65,8 @@
         SELECT * FROM `user` WHERE email = #{email}
     </select>
 
-    <select id="selectAllUser" resultMap="UserMap">
-        SELECT * FROM `user`
+    <select id="selectAllUid" resultType="java.lang.String">
+        SELECT uid FROM `user`
     </select>
 
     <select id="selectSelfInfo" resultMap="selfInfoMap">

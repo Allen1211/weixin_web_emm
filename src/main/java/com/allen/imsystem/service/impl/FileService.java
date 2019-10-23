@@ -4,7 +4,10 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.ByteUtil;
+import com.allen.imsystem.common.utils.MultipartFileUtil;
 import com.allen.imsystem.dao.mappers.FileMapper;
+import com.allen.imsystem.model.dto.MultiFileResponse;
+import com.allen.imsystem.model.dto.MultipartFileDTO;
 import com.allen.imsystem.service.IFileService;
 import jdk.nashorn.internal.objects.Global;
 import net.coobird.thumbnailator.Thumbnails;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
@@ -67,6 +71,64 @@ public class FileService implements IFileService {
         }
         return GlobalConst.Path.MSG_IMG_URL + nameDotType;
 
+    }
+
+    public MultiFileResponse uploadMultipartFile(MultipartFileDTO param) throws IOException {
+        // 约定的每一块的固定大小
+        long blockSize = GlobalConst.BLOCK_SIZE;
+        // 是否是 multipart/form-data
+        String msgFilePath = GlobalConst.Path.MSG_FILE_PATH;   // 文件保存的路径
+        String tempDirPath = msgFilePath + param.getTaskId();
+        String tempFileName = param.getFileName() + "_tmp";
+        File confFile = new File(tempDirPath, param.getFileName() + ".conf");
+        File tmpDir = new File(tempDirPath);
+        File tmpFile = new File(tempDirPath, tempFileName);
+        if (!tmpDir.exists()) {
+            tmpDir.mkdirs();
+        }
+
+        RandomAccessFile accessTmpFile = new RandomAccessFile(tmpFile, "rw");
+        RandomAccessFile accessConfFile = new RandomAccessFile(confFile, "rw");
+
+        long offset = blockSize * param.getCurrBlock();
+        //定位到该分片的偏移量
+        accessTmpFile.seek(offset);
+        //写入该分片数据
+        accessTmpFile.write(param.getFileItem().get());
+
+        //把该分段标记为 true 表示完成
+        System.out.println("set part " + param.getCurrBlock() + " complete");
+        accessConfFile.setLength(param.getBlockNum());
+        accessConfFile.seek(param.getCurrBlock());
+        accessConfFile.write(Byte.MAX_VALUE);
+
+        //completeList 检查是否全部完成,如果数组里是否全部都是(全部分片都成功上传)
+        byte[] completeList = FileUtils.readFileToByteArray(confFile);
+        boolean isComplete = checkIsComplete(completeList);
+        MultiFileResponse responseDTO = new MultiFileResponse();
+        responseDTO.setTaskId(param.getTaskId());
+        responseDTO.setCurrBlock(param.getCurrBlock());
+        responseDTO.setIsComplete(isComplete);
+
+        if (isComplete) {
+            String url = GlobalConst.Path.MSG_FILE_URL + param.getTaskId();
+            responseDTO.setDownloadUrl(url);
+            System.out.println("upload complete !!");
+        }
+        accessTmpFile.close();
+        accessConfFile.close();
+        System.out.println("end !!!");
+        return responseDTO;
+    }
+
+    private boolean checkIsComplete(byte[] completeList){
+        byte isComplete = Byte.MAX_VALUE;
+        for (int i = 0; i < completeList.length && isComplete==Byte.MAX_VALUE; i++) {
+            //与运算, 如果有部分没有完成则 isComplete 不是 Byte.MAX_VALUE
+            isComplete = (byte)(isComplete & completeList[i]);
+            System.out.println("check part " + i + " complete?:" + completeList[i]);
+        }
+        return isComplete == Byte.MAX_VALUE;
     }
 
     private void checkImageFile(MultipartFile multipartFile){

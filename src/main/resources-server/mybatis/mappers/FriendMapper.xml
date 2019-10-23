@@ -35,12 +35,22 @@
     <resultMap id="friendGroupMap" type="com.allen.imsystem.model.dto.FriendGroup">
         <result property="groupId" column="id"/>
         <result property="groupName" column="fri_group_name"/>
+        <result property="isDefault" column="is_default" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
     </resultMap>
 
     <resultMap id="friendGroupWithSizeMap" type="com.allen.imsystem.model.dto.FriendGroup">
         <result property="groupId" column="id"/>
         <result property="groupName" column="fri_group_name"/>
         <result property="groupSize" column="fri_group_size"/>
+        <result property="isDefault" column="is_default" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+    </resultMap>
+
+    <resultMap id="friendGroupPojoMap" type="com.allen.imsystem.model.pojo.FriendGroupPojo">
+        <result property="groupId" column="id"/>
+        <result property="friendGroupName" column="fri_group_name"/>
+        <result property="uid" column="uid"/>
+        <result property="status" column="status" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="isDefault" column="is_default" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
     </resultMap>
 
     <select id="selectFriendId" resultType="java.lang.String">
@@ -62,7 +72,7 @@
     </select>
 
     <select id="selectFriendGroupList" resultMap="friendGroupMap">
-        SELECT id,fri_group_name FROM status = 1 and friend_group where uid=#{uid}
+        SELECT id,fri_group_name,is_default FROM friend_group status = 1 and friend_group where uid=#{uid}
     </select>
 
     <select id="selectGroupId" resultType="java.lang.Integer">
@@ -74,7 +84,7 @@
     </select>
 
     <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
-        SELECT id,fri_group_name,
+        SELECT id,fri_group_name,is_default,
         (SELECT count(*) from friend
         INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid} AND b_in_a_fgroup_id = fg.id AND a_delete_b=0)
@@ -83,7 +93,7 @@
         INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = fg.id AND b_delete_a=0)
         as fri_group_size
-        FROM friend_group as fg where fg.status=1 and (uid= '0' or uid = #{uid})
+        FROM friend_group as fg where fg.status=1 and uid = #{uid}
         order by id
     </select>
 
@@ -164,6 +174,10 @@
         SELECT * FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid}) LIMIT 1
     </select>
 
+    <select id="selectUserDefaultFriendGroup" resultMap="friendGroupPojoMap">
+        SELECT * FROM friend_group WHERE is_default = 1 AND uid=#{uid} AND status = 1
+    </select>
+
     <insert id="addFriendApply" >
         INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
         values (#{fromUid},#{toUid},#{groupId},#{reason})
@@ -175,7 +189,7 @@
     </update>
 
     <update id="updateFriendGroupName" >
-        UPDATE friend_group set status = 1, fri_group_name=#{groupName} WHERE id=#{groupId} and user_id=#{userId}
+        UPDATE friend_group set fri_group_name=#{groupName} WHERE id=#{groupId} and uid=#{uid} and status=1
     </update>
 
     <update id="deleteFriendGroup">
@@ -184,8 +198,8 @@
 
 
     <update id="moveGroupFriendToDefaultGroup">
-        update friend as f set f.a_in_b_fgroup_id= 1 WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid};
-        update friend as f set f.b_in_a_fgroup_id= 1 WHERE f.b_in_a_fgroup_id= #{groupId} AND f.uid_a = #{uid}
+        update friend as f set f.a_in_b_fgroup_id= #{defaultGroupId} WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid};
+        update friend as f set f.b_in_a_fgroup_id= #{defaultGroupId} WHERE f.b_in_a_fgroup_id= #{groupId} AND f.uid_a = #{uid}
     </update>
 
     <update id="moveFriendToAnotherGroup">
@@ -207,13 +221,25 @@
         VALUES (#{uidA},#{uidB},#{abGroupId},#{baGroupId});
     </insert>
 
-    <insert id="insertNewFriendGroup">
-        INSERT INTO friend_group (user_id,uid,fri_group_name) VALUES (#{userId},#{uid},#{groupName})
+    <insert id="insertNewFriendGroup" useGeneratedKeys="true">
+        INSERT INTO friend_group (uid,fri_group_name,is_default)
+        VALUES (#{uid},#{groupName},#{isDefault})
     </insert>
 
     <delete id="deleteFriend">
         DELETE FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </delete>
 
+<!-- 测试用-->
+
+    <select id="selectAllFriendRelation" resultMap="friendRelationMap">
+        SELECT * FROM friend
+    </select>
+
+    <update id="updateFriendRelation" parameterType="com.allen.imsystem.model.pojo.FriendRelation">
+        UPDATE friend SET uid_a = #{uidA} , uid_b = #{uidB},
+        a_in_b_fgroup_id = #{aInbGroupId},b_in_a_fgroup_id = #{bInaGroupId}, update_time=NOW()
+        WHERE id = #{id}
+    </update>
 
 </mapper>

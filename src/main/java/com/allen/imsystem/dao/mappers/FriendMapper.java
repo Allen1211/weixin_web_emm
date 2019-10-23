@@ -3,6 +3,7 @@ package com.allen.imsystem.dao.mappers;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
 import org.apache.ibatis.annotations.Param;
 
@@ -31,6 +32,8 @@ public interface FriendMapper {
 
     FriendRelation selectFriendRelation(@Param("uid")String uid, @Param("friendId")String friendId);
 
+    FriendGroupPojo selectUserDefaultFriendGroup(@Param("uid")String uid);
+
     Integer checkIsFriend(@Param("uid")String uid, @Param("friendId")String friendId);
 
     Integer addFriendApply(@Param("fromUid") String fromUid,@Param("toUid")String toUid
@@ -45,7 +48,8 @@ public interface FriendMapper {
 
     List<FriendGroup> selectFriendGroupListWithSize(@Param("uid")String uid);
 
-    Integer insertNewFriendGroup(@Param("userId")Integer userId,@Param("uid")String uid, @Param("groupName")String groupName);
+    Integer insertNewFriendGroup(@Param("uid")String uid,
+                                 @Param("groupName")String groupName,@Param("isDefault")Boolean isDefault);
 
     Integer sortDeleteFriendA2B(@Param("uid")String uid, @Param("friendId")String friendId);
 
@@ -56,11 +60,15 @@ public interface FriendMapper {
     Integer deleteFriendGroup(@Param("groupId") Integer groupId,@Param("uid") String uid);
 
     Integer updateFriendGroupName(@Param("groupId")Integer groupId, @Param("groupName")String groupName,
-                                  @Param("userId")Integer userId);
+                                  @Param("uid")String uid);
 
-    Integer moveGroupFriendToDefaultGroup(@Param("groupId") Integer groupId,@Param("uid") String uid);
+    Integer moveGroupFriendToDefaultGroup(@Param("defaultGroupId")Integer defaultGroupId,@Param("groupId") Integer groupId,@Param("uid") String uid);
 
     Integer moveFriendToAnotherGroup(@Param("uid")String uid, @Param("friendId")String friendId,
                                      @Param("oldGroupId")Integer oldGroupId, @Param("newGroupId")Integer newGroupId);
 
+
+    List<FriendRelation> selectAllFriendRelation();
+
+    Integer updateFriendRelation(FriendRelation friendRelation);
 }

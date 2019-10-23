@@ -60,7 +60,7 @@ public interface IFriendService {
     /**
      * 新建一个好友分组
      */
-    Integer addFriendGroup(Integer userId, String uid, String groupName);
+    Integer addFriendGroup(String uid, String groupName,Boolean isDefault);
 
     /**
      * 获取好友列表
@@ -80,7 +80,7 @@ public interface IFriendService {
     /**
      * 更改好友分组组名
      */
-    boolean updateFriendGroupName(Integer groupId, String groupName,Integer userId);
+    boolean updateFriendGroupName(Integer groupId, String groupName,String uid);
 
     /**
      * 删除一个好友分组，内部如果有好友则全移到默认分组

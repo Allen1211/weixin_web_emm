@@ -71,7 +71,7 @@ public class ChatService implements IChatService {
     public Long getChatLastMsgTimestamp(Long chatId) {
         String val = (String) redisService.hget(GlobalConst.Redis.KEY_CHAT_LAST_MSG_TIME, chatId.toString());
         if (val == null)
-            return System.currentTimeMillis();
+            return 0L;
         else
             return Long.valueOf(val);
     }
@@ -245,10 +245,12 @@ public class ChatService implements IChatService {
             for (int i = 0; i < privateChatList.size(); i++) {
                 ChatSessionDTO privateChat = privateChatList.get(i);
 
-                // 填充新消息条数
-                ChatNewMsgSizeDTO sizeDTO = sizeMap.get(privateChat.getTalkId());
-                privateChat.setNewMessageCount(sizeDTO == null ? 0 : sizeDTO.getSize());
-
+                // 从数据库， 填充新消息条数
+//                ChatNewMsgSizeDTO sizeDTO = sizeMap.get(privateChat.getTalkId());
+//                privateChat.setNewMessageCount(sizeDTO == null ? 0 : sizeDTO.getSize());
+                Integer newMsgCount = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,
+                        uid+privateChat.getTalkId().toString());
+                privateChat.setNewMessageCount(newMsgCount==null?0:newMsgCount);
                 // 填充在线信息
                 Integer onlineStatus = userService.getUserOnlineStatus(privateChat.getFriendId());
                 privateChat.setOnline(onlineStatus.equals(1));
@@ -264,6 +266,7 @@ public class ChatService implements IChatService {
             }
         }
         // 获取群会话
+
 
         return privateChatList;
     }

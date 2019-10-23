@@ -4,24 +4,28 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.model.dto.ChatSessionDTO;
-import com.allen.imsystem.model.dto.ChatSessionInfo;
-import com.allen.imsystem.model.dto.JSONResponse;
-import com.allen.imsystem.model.dto.MsgRecord;
+import com.allen.imsystem.common.utils.MultipartFileUtil;
+import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.impl.RedisService;
+import org.apache.commons.beanutils.BeanMap;
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RequestMapping("/api/talk")
 @RestController
@@ -52,6 +56,7 @@ public class TalkController {
         String uid = cacheHolder.getUid(request);
         ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
         chatService.setTalkAllMsgHasRead(uid,talkIdStr);
+        Long talkLastMsgTimestamp = chatService.getChatLastMsgTimestamp(Long.parseLong(talkIdStr));
         return new JSONResponse(1)
                 .putData("isGroup", chatSessionInfo.getIsGroup())
                 .putData("title", chatSessionInfo.getTitle())
@@ -59,7 +64,8 @@ public class TalkController {
                 .putData("talkId", chatSessionInfo.getTalkId().toString())
                 .putData("srcId",chatSessionInfo.getSrcId())
                 .putData("destId",chatSessionInfo.getDestId())
-                .putData("avatar",chatSessionInfo.getAvatar());
+                .putData("avatar",chatSessionInfo.getAvatar())
+                .putData("lastTimeStamp",talkLastMsgTimestamp);
     }
 
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
@@ -143,5 +149,22 @@ public class TalkController {
            e.printStackTrace();
            throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE, "文件保存失败");
        }
+    }
+
+    private static AtomicLong counter = new AtomicLong(0L);
+
+    @RequestMapping(value = "/messageFileUpload",method = RequestMethod.POST)
+    public JSONResponse messageFileUpload(HttpServletRequest request) throws Exception {
+
+        String prefix = "req_count:" + counter.incrementAndGet() + ":";
+        System.out.println(prefix + "start !!!");
+        //使用 工具类解析相关参数，工具类代码见下面
+        MultipartFileDTO param = MultipartFileUtil.parse(request);
+        System.out.println(prefix + "chunks= " + param.getBlockNum());
+        System.out.println(prefix + "chunk= " + param.getCurrBlock());
+        System.out.println(prefix + "chunkSize= " + param.getCurrBlockSize());
+
+        MultiFileResponse responseDTO = fileService.uploadMultipartFile(param);
+        return new JSONResponse(1).putAllData(new BeanMap(responseDTO));
     }
 }

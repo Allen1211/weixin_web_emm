@@ -47,4 +47,12 @@ public class JSONResponse {
         data.put(key,value);
         return this;
     }
+
+    public JSONResponse putAllData(Map dataMap){
+        if(data == null){
+            data = new HashMap<>();
+        }
+        data.putAll(dataMap);
+        return this;
+    }
 }

@@ -3,6 +3,7 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
@@ -32,6 +33,9 @@ public class TestMyBatis {
 
     @Autowired
     FriendDao friendDao;
+
+    @Autowired
+    UserMapper userMapper;
 
     @Autowired
     IFriendService friendService;
@@ -120,5 +124,13 @@ public class TestMyBatis {
         System.out.println(userInfoDTO);
     }
 
-
+    @Test
+    public void test11(){
+        List<String> uidList = userMapper.selectAllUid();
+        for(String uid : uidList){
+            if(uid.equals("0")) continue;
+            System.out.println(uid);
+            friendDao.insertNewFriendGroup(uid,"我的好友",true);
+        }
+    }
 }

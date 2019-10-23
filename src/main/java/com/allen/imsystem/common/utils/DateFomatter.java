@@ -15,8 +15,10 @@ public class DateFomatter {
         Calendar msgCalendar = Calendar.getInstance();
         msgCalendar.setTime(msgDate);
 
-        if(nowCalendar.get(0) == msgCalendar.get(0) && nowCalendar.get(1)==msgCalendar.get(1)){
-            int lessDay = nowCalendar.get(6) - msgCalendar.get(6);
+        if(nowCalendar.get(Calendar.ERA) == msgCalendar.get(Calendar.ERA)
+                && nowCalendar.get(Calendar.YEAR)==msgCalendar.get(Calendar.YEAR)){
+
+            int lessDay = nowCalendar.get(Calendar.DAY_OF_YEAR) - msgCalendar.get(Calendar.DAY_OF_YEAR);
             if(lessDay == 0){// 同一天
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
                 return simpleDateFormat.format(msgDate);

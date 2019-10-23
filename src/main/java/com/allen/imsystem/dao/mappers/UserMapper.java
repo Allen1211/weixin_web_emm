@@ -22,6 +22,8 @@ public interface UserMapper {
 
     Integer selectCountUid(String uid);
 
+    List<String> selectAllUid();
+
     Integer selectCountEmail(String email);
 
     UidPool selectNextUnUsedUid();

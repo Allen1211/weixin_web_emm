@@ -13,5 +13,7 @@ public class FriendListByGroupDTO {
 
     private Integer groupSize;
 
+    private Boolean isDefault;
+
     private List<UserInfoDTO> members;
 }

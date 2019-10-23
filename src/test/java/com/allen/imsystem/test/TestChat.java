@@ -3,6 +3,7 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.mappers.ChatMapper;
+import com.allen.imsystem.model.dto.ChatLastMessageTime;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.MsgRecord;
@@ -101,5 +102,23 @@ public class TestChat {
     public void type1(){
         Integer type = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_TYPE, "636342848935870464");
         System.out.println(type);
+    }
+
+    @Test
+    public void wtf(){
+        List<ChatLastMessageTime> list = chatMapper.selectChatSessionLastMsgTime();
+        for(ChatLastMessageTime bean : list){
+
+            Long chatId = bean.getChatId();
+            Long timestamp = 0L;
+            if(bean.getLastMsgTime() != null){
+                timestamp = bean.getLastMsgTime().getTime();
+            }
+            if(!redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_LAST_MSG_TIME,chatId.toString())){
+                redisService.hset(GlobalConst.Redis.KEY_CHAT_LAST_MSG_TIME,chatId.toString(),timestamp.toString());
+//                System.out.println(chatId);
+            }
+            System.out.println();
+        }
     }
 }

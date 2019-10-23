@@ -1,8 +1,11 @@
 package com.allen.imsystem.test;
 
 import com.allen.imsystem.dao.FriendDao;
+import com.allen.imsystem.dao.mappers.FriendMapper;
 import com.allen.imsystem.model.dto.ApplyAddFriendDTO;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
+import com.allen.imsystem.model.pojo.FriendGroupPojo;
+import com.allen.imsystem.model.pojo.FriendRelation;
 import com.allen.imsystem.service.IFriendService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +24,9 @@ public class TestFriendService {
 
     @Autowired
     private FriendDao friendDao;
+
+    @Autowired
+    private FriendMapper friendMapper;
 
     @Test
     public void test1(){
@@ -57,5 +63,29 @@ public class TestFriendService {
     public void Test5(){
         boolean is = friendService.checkIsDeletedByFriend("81309655","28661270");
         System.out.println(is);
+    }
+
+    @Test
+    public void updateGroup(){
+        List<FriendRelation> friendRelationList = friendMapper.selectAllFriendRelation();
+        for(FriendRelation fr:friendRelationList){
+            String uidA = fr.getUidA();
+            String uidB = fr.getUidB();
+            Integer aInB = fr.getAInbGroupId();
+            Integer bInA = fr.getBInaGroupId();
+
+            if(aInB.equals(1)){
+                FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uidB);
+                Integer bDefaultGroupId = defaultGroup.getGroupId();
+                fr.setAInbGroupId(bDefaultGroupId);
+            }
+
+            if(bInA.equals(1)){
+                FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uidA);
+                Integer aDefaultGroupId = defaultGroup.getGroupId();
+                fr.setBInaGroupId(aDefaultGroupId);
+            }
+            friendMapper.updateFriendRelation(fr);
+        }
     }
 }

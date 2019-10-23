@@ -57,7 +57,7 @@ public class FriendController {
         // 1、更新数据库
         String uid = cacheHolder.getUid(request);
         String friendId = (String) params.get("friendId");
-        Integer groupId = 1;    // 不传groupId，默认放到默认组
+        Integer groupId = null;
         if(params.get("groupId") != null){
             groupId = Integer.valueOf(params.get("groupId"));
         }
@@ -133,9 +133,8 @@ public class FriendController {
     @ResponseBody
     public JSONResponse addFriendGroup(@RequestBody Map<String, Object> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        Integer userId = cacheHolder.getUserId(request);
         String groupName = (String) params.get("groupName");
-        Integer groupId = friendService.addFriendGroup(userId,uid, groupName);
+        Integer groupId = friendService.addFriendGroup(uid, groupName,false);
         if (groupId != 0) {
             JSONResponse jsonResponse = new JSONResponse(1);
             jsonResponse.putData("groupId",groupId);
@@ -197,8 +196,8 @@ public class FriendController {
     public JSONResponse updateFriendGroupName(@RequestBody Map<String,String> params,HttpServletRequest request){
         Integer groupId = Integer.valueOf(params.get("groupId"));
         String newGroupName = params.get("newGroupName");
-        Integer userId = cacheHolder.getUserId(request);
-        boolean success = friendService.updateFriendGroupName(groupId,newGroupName,userId);
+        String uid = cacheHolder.getUid(request);
+        boolean success = friendService.updateFriendGroupName(groupId,newGroupName,uid);
         if (success) {
             return new JSONResponse(1);
         } else {
@@ -218,6 +217,8 @@ public class FriendController {
             throw new BusinessException(ExceptionType.SERVER_ERROR, "删除失败");
         }
     }
+
+
 
     @RequestMapping(value = "/moveFriendToOtherGroup",method = RequestMethod.POST)
     @ResponseBody

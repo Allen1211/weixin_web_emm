@@ -14,6 +14,8 @@ public class FriendGroup {
 
     private Integer groupSize;
 
+    private Boolean isDefault;
+
     List list = new ArrayList<>();
 
 }

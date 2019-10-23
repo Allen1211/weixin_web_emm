@@ -1,10 +1,7 @@
 package com.allen.imsystem.dao.mappers;
 
 import com.allen.imsystem.common.PageBean;
-import com.allen.imsystem.model.dto.ChatNewMsgSizeDTO;
-import com.allen.imsystem.model.dto.ChatSessionDTO;
-import com.allen.imsystem.model.dto.ChatSessionInfo;
-import com.allen.imsystem.model.dto.MsgRecord;
+import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.ChatGroup;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
@@ -55,4 +52,7 @@ public interface ChatMapper {
     Integer hardDeletePrivateChat(@Param("uidA")String uidA,@Param("uidB")String uidB);
 
     Integer insertPrivateMsgToRecord(PrivateMsgRecord privateMsgRecord);
+
+
+    List<ChatLastMessageTime> selectChatSessionLastMsgTime();
 }

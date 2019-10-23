@@ -233,5 +233,11 @@
     <delete id="hardDeletePrivateChat">
         DELETE FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB}
     </delete>
-    
+
+
+
+<!--    测试用-->
+    <select id="selectChatSessionLastMsgTime" resultType="com.allen.imsystem.model.dto.ChatLastMessageTime">
+        SELECT cs.chat_id as chatId,r.created_time as lastMsgTime FROM private_chat as cs LEFT JOIN pri_msg_record as r ON cs.last_msg_id = r.msg_id
+    </select>
 </mapper>
