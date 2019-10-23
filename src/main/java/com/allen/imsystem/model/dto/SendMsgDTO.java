@@ -11,8 +11,10 @@ public class SendMsgDTO {
     private String talkId;
     private String srcId;
     private String destId;
-    private String messageImgData;
+    private String messageImgUrl;
     private MsgFileInfo fileInfo;
     private String timestamp;
     private Boolean isGroup;
 }
+
+

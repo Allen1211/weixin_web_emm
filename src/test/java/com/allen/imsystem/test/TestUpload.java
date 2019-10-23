@@ -1,7 +1,13 @@
 package com.allen.imsystem.test;
 
-import java.io.*;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.io.*;
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
 public class TestUpload {
     public static void main(String[] args) throws IOException {
         String linuxPath = "/usr/resources/imsystem/static/avatar/";
@@ -16,4 +22,9 @@ public class TestUpload {
         os.write(text.getBytes("UTF-8"));
         os.flush();
     }
+
+    @Test
+    public void testFile() throws IOException {
+    }
+
 }

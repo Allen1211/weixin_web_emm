@@ -230,11 +230,15 @@ public class FriendService implements IFriendService {
             return friendDao.deleteFriend(uid, friendId) > 0;
         }
         else {   // 否则执行逻辑删除
-            if (uid.compareTo(friendId) < 0) {
-                return friendDao.sortDeleteFriendA2B(uid, friendId) > 0;
-            } else {
-                return friendDao.sortDeleteFriendB2A(uid, friendId) > 0;
-            }
+            return sortDeleteFriend(uid,friendId);
+        }
+    }
+
+    private boolean sortDeleteFriend(String uid,String friendId){
+        if (uid.compareTo(friendId) < 0) {
+            return friendDao.sortDeleteFriendA2B(uid, friendId) > 0;
+        } else {
+            return friendDao.sortDeleteFriendB2A(uid, friendId) > 0;
         }
     }
 

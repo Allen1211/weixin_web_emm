@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.FileMapper">
+    <select id="checkMD5Exist" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM file_msg_md5 WHERE md5 = #{md5} AND status = 1
+    </select>
+
+    <insert id="insertFileMd5" parameterType="java.lang.String" useGeneratedKeys="true">
+        INSERT INTO file_msg_md5 (md5, status, created_time) VALUES (#{md5},1,NOW())
+    </insert>
+</mapper>

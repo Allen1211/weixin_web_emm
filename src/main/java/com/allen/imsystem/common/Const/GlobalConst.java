@@ -11,9 +11,16 @@ public class GlobalConst {
         public static final String API_SERVER_IP = "120.77.42.156";
         public static final String RESOURCES_URL = "http://120.77.42.156:8088/imsystem/static/";
         public static final String AVATAR_URL = "http://120.77.42.156:8088/imsystem/static/avatar/";
+        public static final String MSG_IMG_URL = "http://120.77.42.156:8088/imsystem/static/msg_img/";
+        public static final String MSG_FILE_URL = "http://120.77.42.156:8088/imsystem/static/msg_file/";
         public static final String AVATAR_PATH = "/usr/resources/imsystem/static/avatar/";
+        public static final String MSG_IMG_PATH = "/usr/resources/imsystem/static/msg_img/";
+//        public static final String MSG_IMG_PATH = "E:/";
+        public static final String MSG_FILE_PATH = "/usr/resources/imsystem/static/msg_file/";
         public static final String MSG_RECORD_PATH = "/usr/resources/imsystem/static/msg_record/";
     }
+
+
     /**
      *  用户在线状态
      */

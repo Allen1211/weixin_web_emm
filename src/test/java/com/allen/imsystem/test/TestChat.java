@@ -8,6 +8,7 @@ import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.impl.RedisService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +33,8 @@ public class TestChat {
     @Autowired
     ChatMapper chatMapper;
 
+    @Autowired
+    RedisService redisService;
 
     @Autowired
     RedisUtil redisUtil;
@@ -92,5 +95,11 @@ public class TestChat {
         privateMsgRecord.setToUid("28661270");
         privateMsgRecord.setHasRead(false);
         chatMapper.insertPrivateMsgToRecord(privateMsgRecord);
+    }
+
+    @Test
+    public void type1(){
+        Integer type = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_TYPE, "636342848935870464");
+        System.out.println(type);
     }
 }

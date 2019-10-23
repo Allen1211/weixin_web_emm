@@ -12,6 +12,7 @@ public class PrivateMsgRecord {
     private String fromUid;
     private String toUid;
     private String content;
+    private String resourceUrl;
     private Boolean hasRead;
     private Integer status;
     private Date createdTime;

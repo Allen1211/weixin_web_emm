@@ -2,6 +2,8 @@ package com.allen.imsystem.controller.websocket;
 
 
 import com.alibaba.fastjson.JSONObject;
+import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.service.impl.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
@@ -11,10 +13,15 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class TalkWebSocket extends AbstractWebSocketHandler {
+
+    @Autowired
+    private RedisService redisService;
 
     @Autowired
     private WebSocketEventHandler webSocketEventHandler;
@@ -26,7 +33,9 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
         Map<String, Object> attributes = session.getAttributes();
         String uid = (String) attributes.get("uid");
         sessionPool.put(uid, session);
-        System.out.println(uid + " open talk websocket");
+        System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())
+                + " " + uid + " open talk websocket");
+        redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,1);
     }
 
 
@@ -58,9 +67,12 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
      */
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) {
         String uid = (String) session.getAttributes().get("uid");
+        System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())+
+                " websocket client closed : " + uid);
         if(uid != null){
             sessionPool.remove(uid);
             // TODO redis在线状态设为离线
+            redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
         }
     }
 

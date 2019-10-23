@@ -44,7 +44,7 @@
 
     <resultMap id="privateMsgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
         <result property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
-        <result property="msgType" column="msg_type"/>
+        <result property="messageType" column="msg_type"/>
         <result property="messageText" column="content"/>
         <result property="msgTimeDate" column="created_time"/>
         <result property="messageImgUrl" column="resource_url"/>
@@ -180,6 +180,7 @@
         WHERE chat_id = #{chatId} AND status = 1 AND created_time &lt; #{beginTime}
     </select>
 
+
     <insert id="insertNewPrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
         INSERT INTO private_chat (chat_id, uid_a, uid_b, user_a_status, user_b_status, last_msg_id,last_sender_id, created_time, update_time)
         VALUES (#{chatId},#{uidA},#{uidB},#{userAStatus},#{userBStatus},#{lastMsgId},#{lastSenderId},NOW(),NOW())
@@ -188,8 +189,8 @@
 
     <!--插入一条私聊消息到私聊消息记录    -->
     <insert id="insertPrivateMsgToRecord" parameterType="com.allen.imsystem.model.pojo.PrivateMsgRecord" >
-        INSERT INTO pri_msg_record (msg_id, msg_type, chat_id, from_uid, to_uid, content, has_read, status)
-        values (#{msgId},#{msgType},#{chatId},#{fromUid},#{toUid},#{content},#{hasRead},#{status})
+        INSERT INTO pri_msg_record (msg_id, msg_type, chat_id, from_uid, to_uid, content,resource_url, has_read, status)
+        values (#{msgId},#{msgType},#{chatId},#{fromUid},#{toUid},#{content},#{resourceUrl},#{hasRead},#{status})
     </insert>
 
     <update id="updatePrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">

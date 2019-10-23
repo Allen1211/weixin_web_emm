@@ -5,10 +5,14 @@ import lombok.Data;
 @Data
 public class ServerAckDTO {
     private Long messageId;
-    private String timestamp;
+    private Long talkId;
+    private String timeStamp;
+    private String lastMessage;
+    private String lastMessageTime;
 
-    public ServerAckDTO(Long messageId, String timestamp) {
+    public ServerAckDTO(Long talkId, Long messageId, String timeStamp) {
+        this.talkId = talkId;
         this.messageId = messageId;
-        this.timestamp = timestamp;
+        this.timeStamp = timeStamp;
     }
 }

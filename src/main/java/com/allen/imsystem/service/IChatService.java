@@ -72,7 +72,6 @@ public interface IChatService {
      */
     Map<String, Object> openNewPrivateChat(String uid, String friendId);
 
-
     /**
      * 移除一个对好友的私聊会话
      * @param uid

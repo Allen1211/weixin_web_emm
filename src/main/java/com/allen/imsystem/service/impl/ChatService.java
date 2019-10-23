@@ -7,7 +7,6 @@ import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.DateFomatter;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.dao.ChatDao;
-import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
@@ -17,7 +16,6 @@ import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IUserService;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,15 +84,18 @@ public class ChatService implements IChatService {
 
     @Override
     public boolean setUserChatNewMsgCount(String uid, Long chatId, Integer count) {
+        if(count == null) count = 0;
         return redisService.hset(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid+chatId, count);
     }
 
     @Override
     public Integer getUserChatNewMsgCount(String uid, Long chatId) {
         Integer count = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid+chatId);
-//        if(count == null){  // 如果缓存中不存在，到数据库里查询，并更新缓存
-//
-//        }
+        if(count == null){  // 如果缓存中不存在，到数据库里查询，并更新缓存
+            Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId,uid);
+            setUserChatNewMsgCount(uid,chatId,newMsgCount);
+            return newMsgCount;
+        }
         return count == null ? 0: count;
     }
 
@@ -107,7 +108,7 @@ public class ChatService implements IChatService {
             setUserChatNewMsgCount(uid,chatId,newMsgCount!=null ? newMsgCount+1 : 1);
             return;
         }
-        redisService.hincr(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId,1L);
+        Long val = redisService.hincr(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId,1L);
         return;
     }
 
@@ -211,9 +212,12 @@ public class ChatService implements IChatService {
             privateChat.setUserBStatus(false);
         }
         chatMapper.updatePrivateChat(privateChat);
+        // 该会话所有历史消息设为已读
+        setTalkAllMsgHasRead(uid,privateChat.getChatId().toString());
     }
 
     @Override
+    @Transactional
     public void removePrivateChat(String uid, String friendId) {
         String uidA = getUidAUidB(uid, friendId)[0];
         String uidB = getUidAUidB(uid, friendId)[1];
@@ -228,14 +232,16 @@ public class ChatService implements IChatService {
         // 设置该用户对该会话的移除为是
         String userChatRemoveKey = uid + privateChat.getChatId();
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
+        // 该会话所有历史消息设为已读
+        setTalkAllMsgHasRead(uid,privateChat.getChatId().toString());
     }
 
     @Override
     public List<ChatSessionDTO> getChatList(String uid) {
         // 获取私聊会话
         List<ChatSessionDTO> privateChatList = chatDao.selectPrivateChatList(uid);
-        Map<Long, ChatNewMsgSizeDTO> sizeMap = chatDao.selectPrivateChatNewMsgSize(privateChatList, uid);
-        if (privateChatList != null) {
+        if (privateChatList != null && privateChatList.size() > 0) {
+            Map<Long, ChatNewMsgSizeDTO> sizeMap = chatDao.selectPrivateChatNewMsgSize(privateChatList, uid);
             for (int i = 0; i < privateChatList.size(); i++) {
                 ChatSessionDTO privateChat = privateChatList.get(i);
 
@@ -330,7 +336,7 @@ public class ChatService implements IChatService {
         for (int i = msgRecordList.size() - 1; i >= 0; i--) {
             MsgRecord msgRecord = msgRecordList.get(i);
             // 是否显示
-            msgRecord.setShowMsg(true);
+            msgRecord.setShowMessage(true);
 
             // 是否是自己发的
             msgRecord.setUserType(
@@ -338,7 +344,7 @@ public class ChatService implements IChatService {
             );
 
             // 消息类型
-            switch (msgRecord.getMsgType()) {
+            switch (msgRecord.getMessageType()) {
                 case 1: {// 普通文本
                     msgRecord.setFileInfo(null);
                     msgRecord.setMessageImgUrl(null);
@@ -359,11 +365,11 @@ public class ChatService implements IChatService {
             // 首条或者相差五分钟的才显示时间
             Long thisMsgTime = msgRecord.getMsgTimeDate().getTime();
             boolean showMsgTime = preMsgTime == null || (thisMsgTime - preMsgTime >= GlobalConst.MAX_NOT_SHOW_TIME_SPACE);
-            msgRecord.setShowMsgTime(showMsgTime);
+            msgRecord.setShowMessageTime(showMsgTime);
             if (showMsgTime) {
                 // 时间格式化处理
                 String format = DateFomatter.formatMessageDate(msgRecord.getMsgTimeDate());
-                msgRecord.setMsgTime(format);
+                msgRecord.setMessageTime(format);
             }
             preMsgTime = msgRecord.getMsgTimeDate().getTime();
 
@@ -384,6 +390,13 @@ public class ChatService implements IChatService {
     public Boolean savePrivateMsgRecord(SendMsgDTO msg) {
         PrivateMsgRecord privateMsgRecord = new PrivateMsgRecord();
         // TODO 消息类型的不同应有不同的保存方式
+        if (msg.getMessageType().equals(2)){
+            privateMsgRecord.setResourceUrl(msg.getMessageImgUrl());
+        }else if(msg.getMessageType().equals(3)){
+            privateMsgRecord.setResourceUrl(msg.getFileInfo().getDownloadUrl());
+        }else{
+            privateMsgRecord.setResourceUrl("");
+        }
 
         privateMsgRecord.setMsgId(msg.getMsgId());
         privateMsgRecord.setChatId(Long.valueOf(msg.getTalkId()));
@@ -393,7 +406,7 @@ public class ChatService implements IChatService {
         privateMsgRecord.setHasRead(false);
         privateMsgRecord.setMsgType(msg.getMessageType());
         privateMsgRecord.setStatus(1);
-        Date msgTime = new Date(Long.valueOf(msg.getTimestamp()));
+        Date msgTime = new Date(Long.parseLong(msg.getTimestamp()));
         privateMsgRecord.setCreatedTime(msgTime);
         privateMsgRecord.setUpdateTime(msgTime);
 

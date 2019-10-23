@@ -2,12 +2,12 @@ package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.DateFomatter;
-import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.controller.websocket.WebSocketEventHandler;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IMessageService;
@@ -48,33 +48,43 @@ public class MessageService implements IMessageService {
         // 0、检查是否被对方删除
         boolean isDeleteByFriend = friendService.checkIsDeletedByFriend(sendMsgDTO.getSrcId(), sendMsgDTO.getDestId());
         if (isDeleteByFriend) {
-            webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),new SocketResponse(203, 0,
-                    2001, new ErrMsg("对方还不是您的好友，或您已被对方删除"), null));
+            MultiDataSocketResponse socketResponse =
+                    new MultiDataSocketResponse(203, 0,
+                            2001, new ErrMsg("对方还不是您的好友，或您已被对方删除"))
+                            .putData("timeStamp", sendMsgDTO.getTimestamp());
+
+            webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(), socketResponse);
             return;
         }
         // 1、为该条信息生成id
         Long msgId = SnowFlakeUtil.getNextSnowFlakeId();
         sendMsgDTO.setMsgId(msgId);
-
+        Long chatId = Long.parseLong(sendMsgDTO.getTalkId());
         // 2、消息入库
         // 2.1 插入聊天记录 , 并更新会话的最后一条消息
-        boolean insertSuccess = chatService.savePrivateMsgRecord(sendMsgDTO);
-        chatService.updateChatLastMsg(Long.valueOf(sendMsgDTO.getTalkId()), msgId, sendMsgDTO.getSrcId());
-        chatService.incrUserChatNewMsgCount(sendMsgDTO.getDestId(),Long.valueOf(sendMsgDTO.getTalkId()));
+        boolean bool1 = chatService.savePrivateMsgRecord(sendMsgDTO);
+        boolean bool2 = chatService.updateChatLastMsg(chatId, msgId, sendMsgDTO.getSrcId());
+        boolean bool3 = chatService.setChatLastMsgTimestamp(chatId,Long.parseLong(sendMsgDTO.getTimestamp()));
+        chatService.incrUserChatNewMsgCount(sendMsgDTO.getDestId(), chatId);
         // 3、入库成功，发送服务端收到确认回执
-        if (insertSuccess) {
-            ServerAckDTO serverAckDTO = new ServerAckDTO(msgId, sendMsgDTO.getTimestamp());
+        if (true) {
+            ServerAckDTO serverAckDTO = new ServerAckDTO(chatId,msgId, sendMsgDTO.getTimestamp());
+            String messageTime = DateFomatter.formatMessageDate(new Date(Long.parseLong(sendMsgDTO.getTimestamp())));
+            String messageText = parseMessageText(sendMsgDTO);
+            serverAckDTO.setLastMessage(messageText);
+            serverAckDTO.setLastMessageTime(messageTime);
             new Thread(() -> {
                 webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
-                        new SocketResponse(202,1,serverAckDTO));
+                        new SocketResponse(202, 1, serverAckDTO));
             }).start();
+
+            // 更新该会话最后一条信息
         }
 
         // 4、查看接收者是否在线
         boolean isOnline = userService.isOnline(sendMsgDTO.getSrcId());
         if (isOnline) {   // 如果在线，转发消息，并把消息存入缓存，等待接收者已读回执。
             PushMessageDTO pushMessageDTO = packPushMessageDTO(sendMsgDTO);
-
             webSocketEventHandler.handleResponse(201, sendMsgDTO.getDestId(), pushMessageDTO);
         }
     }
@@ -95,44 +105,74 @@ public class MessageService implements IMessageService {
         // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
         Boolean isNewTalk = !chatService.isChatSessionOpenToUser(sendMsgDTO.getDestId(), talkId);
         result.setIsNewTalk(isNewTalk);
+
+        if (isNewTalk) { // 如果是新会话，更新
+            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, sendMsgDTO.getDestId() + talkId, true);
+            new Thread(() -> {
+                PrivateChat privateChat = new PrivateChat();
+                privateChat.setChatId(Long.valueOf(talkId));
+                privateChat.setUserAStatus(true);
+                privateChat.setUserBStatus(true);
+                privateChat.setUpdateTime(new Date());
+                chatMapper.updatePrivateChat(privateChat);
+            }).start();
+        }
+        // 3、填充会话信息
         ChatSessionDTO talkData = null;
         if (sendMsgDTO.getIsGroup()) {    // 若是群聊
 
         } else {  // 若不是群聊
-            talkData = chatMapper.selectNewMsgPrivateChatData(talkId,sendMsgDTO.getDestId(),sendMsgDTO.getSrcId());
+            talkData = chatMapper.selectNewMsgPrivateChatData(talkId, sendMsgDTO.getDestId(), sendMsgDTO.getSrcId());
             talkData.setLastMessageTime(DateFomatter.formatChatSessionDate(talkData.getLastMessageDate()));
-            talkData.setNewMessageCount(chatService.getUserChatNewMsgCount(sendMsgDTO.getDestId(),talkId));
+            talkData.setNewMessageCount(chatService.getUserChatNewMsgCount(sendMsgDTO.getDestId(), talkId) + 1);
         }
         result.setTalkData(talkData);
 
-        // 3、填充消息体
+        // 4、填充消息体
         MsgRecord msgRecord = new MsgRecord();
         msgRecord.setMessageId(sendMsgDTO.getMsgId());
         msgRecord.setUserType(0);
-        msgRecord.setMsgType(sendMsgDTO.getMessageType());
+        msgRecord.setMessageType(sendMsgDTO.getMessageType());
         msgRecord.setMessageText(sendMsgDTO.getMessageText());
         // TODO 图片信息，应该返回URL
-        msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgData());
+        if(msgRecord.getMessageType().equals(2))
+            msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgUrl());
         // TODO 文件信息，应该返回文件下载URL
-        msgRecord.setFileInfo(null);
+        if(msgRecord.getMessageType().equals(3))
+            msgRecord.setFileInfo(sendMsgDTO.getFileInfo());
 
-        // 发送者信息
+        // 4.1发送者信息
         UserInfoDTO userInfo = userMapper.selectSenderInfo(sendMsgDTO.getSrcId());
         msgRecord.setUserInfo(userInfo);
-        // 消息时间
+        // 4.2消息时间
         Date msgTimeDate = new Date(Long.valueOf(sendMsgDTO.getTimestamp()));
         String msgTimeStr = DateFomatter.formatMessageDate(msgTimeDate);
         msgRecord.setMsgTimeDate(msgTimeDate);
-        msgRecord.setMsgTime(msgTimeStr);
-        // 是否显示时间
+        msgRecord.setMessageTime(msgTimeStr);
+        // 4.3是否显示时间
         Long chatLastMsgTime = chatService.getChatLastMsgTimestamp(talkId);
         Long thisMsgTime = Long.valueOf(sendMsgDTO.getTimestamp());
         boolean showTime = thisMsgTime - chatLastMsgTime > GlobalConst.MAX_NOT_SHOW_TIME_SPACE;
-        msgRecord.setShowMsgTime(showTime);
+        msgRecord.setShowMessageTime(showTime);
         // TODO 群昵称
 
         result.setMessageData(msgRecord);
 
         return result;
+    }
+
+
+    private String parseMessageText(SendMsgDTO sendMsgDTO) {
+        Integer msgType = sendMsgDTO.getMessageType();
+        String msgText = sendMsgDTO.getMessageText();
+        if (msgType.equals(1)) {
+            msgText = msgText == null ? "" : msgText;
+        } else if (msgType.equals(2)) {
+            msgText = "[图片]";
+        } else if (msgType.equals(3)) {
+            msgText = sendMsgDTO.getFileInfo().getFileName();
+        }
+        sendMsgDTO.setMessageText(msgText);
+        return msgText;
     }
 }

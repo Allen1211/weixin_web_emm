@@ -2,18 +2,23 @@ package com.allen.imsystem.controller;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.ICacheHolder;
+import com.allen.imsystem.common.exception.BusinessException;
+import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.JSONResponse;
 import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.impl.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +37,11 @@ public class TalkController {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private IFileService fileService;
+
     /**
-     * 获取会话的一些信息
+     * 获取会话的一些信息，只在用户点击一个会话的时候，调用此接口，故可认为对于该用户该会话所有消息已读。
      * @param talkIdStr
      * @param request
      * @return
@@ -43,6 +51,7 @@ public class TalkController {
         Long talkId = Long.valueOf(talkIdStr);
         String uid = cacheHolder.getUid(request);
         ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
+        chatService.setTalkAllMsgHasRead(uid,talkIdStr);
         return new JSONResponse(1)
                 .putData("isGroup", chatSessionInfo.getIsGroup())
                 .putData("title", chatSessionInfo.getTitle())
@@ -125,4 +134,14 @@ public class TalkController {
     }
 
 
+    @RequestMapping(value = "/uploadMessageImage",method = RequestMethod.POST)
+    public JSONResponse uploadMessageImage(@RequestParam("image") MultipartFile multipartFile){
+       try {
+           String url = fileService.uploadMsgImg(multipartFile);
+           return new JSONResponse(1).putData("imageUrl",url);
+       }catch(IOException e){
+           e.printStackTrace();
+           throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE, "文件保存失败");
+       }
+    }
 }
