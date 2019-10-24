@@ -153,8 +153,8 @@ public class TalkController {
 
     private static AtomicLong counter = new AtomicLong(0L);
 
-    @RequestMapping(value = "/messageFileUpload",method = RequestMethod.POST)
-    public JSONResponse messageFileUpload(HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/uploadMultipartFile",method = RequestMethod.POST)
+    public JSONResponse uploadMultipartFile(HttpServletRequest request) throws Exception {
 
         String prefix = "req_count:" + counter.incrementAndGet() + ":";
         System.out.println(prefix + "start !!!");

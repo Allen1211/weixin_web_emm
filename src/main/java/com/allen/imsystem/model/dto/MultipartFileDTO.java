@@ -10,7 +10,7 @@ public class MultipartFileDTO {
     //该请求是否是multipart
     private boolean isMultipart;
     //任务ID
-    private String taskId;
+    private String md5;
     //总分片数量
     private int blockNum;
     //当前为第几块分片
@@ -23,4 +23,6 @@ public class MultipartFileDTO {
     private FileItem fileItem;
     //请求中附带的自定义参数
     private HashMap<String, String> param = new HashMap<>();
+
+
 }

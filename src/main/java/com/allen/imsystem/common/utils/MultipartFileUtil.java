@@ -33,8 +33,8 @@ public class MultipartFileUtil {
 //                    System.out.println("field val has:"+fileItem.getString());
 //                }
 
-                if (fileItem.getFieldName().equals("taskId")) {
-                    param.setTaskId(fileItem.getString());
+                if (fileItem.getFieldName().equals("md5")) {
+                    param.setMd5(fileItem.getString());
                 } else if (fileItem.getFieldName().equals("fileName")) {
                     param.setFileName(new String(fileItem.getString().getBytes(
                             "ISO-8859-1"), "UTF-8"));
