@@ -240,4 +240,30 @@
     <select id="selectChatSessionLastMsgTime" resultType="com.allen.imsystem.model.dto.ChatLastMessageTime">
         SELECT cs.chat_id as chatId,r.created_time as lastMsgTime FROM private_chat as cs LEFT JOIN pri_msg_record as r ON cs.last_msg_id = r.msg_id
     </select>
+
+    <select id="fixSelect" resultType="com.allen.imsystem.model.FixBean">
+        SELECT pmr.chat_id as chatId,msg_id as msgId,pc.uid_a as toUid from pri_msg_record as pmr
+        LEFT JOIN private_chat as pc
+        ON pmr.chat_id = pc.chat_id
+        WHERE pc.uid_b=pmr.from_uid
+
+        UNION ALL
+
+        SELECT pmr.chat_id as chatId,msg_id as msgId, pc.uid_b as toUid from pri_msg_record as pmr
+        LEFT JOIN private_chat as pc
+        ON pmr.chat_id = pc.chat_id
+        WHERE pc.uid_a=pmr.from_uid
+
+        ORDER BY msgId
+    </select>
+
+    <update id="fix" parameterType="java.util.List">
+        <foreach collection="fixBeanList" item="fixBean" index="index" open="" close="" separator=";">
+            update pri_msg_record
+            <set>
+                to_uid=${fixBean.toUid}
+            </set>
+            where msg_id = ${fixBean.msgId} AND chat_id = ${fixBean.chatId}
+        </foreach>
+    </update>
 </mapper>

@@ -1,6 +1,7 @@
 package com.allen.imsystem.dao.mappers;
 
 import com.allen.imsystem.common.PageBean;
+import com.allen.imsystem.model.FixBean;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.ChatGroup;
 import com.allen.imsystem.model.pojo.PrivateChat;
@@ -55,4 +56,10 @@ public interface ChatMapper {
 
 
     List<ChatLastMessageTime> selectChatSessionLastMsgTime();
+
+
+
+    List<FixBean> fixSelect();
+
+    Integer fix(@Param("fixBeanList")List<FixBean> fixBeanList);
 }

@@ -39,7 +39,7 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
         }
         sessionPool.put(uid, session);
         System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())
-                + " " + uid + " open talk websocket");
+                + " " + uid + " open talk websocket " + session.getId());
         redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,1);
     }
 

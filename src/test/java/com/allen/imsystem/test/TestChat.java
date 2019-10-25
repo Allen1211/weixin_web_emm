@@ -3,6 +3,7 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.mappers.ChatMapper;
+import com.allen.imsystem.model.FixBean;
 import com.allen.imsystem.model.dto.ChatLastMessageTime;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
@@ -120,5 +121,13 @@ public class TestChat {
             }
             System.out.println();
         }
+    }
+
+
+    @Test
+    public void fix(){
+        List<FixBean> fixBeanList = chatMapper.fixSelect();
+        Integer affect = chatMapper.fix(fixBeanList);
+        System.out.println(affect);
     }
 }
