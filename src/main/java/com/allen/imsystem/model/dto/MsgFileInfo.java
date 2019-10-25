@@ -1,12 +1,14 @@
 package com.allen.imsystem.model.dto;
 
+import com.allen.imsystem.common.Const.GlobalConst;
 import lombok.Data;
 
 @Data
 public class MsgFileInfo {
     private String fileName;
     private String downloadUrl;
-
+    private String fileIcon = GlobalConst.Path.FILE_ICON_URL;
+    private String size;
     public MsgFileInfo() {
     }
 

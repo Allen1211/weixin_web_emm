@@ -20,9 +20,11 @@ public class GlobalConst {
         public static final String AVATAR_PATH = "/usr/resources/imsystem/static/avatar/";
         public static final String MSG_IMG_PATH = "/usr/resources/imsystem/static/msg_img/";
 //        public static final String MSG_IMG_PATH = "E:/";
-//        public static final String MSG_FILE_PATH = "/usr/resources/imsystem/static/msg_file/";
-        public static final String MSG_FILE_PATH = "E:/";
+        public static final String MSG_FILE_PATH = "/usr/resources/imsystem/static/msg_file/";
+//        public static final String MSG_FILE_PATH = "E:/";
         public static final String MSG_RECORD_PATH = "/usr/resources/imsystem/static/msg_record/";
+
+        public static final String FILE_ICON_URL = "/user/resources/imsystem/static/msg_file/file_icon.png";
     }
 
 

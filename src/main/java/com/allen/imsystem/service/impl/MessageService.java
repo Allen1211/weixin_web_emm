@@ -73,11 +73,12 @@ public class MessageService implements IMessageService {
             String messageText = parseMessageText(sendMsgDTO);
             serverAckDTO.setLastMessage(messageText);
             serverAckDTO.setLastMessageTime(messageTime);
-            new Thread(() -> {
-                webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
-                        new SocketResponse(202, 1, serverAckDTO));
-            }).start();
-
+//            new Thread(() -> {
+//                webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
+//                        new SocketResponse(202, 1, serverAckDTO));
+//            }).start();
+            webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
+                    new SocketResponse(202, 1, serverAckDTO));
             // 更新该会话最后一条信息
         }
 

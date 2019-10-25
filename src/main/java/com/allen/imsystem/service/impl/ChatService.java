@@ -391,19 +391,25 @@ public class ChatService implements IChatService {
 
     @Override
     public Boolean savePrivateMsgRecord(SendMsgDTO msg) {
+
+
         PrivateMsgRecord privateMsgRecord = new PrivateMsgRecord();
+        System.out.println(msg.getMessageType());
         // TODO 消息类型的不同应有不同的保存方式
         if (msg.getMessageType().equals(2)){
+            privateMsgRecord.setContent("[图片]");
             privateMsgRecord.setResourceUrl(msg.getMessageImgUrl());
         }else if(msg.getMessageType().equals(3)){
+            privateMsgRecord.setContent(msg.getFileInfo().getFileName());
             privateMsgRecord.setResourceUrl(msg.getFileInfo().getDownloadUrl());
+            System.out.println(privateMsgRecord.getContent());
         }else{
+            privateMsgRecord.setContent(msg.getMessageText());
             privateMsgRecord.setResourceUrl("");
         }
 
         privateMsgRecord.setMsgId(msg.getMsgId());
         privateMsgRecord.setChatId(Long.valueOf(msg.getTalkId()));
-        privateMsgRecord.setContent(msg.getMessageText());
         privateMsgRecord.setFromUid(msg.getSrcId());
         privateMsgRecord.setToUid(msg.getDestId());
         privateMsgRecord.setHasRead(false);

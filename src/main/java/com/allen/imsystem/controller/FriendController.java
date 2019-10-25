@@ -211,11 +211,7 @@ public class FriendController {
         Integer groupId = Integer.valueOf(params.get("groupId"));
         String uid = cacheHolder.getUid(request);
         boolean success = friendService.deleteFriendGroup(groupId,uid);
-        if (success) {
-            return new JSONResponse(1);
-        } else {
-            throw new BusinessException(ExceptionType.SERVER_ERROR, "删除失败");
-        }
+        return new JSONResponse(1);
     }
 
 
@@ -228,11 +224,7 @@ public class FriendController {
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
         boolean isSucess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
-        if (isSucess) {
-            return new JSONResponse(1);
-        } else {
-            throw new BusinessException(ExceptionType.SERVER_ERROR, "更改失败，数据不匹配");
-        }
+        return new JSONResponse(1);
     }
 
 

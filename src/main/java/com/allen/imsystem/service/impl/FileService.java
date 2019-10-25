@@ -77,9 +77,8 @@ public class FileService implements IFileService {
     public MultiFileResponse uploadMultipartFile(MultipartFileDTO param) throws IOException {
         // 约定的每一块的固定大小
         long blockSize = GlobalConst.BLOCK_SIZE;
-        String type = getFileType(param.getFileItem());
         String tempDirPath = GlobalConst.Path.MSG_FILE_PATH + param.getMd5();  // 该文件保存的文件夹，以md5作为文件夹名
-        String tempFileName = "tmp_" + param.getMd5() + "." + type;   // 临时文件名
+        String tempFileName = param.getMd5() + "." + getFileType(param.getFileName());   // 临时文件名
         File confFile = new File(tempDirPath, param.getMd5() + ".conf");   // 标识上传进度的文件
         File tmpDir = new File(tempDirPath);
         File tmpFile = new File(tempDirPath, tempFileName);
@@ -115,16 +114,21 @@ public class FileService implements IFileService {
         responseDTO.setIsComplete(isComplete);
 
         if (isComplete) {
-            String url = GlobalConst.Path.MSG_FILE_URL + param.getMd5();
+            String nameDotType = param.getMd5() + "." + getFileType(param.getFileName());
+            String url = GlobalConst.Path.MSG_FILE_URL + param.getMd5() + "/" + nameDotType;
             responseDTO.setDownloadUrl(url);
             // 重命名文件
             if (tmpFile.exists()) {
-                File newFileName = new File(tempDirPath, param.getFileName()+"."+type);
-                tmpFile.renameTo(newFileName);
+                File newFileName = new File(tempDirPath, nameDotType);
+                boolean success = tmpFile.renameTo(newFileName);
+                System.out.println(success);
             }
             System.out.println("upload complete !!");
             System.out.println(responseDTO);
+
+            //TODO MD5和url的对应关系保存到数据库
         }
+
         accessTmpFile.close();
         accessConfFile.close();
         System.out.println("end !!!");
@@ -137,7 +141,6 @@ public class FileService implements IFileService {
         for (int i = 1; i < completeList.length && isComplete == Byte.MAX_VALUE; i++) {
             //与运算, 如果有部分没有完成则 isComplete 不是 Byte.MAX_VALUE
             isComplete = (byte) (isComplete & completeList[i]);
-            System.out.println("check part " + i + " complete?:" + completeList[i]);
         }
         return isComplete == Byte.MAX_VALUE;
     }
@@ -192,14 +195,13 @@ public class FileService implements IFileService {
     private String getFileType(MultipartFile multipartFile) {
         String contentType = multipartFile.getContentType();
         String type = contentType.substring(contentType.lastIndexOf('/') + 1);
-        return type;
+        return type!=null ? type:"";
     }
 
 
-    private String getFileType(FileItem fileItem) {
-        String contentType = fileItem.getContentType();
-        String type = contentType.substring(contentType.lastIndexOf('/') + 1);
-        return type;
+    private String getFileType(String fullName) {
+        String type = fullName.substring(fullName.lastIndexOf('.') + 1);
+        return type!=null ? type:"";
     }
 
 

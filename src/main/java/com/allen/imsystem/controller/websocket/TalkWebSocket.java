@@ -32,6 +32,11 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
         Map<String, Object> attributes = session.getAttributes();
         String uid = (String) attributes.get("uid");
+        if(sessionPool.get(uid) != null){
+            session.sendMessage(new TextMessage("该账户已经建立了连接！！"));
+            session.close();
+            return;
+        }
         sessionPool.put(uid, session);
         System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())
                 + " " + uid + " open talk websocket");
@@ -53,6 +58,8 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
             webSocketEventHandler.handleRequest(eventCode,jsonObject);
         }).start();
 
+
+
     }
 
     @Override
@@ -68,11 +75,20 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) {
         String uid = (String) session.getAttributes().get("uid");
         System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())+
-                " websocket client closed : " + uid);
+                " websocket client closed : " + uid + "  sessionId: " + session.getId());
         if(uid != null){
-            sessionPool.remove(uid);
-            // TODO redis在线状态设为离线
-            redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
+            WebSocketSession oldSession = sessionPool.get(uid);
+            if(oldSession == null){
+                System.out.println("old session is null");
+                return;
+            }
+            if(oldSession.getId().equals(session.getId())){
+                sessionPool.remove(uid);
+                // TODO redis在线状态设为离线
+                redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
+            }else{
+                System.out.println(" a websocket client " + session.getId() + " " + "want to close another client: " + oldSession.getId());
+            }
         }
     }
 
@@ -88,6 +104,7 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
             TextMessage textMessage = new TextMessage(jsonResponse);
             try{
                 session.sendMessage(textMessage);
+                System.out.println("push message to client : " + destId + " sessionId:" + session.getId());
             }catch (IOException e){
                 e.printStackTrace();
                 return false;

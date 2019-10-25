@@ -274,6 +274,8 @@ public class FriendService implements IFriendService {
         }
         boolean moveSuccess = true;
         if (size > 0) {// 若有好友，将该分组下所有好友转至默认分组
+            Integer affect = friendDao.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(),groupId, uid);
+            System.out.println(affect);
             moveSuccess = friendDao.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(),groupId, uid) > 0;
         }
         // 3 删除掉该分组
