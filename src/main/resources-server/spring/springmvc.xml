@@ -10,16 +10,9 @@
             http://www.springframework.org/schema/mvc
             http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-        <import resource="applicationContext.xml" />
-
         <!-- DispatcherServlet不处理静态资源,交给服务器默认的servlet处理 -->
         <mvc:default-servlet-handler />
 
-    <!-- 配置自动扫描的包 -->
-    <context:component-scan base-package="com.allen.imsystem.*"/>
-    <context:component-scan base-package="com.allen.imsystem.*.*"/>
-    <context:component-scan base-package="com.allen.imsystem.*.*"/>
-    <context:component-scan base-package="com.allen.imsystem.common.exception"/>
 <!--        &lt;!&ndash; 启用annotation &ndash;&gt;-->
 <!--        <mvc:annotation-driven />-->
 
@@ -100,12 +93,5 @@
             <property name="cacheSeconds" value="120" />
         </bean>
 
-
-<!--    websocket-->
-<!--    <websocket:handlers>-->
-<!--        <websocket:mapping path="ws://localhost:8080/imsystem/talk" handler="talkWebSocketHandler"/>-->
-<!--        <websocket:sockjs/>-->
-<!--    </websocket:handlers>-->
-<!--    <bean id="talkWebSocketHandler" class="com.allen.imsystem.controller.websocket.TalkWebSocket" />-->
 
 </beans>

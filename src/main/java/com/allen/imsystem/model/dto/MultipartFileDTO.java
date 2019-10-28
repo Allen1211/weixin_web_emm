@@ -15,8 +15,8 @@ public class MultipartFileDTO {
     private int blockNum;
     //当前为第几块分片
     private int currBlock;
-    //当前分片大小
-    private long currBlockSize = 0L;
+    //文件总大小
+    private Long totalSize = 0L;
     //文件名
     private String fileName;
     //分片对象

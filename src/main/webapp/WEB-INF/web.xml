@@ -5,7 +5,7 @@
 
   <context-param>
     <param-name>contextConfigLocation</param-name>
-    <param-value>classpath:spring/springmvc.xml</param-value>
+    <param-value>classpath:spring/springmvc.xml,classpath:spring/applicationContext*.xml</param-value>
   </context-param>
 
   <session-config>
@@ -42,7 +42,7 @@
     <servlet-class>com.allen.imsystem.common.security.DispatcherServletWrapper</servlet-class>
     <init-param>
       <param-name>contextConfigLocation</param-name>
-      <param-value>classpath:spring/springmvc.xml</param-value>
+      <param-value>classpath:spring/springmvc.xml,classpath:spring/applicationContext*.xml</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
   </servlet>

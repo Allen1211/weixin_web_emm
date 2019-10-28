@@ -1,17 +1,14 @@
 package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
-import com.allen.imsystem.common.utils.DateFomatter;
+import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
-import com.allen.imsystem.controller.websocket.WebSocketEventHandler;
+import com.allen.imsystem.netty.WebSocketEventHandler;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.PrivateChat;
-import com.allen.imsystem.service.IChatService;
-import com.allen.imsystem.service.IFriendService;
-import com.allen.imsystem.service.IMessageService;
-import com.allen.imsystem.service.IUserService;
+import com.allen.imsystem.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +26,9 @@ public class MessageService implements IMessageService {
 
     @Autowired
     private IChatService chatService;
+
+    @Autowired
+    private IFileService fileService;
 
     @Autowired
     private IFriendService friendService;
@@ -69,7 +69,7 @@ public class MessageService implements IMessageService {
         // 3、入库成功，发送服务端收到确认回执
         if (true) {
             ServerAckDTO serverAckDTO = new ServerAckDTO(chatId,msgId, sendMsgDTO.getTimestamp());
-            String messageTime = DateFomatter.formatMessageDate(new Date(Long.parseLong(sendMsgDTO.getTimestamp())));
+            String messageTime = FormatUtil.formatMessageDate(new Date(Long.parseLong(sendMsgDTO.getTimestamp())));
             String messageText = parseMessageText(sendMsgDTO);
             serverAckDTO.setLastMessage(messageText);
             serverAckDTO.setLastMessageTime(messageTime);
@@ -121,7 +121,7 @@ public class MessageService implements IMessageService {
 
         } else {  // 若不是群聊
             talkData = chatMapper.selectNewMsgPrivateChatData(talkId, sendMsgDTO.getDestId(), sendMsgDTO.getSrcId());
-            talkData.setLastMessageTime(DateFomatter.formatChatSessionDate(talkData.getLastMessageDate()));
+            talkData.setLastMessageTime(FormatUtil.formatChatSessionDate(talkData.getLastMessageDate()));
             talkData.setNewMessageCount(chatService.getUserChatNewMsgCount(sendMsgDTO.getDestId(), talkId) + 1);
         }
         result.setTalkData(talkData);
@@ -132,6 +132,35 @@ public class MessageService implements IMessageService {
         msgRecord.setUserType(0);
         msgRecord.setMessageType(sendMsgDTO.getMessageType());
         msgRecord.setMessageText(sendMsgDTO.getMessageText());
+
+        switch (msgRecord.getMessageType()){
+            case 1:{
+                msgRecord.setMessageText(sendMsgDTO.getMessageText());
+                break;
+            }
+            case 2:{
+                msgRecord.setMessageText("[图片]");
+                msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgUrl());
+                break;
+            }
+            case 3:{
+                MsgFileInfo fileInfo = sendMsgDTO.getFileInfo();
+                String md5 = fileService.getMd5FromUrl(3,fileInfo.getDownloadUrl());
+                String sizeStr = (String) redisService.get(md5);
+                Long size = 0L;
+                if(sizeStr == null){
+                    size = 0L;
+                }else{
+                    size = Long.parseLong(sizeStr);
+                }
+                String fileSize = FormatUtil.formatFileSize(size);
+                fileInfo.setFileSize(fileSize);
+                fileInfo.setSize(size);
+                msgRecord.setFileInfo(fileInfo);
+                break;
+            }
+        }
+
         // TODO 图片信息，应该返回URL
         if(msgRecord.getMessageType().equals(2))
             msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgUrl());
@@ -144,7 +173,7 @@ public class MessageService implements IMessageService {
         msgRecord.setUserInfo(userInfo);
         // 4.2消息时间
         Date msgTimeDate = new Date(Long.valueOf(sendMsgDTO.getTimestamp()));
-        String msgTimeStr = DateFomatter.formatMessageDate(msgTimeDate);
+        String msgTimeStr = FormatUtil.formatMessageDate(msgTimeDate);
         msgRecord.setMsgTimeDate(msgTimeDate);
         msgRecord.setMessageTime(msgTimeStr);
         // 4.3是否显示时间

@@ -13,6 +13,7 @@ public class PrivateMsgRecord {
     private String toUid;
     private String content;
     private String resourceUrl;
+    private String fileMd5;
     private Boolean hasRead;
     private Integer status;
     private Date createdTime;

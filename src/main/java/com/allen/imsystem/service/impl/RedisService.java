@@ -16,13 +16,13 @@ import java.util.concurrent.TimeUnit;
  * 针对所有的Set 都是以s开头的方法                    不含通用方法
  * 针对所有的List 都是以l开头的方法
  */
-@Service
 public class RedisService {
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+//    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate redisTemplate;
 
-    public void setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
+    public void setRedisTemplate(RedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
     //=============================common============================

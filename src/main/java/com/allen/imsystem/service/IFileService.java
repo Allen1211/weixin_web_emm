@@ -26,4 +26,7 @@ public interface IFileService {
     MultiFileResponse uploadMultipartFile(MultipartFileDTO param) throws IOException;
 
     FileUploadInfo getUnCompleteParts(String md5);
+
+    String getMd5FromUrl(Integer type , String url);
+
 }

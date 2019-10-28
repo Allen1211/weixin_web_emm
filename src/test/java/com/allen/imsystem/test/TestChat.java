@@ -60,9 +60,9 @@ public class TestChat {
 
     @Test
     public void testMsgRecord(){
-        List<MsgRecord> list = chatService.getMessageRecord("28661270","633786567424475138",new Date(),1,5);
-        System.out.println(list.size());
-        System.out.println(list);
+//        List<MsgRecord> list = chatService.getMessageRecord("28661270","633786567424475138",new Date(),1,5);
+//        System.out.println(list.size());
+//        System.out.println(list);
     }
 
     @Test

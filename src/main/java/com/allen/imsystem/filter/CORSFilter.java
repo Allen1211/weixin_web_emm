@@ -33,8 +33,8 @@ public class CORSFilter implements Filter {
         }
         response.setHeader("Access-Control-Allow-Credentials", "true");
         response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT,PATCH, HEAD");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Depth, User-Agent, X-File-Size," +
-                " X-Requested-With, X-Requested-By, If-Modified-Since, X-File-Name, X-File-Type, Cache-Control, Origin,token");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, ContentType, Content-Type, Depth, User-Agent, X-File-Size," +
+                " X-Requested-With, X-Requested-By, If-Modified-Since, X-File-Name, X-File-Type, Cache-Control, Origin,token,boundary");
         response.addHeader("Access-Control-Max-Age", "3600");
         chain.doFilter(request, response);
     }

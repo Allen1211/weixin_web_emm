@@ -4,7 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.PageBean;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.common.utils.DateFomatter;
+import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.dao.ChatDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
@@ -14,8 +14,10 @@ import com.allen.imsystem.model.pojo.ChatGroup;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IUserService;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,9 @@ public class ChatService implements IChatService {
 
     @Autowired
     private IFriendService friendService;
+
+    @Autowired
+    private IFileService fileService;
 
     @Autowired
     private RedisService redisService;
@@ -260,7 +265,7 @@ public class ChatService implements IChatService {
                     privateChat.setLastMessageTime("");
                 } else {
                     //日期时间格式化
-                    privateChat.setLastMessageTime(DateFomatter.formatChatSessionDate(privateChat.getLastMessageDate()));
+                    privateChat.setLastMessageTime(FormatUtil.formatChatSessionDate(privateChat.getLastMessageDate()));
                 }
 
             }
@@ -323,7 +328,40 @@ public class ChatService implements IChatService {
     }
 
     @Override
-    public List<MsgRecord> getMessageRecord(String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
+    public Map<String,Object> getMessageRecord(String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
+        Map<String,Object> resultMap = new HashMap<>(3);
+        List<MsgRecord> messageList = null;
+        // 如果是第一页，要获取一次总页数，记录一下统计的起始时间
+        if (index == 1) {
+            Long now = System.currentTimeMillis();
+            redisService.hset("MSG_RECORD_BEGIN_TIME", talkId, now.toString());
+            Integer totalSize = this.getAllHistoryMessageSize(talkId, uid, new Date(now));
+            Integer totalPage = 1;
+            if (totalSize <= pageSize) {
+                totalPage = 1;
+            } else if (totalSize % pageSize == 0) {
+                totalPage = totalSize / pageSize;
+            } else {
+                totalPage = totalSize / pageSize + 1;
+            }
+            messageList = doGetMessageList(uid,talkId,new Date(now),index,pageSize);
+            resultMap.put("messageList",messageList);
+            resultMap.put("allPageSize",totalPage);
+            resultMap.put("curPageIndex",index);
+        } else {
+            String nowStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_TIME, talkId);
+            if (nowStr != null) {
+                beginTime = new Date(Long.valueOf(nowStr));
+            }
+            messageList = doGetMessageList(uid,talkId,beginTime,index,pageSize);
+            resultMap.put("messageList",messageList);
+            resultMap.put("curPageIndex",index);
+        }
+
+        return resultMap;
+    }
+
+    private List<MsgRecord> doGetMessageList(String uid, String talkId, Date beginTime, Integer index, Integer pageSize){
         if (beginTime == null) {
             beginTime = new Date();
         }
@@ -332,8 +370,7 @@ public class ChatService implements IChatService {
         List<MsgRecord> msgRecordList =
                 chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), beginTime, uid, pageBean);
         if (msgRecordList == null) {
-            msgRecordList = new ArrayList<>();
-            return msgRecordList;
+            return new ArrayList<>();
         }
         Long preMsgTime = null;
         for (int i = msgRecordList.size() - 1; i >= 0; i--) {
@@ -354,12 +391,27 @@ public class ChatService implements IChatService {
                     break;
                 }
                 case 2: {// 图片
-                    msgRecord.setFileInfo(null);
                     msgRecord.setMessageText("[图片]");
+                    MsgFileInfo fileInfo = msgRecord.getFileInfo();
+                    String imgUrl;
+                    if(fileInfo == null){
+                        imgUrl = GlobalConst.Path.IMG_NOT_FOUND;
+                    }else{
+                        imgUrl = fileInfo.getDownloadUrl();
+                    }
+                    msgRecord.setMessageImgUrl(imgUrl == null? GlobalConst.Path.IMG_NOT_FOUND:imgUrl);
                     break;
                 }
                 case 3: {// 文件
                     msgRecord.setMessageImgUrl(null);
+                    MsgFileInfo fileInfo = msgRecord.getFileInfo();
+                    if(fileInfo == null){
+                        msgRecord.setFileInfo(new MsgFileInfo("不存在的文件",""));
+                        msgRecord.getFileInfo().setFileSize("0");
+                    }else{
+                        String fileSize = FormatUtil.formatFileSize(fileInfo.getSize());
+                        msgRecord.getFileInfo().setFileSize(fileSize);
+                    }
                     break;
                 }
             }
@@ -371,7 +423,7 @@ public class ChatService implements IChatService {
             msgRecord.setShowMessageTime(showMsgTime);
             if (showMsgTime) {
                 // 时间格式化处理
-                String format = DateFomatter.formatMessageDate(msgRecord.getMsgTimeDate());
+                String format = FormatUtil.formatMessageDate(msgRecord.getMsgTimeDate());
                 msgRecord.setMessageTime(format);
             }
             preMsgTime = msgRecord.getMsgTimeDate().getTime();
@@ -391,21 +443,30 @@ public class ChatService implements IChatService {
 
     @Override
     public Boolean savePrivateMsgRecord(SendMsgDTO msg) {
-
-
         PrivateMsgRecord privateMsgRecord = new PrivateMsgRecord();
-        System.out.println(msg.getMessageType());
         // TODO 消息类型的不同应有不同的保存方式
-        if (msg.getMessageType().equals(2)){
-            privateMsgRecord.setContent("[图片]");
-            privateMsgRecord.setResourceUrl(msg.getMessageImgUrl());
-        }else if(msg.getMessageType().equals(3)){
-            privateMsgRecord.setContent(msg.getFileInfo().getFileName());
-            privateMsgRecord.setResourceUrl(msg.getFileInfo().getDownloadUrl());
-            System.out.println(privateMsgRecord.getContent());
-        }else{
-            privateMsgRecord.setContent(msg.getMessageText());
-            privateMsgRecord.setResourceUrl("");
+        switch (msg.getMessageType()){
+            case 1:{    // 文字消息
+                privateMsgRecord.setContent(msg.getMessageText());
+                privateMsgRecord.setResourceUrl("");
+                break;
+            }
+            case 2:{    // 图片消息
+                privateMsgRecord.setContent("[图片]");
+                privateMsgRecord.setResourceUrl(msg.getMessageImgUrl());
+                String imgUrl = msg.getMessageImgUrl();
+                if(StringUtils.isEmpty(imgUrl)) throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
+                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(2,imgUrl));
+                break;
+            }
+            case 3:{    // 文件消息
+                privateMsgRecord.setContent(msg.getFileInfo().getFileName());
+                privateMsgRecord.setResourceUrl(msg.getFileInfo().getDownloadUrl());
+                String fileUrl = msg.getFileInfo().getDownloadUrl();
+                if(StringUtils.isEmpty(fileUrl)) throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
+                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(3,fileUrl));
+                break;
+            }
         }
 
         privateMsgRecord.setMsgId(msg.getMsgId());

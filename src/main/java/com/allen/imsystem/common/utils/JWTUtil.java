@@ -25,7 +25,6 @@ public class JWTUtil {
     /**
      *
      */
-    private static IUserService userService = SpringBeanUtil.getBean(IUserService.class);
     /**
      * 默认密钥
      */

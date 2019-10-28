@@ -66,8 +66,9 @@
     </resultMap>
 
     <resultMap id="fileInfoMap" type="com.allen.imsystem.model.dto.MsgFileInfo">
-        <result property="fileName" column="content"/>
+        <result property="fileName" column="file_name"/>
         <result property="downloadUrl" column="resource_url"/>
+        <result property="size" column="size" javaType="java.lang.Long" jdbcType="BIGINT"/>
     </resultMap>
 
 <!--    <resultMap id="groupChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">-->
@@ -116,11 +117,24 @@
         WHERE pc.chat_id = #{chatId} AND pc.uid_b = #{uid}
     </select>
 
+<!--    <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">-->
+<!--        SELECT msg_id , msg_type, content, resource_url, mr.created_time ,ui.uid, ui.username,-->
+<!--        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id-->
+<!--        FROM pri_msg_record as mr-->
+<!--        INNER JOIN user_info as ui ON ui.uid = mr.from_uid-->
+<!--        WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}-->
+<!--        ORDER BY mr.created_time DESC-->
+<!--        LIMIT #{pageBean.from},#{pageBean.offset}-->
+<!--    </select>-->
+
     <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">
-        SELECT msg_id , msg_type, content, resource_url, mr.created_time ,ui.uid, ui.username,
+        SELECT msg_id , msg_type, content,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
+        fm.file_name , fm.size, mr.created_time ,ui.uid, ui.username,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
         FROM pri_msg_record as mr
         INNER JOIN user_info as ui ON ui.uid = mr.from_uid
+        LEFT JOIN file_msg_md5 as fm ON mr.file_md5 = fm.md5
         WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}
         ORDER BY mr.created_time DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
@@ -187,10 +201,35 @@
     </insert>
 
 
+<!--    INSERT INTO pri_msg_record (msg_id, msg_type, chat_id, from_uid, to_uid, content,resource_url, has_read, status)-->
+<!--    values (#{msgId},#{msgType},#{chatId},#{fromUid},#{toUid},#{content},#{resourceUrl},#{hasRead},#{status})-->
+
     <!--插入一条私聊消息到私聊消息记录    -->
     <insert id="insertPrivateMsgToRecord" parameterType="com.allen.imsystem.model.pojo.PrivateMsgRecord" >
-        INSERT INTO pri_msg_record (msg_id, msg_type, chat_id, from_uid, to_uid, content,resource_url, has_read, status)
-        values (#{msgId},#{msgType},#{chatId},#{fromUid},#{toUid},#{content},#{resourceUrl},#{hasRead},#{status})
+          INSERT INTO `pri_msg_record` (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">msg_id,</if>
+            <if test="msgType!=null">msg_type,</if>
+            <if test="chatId!=null">chat_id,</if>
+            <if test="fromUid!=null">from_uid,</if>
+            <if test="toUid!=null">to_uid,</if>
+            <if test="content!=null">content,</if>
+            <if test="fileMd5!=null">file_md5,</if>
+            <if test="hasRead!=null">has_read,</if>
+            <if test="status!=null">status,</if>
+        </trim>)
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">#{msgId},</if>
+            <if test="msgType!=null">#{msgType},</if>
+            <if test="chatId!=null">#{chatId},</if>
+            <if test="fromUid!=null">#{fromUid},</if>
+            <if test="toUid!=null">#{toUid},</if>
+            <if test="content!=null">#{content},</if>
+            <if test="fileMd5!=null">#{fileMd5},</if>
+            <if test="hasRead!=null">#{hasRead},</if>
+            <if test="status!=null">#{status},</if>
+        </trim>)
     </insert>
 
     <update id="updatePrivateChat" parameterType="com.allen.imsystem.model.pojo.PrivateChat">

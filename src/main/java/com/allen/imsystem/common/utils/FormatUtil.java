@@ -4,10 +4,15 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-public class DateFomatter {
+public class FormatUtil {
 
     private static String[] day_of_week = {"","星期日","星期一","星期二","星期三","星期四","星期五","星期六"};
 
+    /**
+     * 格式化聊天记录的时间展示
+     * @param msgDate
+     * @return
+     */
     public static String formatMessageDate(Date msgDate){
         Date nowDate = new Date();
         Calendar nowCalendar = Calendar.getInstance();
@@ -38,7 +43,11 @@ public class DateFomatter {
         }
     }
 
-
+    /**
+     * 格式化会话列表最后一条信息的时间展示
+     * @param msgDate
+     * @return
+     */
     public static String formatChatSessionDate(Date msgDate){
         if(msgDate == null){
             return "";
@@ -69,7 +78,30 @@ public class DateFomatter {
 
     }
 
-    public static boolean isSameDay(Calendar cal1, Calendar cal2) {
+    /**
+     * 格式化文件大小展示
+     * @return
+     */
+    public static String formatFileSize(Long sizeL) {
+        Double size = sizeL.doubleValue();
+        if(size == null || size == 0){
+            return "0K";
+        }else if(size < 1024){ //小于1K
+            return String.format("%dB",size.intValue());
+        } else if(size < 1024*1024){ // 小于1M
+            return String.format("%.1fK",size/1024.0);
+        }else if(size < 1024*1024*1024){  // 小于1G
+            return String.format("%.2fM",size/(1024.0*1024));
+        }else{
+            return String.format("%.2fG",size/(1024.0*1024*1024));
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(formatFileSize(1024*234L));
+    }
+
+    private static boolean isSameDay(Calendar cal1, Calendar cal2) {
         // 判断是否是同一个实际的同一年的同为第N天
         if(cal1 != null && cal2 != null) {
             return cal1.get(0) == cal2.get(0) && cal1.get(1) == cal2.get(1) && cal1.get(6) == cal2.get(6);
@@ -84,7 +116,7 @@ public class DateFomatter {
      * @param cal2
      * @return
      */
-    public static boolean isYesterday(Calendar cal1, Calendar cal2) {
+    private static boolean isYesterday(Calendar cal1, Calendar cal2) {
 
         if(cal1 != null && cal2 != null) {
             return cal1.get(0) == cal2.get(0) && cal1.get(1) == cal2.get(1) && cal1.get(6) == cal2.get(6)-1;

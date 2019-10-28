@@ -3,6 +3,7 @@ package com.allen.imsystem.controller.websocket;
 
 import com.alibaba.fastjson.JSONObject;
 import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.netty.WebSocketEventHandler;
 import com.allen.imsystem.service.impl.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,9 +34,8 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
         Map<String, Object> attributes = session.getAttributes();
         String uid = (String) attributes.get("uid");
         if(sessionPool.get(uid) != null){
-            session.sendMessage(new TextMessage("该账户已经建立了连接！！"));
-            session.close();
-            return;
+            session.sendMessage(new TextMessage("{\"err\":\"该账户已经建立了连接！你已把对方挤掉\"}"));
+            System.out.println(uid + " id: " + session.getId() + "replace :" + sessionPool.get(uid).getId());
         }
         sessionPool.put(uid, session);
         System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())
@@ -76,20 +76,24 @@ public class TalkWebSocket extends AbstractWebSocketHandler {
         String uid = (String) session.getAttributes().get("uid");
         System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())+
                 " websocket client closed : " + uid + "  sessionId: " + session.getId());
-        if(uid != null){
-            WebSocketSession oldSession = sessionPool.get(uid);
-            if(oldSession == null){
-                System.out.println("old session is null");
-                return;
-            }
-            if(oldSession.getId().equals(session.getId())){
-                sessionPool.remove(uid);
-                // TODO redis在线状态设为离线
-                redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
-            }else{
-                System.out.println(" a websocket client " + session.getId() + " " + "want to close another client: " + oldSession.getId());
-            }
-        }
+
+        sessionPool.remove(uid);
+        // TODO redis在线状态设为离线
+        redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
+//        if(uid != null){
+//            WebSocketSession oldSession = sessionPool.get(uid);
+//            if(oldSession == null){
+//                System.out.println("old session is null");
+//                return;
+//            }
+//            if(oldSession.getId().equals(session.getId())){
+//                sessionPool.remove(uid);
+//                // TODO redis在线状态设为离线
+//                redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,0);
+//            }else{
+//                System.out.println(" a websocket client " + session.getId() + " " + "want to close another client: " + oldSession.getId());
+//            }
+//        }
     }
 
     @Override

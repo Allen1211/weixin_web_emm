@@ -115,7 +115,7 @@ public interface IChatService {
      * @param pageSize
      * @return
      */
-    List<MsgRecord> getMessageRecord(String uid, String talkId,Date beginTime,Integer index, Integer pageSize);
+    Map<String,Object> getMessageRecord(String uid, String talkId,Date beginTime,Integer index, Integer pageSize);
 
     /**
      * 获取某个会话所有聊天记录的条数

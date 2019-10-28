@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.*;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -19,7 +20,7 @@ import java.util.Date;
 import java.util.Set;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml","classpath*:spring/applicationContext.xml", "classpath*:spring/applicationContext-*.xml"})
 public class TestSDR {
     @Autowired
     private RedisTemplate<String,Object> redisTemplate;
@@ -35,10 +36,17 @@ public class TestSDR {
 
     @Autowired
     RedisUtil redisUtil;
+
+    @Autowired
+    JedisConnectionFactory jedisConnectionFactory;
+
+
     @Test
     public void testInject(){
         Assert.assertNotNull(redisTemplate);
         Assert.assertNotNull(stringRedisTemplate);
+        Assert.assertNotNull(redisService);
+        Assert.assertNotNull(jedisConnectionFactory);
     }
     @Test
     public void test1(){

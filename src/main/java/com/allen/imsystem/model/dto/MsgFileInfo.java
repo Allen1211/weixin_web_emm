@@ -8,7 +8,9 @@ public class MsgFileInfo {
     private String fileName;
     private String downloadUrl;
     private String fileIcon = GlobalConst.Path.FILE_ICON_URL;
-    private String size;
+    private String fileSize;
+
+    private Long size;
     public MsgFileInfo() {
     }
 

@@ -7,16 +7,19 @@ public class GlobalConst {
 
     public static final String DEFAULT_FRIEND_GROUP_NAME = "我的好友";
 
-    public static final Long BLOCK_SIZE = 512 * 1024L;
+    public static final Long BLOCK_SIZE = 2 * 1024 * 1024L; // 2MB
+
+    public static final Integer NETTY_PORT = 9898;
     /**
      * 路径类
      */
     public static class Path{
-        public static final String API_SERVER_IP = "120.77.42.156";
-        public static final String RESOURCES_URL = "http://120.77.42.156:8088/imsystem/static/";
-        public static final String AVATAR_URL = "http://120.77.42.156:8088/imsystem/static/avatar/";
-        public static final String MSG_IMG_URL = "http://120.77.42.156:8088/imsystem/static/msg_img/";
-        public static final String MSG_FILE_URL = "http://120.77.42.156:8088/imsystem/static/msg_file/";
+        public static final String TALK_WEBSOCKET_URL = "ws://121.199.10.4:9999/imsystem/talk";
+        public static final String API_SERVER_IP = "121.199.10.4";
+        public static final String RESOURCES_URL = "http://121.199.10.4:8088/imsystem/static/";
+        public static final String AVATAR_URL = "http://121.199.10.4:8088/imsystem/static/avatar/";
+        public static final String MSG_IMG_URL = "http://121.199.10.4:8088/imsystem/static/msg_img/";
+        public static final String MSG_FILE_URL = "http://121.199.10.4:8088/imsystem/static/msg_file/";
         public static final String AVATAR_PATH = "/usr/resources/imsystem/static/avatar/";
         public static final String MSG_IMG_PATH = "/usr/resources/imsystem/static/msg_img/";
 //        public static final String MSG_IMG_PATH = "E:/";
@@ -24,9 +27,10 @@ public class GlobalConst {
 //        public static final String MSG_FILE_PATH = "E:/";
         public static final String MSG_RECORD_PATH = "/usr/resources/imsystem/static/msg_record/";
 
-        public static final String FILE_ICON_URL = "/user/resources/imsystem/static/msg_file/file_icon.png";
-    }
+        public static final String FILE_ICON_URL = "http://121.199.10.4:8088/imsystem/static/msg_file/file_icon.png";
 
+        public static final String IMG_NOT_FOUND = "http://121.199.10.4:8088/imsystem/static/msg_img/img_not_found.jpg";
+    }
 
     /**
      *  用户在线状态
@@ -61,6 +65,7 @@ public class GlobalConst {
         public static final String KEY_RECORD_BEGIN_TIME = "msg_record_begin_time";
         public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
         public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
+        public static final String KEY_FILE_SIZE = "file_size";
     }
 
     public static class ChatType{

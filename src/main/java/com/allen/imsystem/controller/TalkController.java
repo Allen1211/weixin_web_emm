@@ -89,30 +89,8 @@ public class TalkController {
         if (params.get("pageSize") != null) {
             pageSize = Integer.valueOf(params.get("pageSize"));
         }
-        // 如果是第一页，要获取一次总页数，记录一下统计的起始时间
-        if (index == 1) {
-            Long now = System.currentTimeMillis();
-            redisService.hset("MSG_RECORD_BEGIN_TIME", talkId, now.toString());
-            Integer totalSize = chatService.getAllHistoryMessageSize(talkId, uid, new Date(now));
-            Integer totalPage = 1;
-            if (totalSize <= pageSize) {
-                totalPage = 1;
-            } else if (totalSize % pageSize == 0) {
-                totalPage = totalSize / pageSize;
-            } else {
-                totalPage = totalSize / pageSize + 1;
-            }
-            List<MsgRecord> result = chatService.getMessageRecord(uid, talkId, new Date(now), index, pageSize);
-            return new JSONResponse(1).putData("messageList", result).putData("allPageSize", totalPage).putData("curPageIndex", index);
-        } else {
-            String nowStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_TIME, talkId);
-            Date beginTime = null;
-            if (nowStr != null) {
-                beginTime = new Date(Long.valueOf(nowStr));
-            }
-            List<MsgRecord> result = chatService.getMessageRecord(uid, talkId, beginTime, index, pageSize);
-            return new JSONResponse(1).putData("messageList", result).putData("curPageIndex", index);
-        }
+        Map<String,Object> resultMap = chatService.getMessageRecord(uid,talkId,new Date(),index,pageSize);
+        return new JSONResponse(1).putAllData(resultMap);
     }
 
 
@@ -151,7 +129,6 @@ public class TalkController {
     public JSONResponse uploadMultipartFile(HttpServletRequest request) throws Exception {
         //使用 工具类解析相关参数，工具类代码见下面
         MultipartFileDTO param = MultipartFileUtil.parse(request);
-
         MultiFileResponse responseDTO = fileService.uploadMultipartFile(param);
         return new JSONResponse(1).putAllData(new BeanMap(responseDTO));
     }

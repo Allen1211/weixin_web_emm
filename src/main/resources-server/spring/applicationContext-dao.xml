@@ -15,7 +15,6 @@
             http://www.springframework.org/schema/mvc/spring-mvc.xsd
             http://www.springframework.org/schema/tx
             http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
-    <context:component-scan base-package="com.allen.imsystem.*"/>
 
     <context:property-placeholder location="classpath:mybatis/db.properties" file-encoding="utf-8" ignore-unresolvable="true"/>
     <!--    <bean id="springBeanFactory" class="spittr.utils.SpringBeanUtil"/>-->
