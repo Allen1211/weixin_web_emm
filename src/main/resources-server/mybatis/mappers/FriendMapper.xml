@@ -63,6 +63,16 @@
         WHERE friend.uid_b = #{uid} and friend.b_delete_a = 0
     </select>
 
+    <select id="selectTwoWayFriendId" resultType="java.lang.String">
+        SELECT uid_b as friend_uid from friend
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE friend.uid_a = #{uid} and friend.a_delete_b = 0 and friend.b_delete_a = 0
+        UNION ALL
+        SELECT uid_a as friend_uid from friend
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE friend.uid_b = #{uid} and friend.b_delete_a = 0 and friend.a_delete_b = 0
+    </select>
+    
     <select id="selectAquiredId" resultType="java.lang.String">
         SELECT to_uid FROM friend_apply WHERE from_uid = #{uid} AND pass = 0
     </select>

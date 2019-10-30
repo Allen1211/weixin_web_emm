@@ -26,6 +26,10 @@ public class FriendDao {
         return friendMapper.selectAquiredId(uid);
     }
 
+    public Set<String> selectTwoWayFriendId(String uid){
+        return friendMapper.selectTwoWayFriendId(uid);
+    }
+
     public Integer selectGroupId(@Param("uid")String uid, @Param("groupName")String groupName){
         return friendMapper.selectGroupId(uid,groupName);
     }

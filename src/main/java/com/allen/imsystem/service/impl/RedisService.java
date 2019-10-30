@@ -1,9 +1,12 @@
 package com.allen.imsystem.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import java.util.Collection;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
@@ -16,11 +19,12 @@ import java.util.concurrent.TimeUnit;
  * 针对所有的Set 都是以s开头的方法                    不含通用方法
  * 针对所有的List 都是以l开头的方法
  */
+@Service
 public class RedisService {
 
     @Autowired
-//    private RedisTemplate<String, Object> redisTemplate;
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
+//    private RedisTemplate redisTemplate;
 
     public void setRedisTemplate(RedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -342,7 +346,6 @@ public class RedisService {
             return 0;
         }
     }
-
     /**
      * 将set数据放入缓存
      * @param key 键

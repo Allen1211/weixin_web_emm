@@ -24,7 +24,7 @@ public class NettyServer implements Runnable {
     @Autowired
     private ChildChannelHandler childChannelHandler;
 
-    @PostConstruct
+//    @PostConstruct
     public void init() {
         new Thread(this).start();
     }

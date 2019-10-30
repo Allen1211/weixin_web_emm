@@ -45,22 +45,22 @@ public class WebSocketEventHandler implements MessageListener {
             case 201:
             case 202: {
                 SocketResponse socketResponse = new SocketResponse(eventCode,1,data);
-                TalkChannelGroup.send(destId,socketResponse);
+                GlobalChannelGroup.send(destId,socketResponse);
                 break;
             }
             case 203:{
                 SocketResponse socketResponse = new SocketResponse(eventCode,0,code,errMsg,data);
-                TalkChannelGroup.send(destId,socketResponse);
+                GlobalChannelGroup.send(destId,socketResponse);
                 break;
             }
         }
     }
 
     public void handleResponse(String destId,SocketResponse socketResponse){
-        TalkChannelGroup.send(destId,socketResponse);
+        GlobalChannelGroup.send(destId,socketResponse);
     }
 
     public void handleResponse(String destId, MultiDataSocketResponse socketResponse){
-        TalkChannelGroup.send(destId,socketResponse);
+        GlobalChannelGroup.send(destId,socketResponse);
     }
 }

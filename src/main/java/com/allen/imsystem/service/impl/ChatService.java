@@ -106,7 +106,12 @@ public class ChatService implements IChatService {
 
     @Override
     public void incrUserChatNewMsgCount(String uid, Long chatId) {
-        boolean hasKey = redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId);
+        boolean hasKey=false;
+        try {
+            hasKey = redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
         if(!hasKey){
             // 去数据库里同步。
             Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId,uid);

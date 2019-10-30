@@ -1,5 +1,6 @@
 package com.allen.imsystem.service.impl;
 
+import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.dao.ChatDao;
@@ -12,15 +13,13 @@ import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
+import jdk.nashorn.internal.objects.Global;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class FriendService implements IFriendService {
@@ -36,6 +35,9 @@ public class FriendService implements IFriendService {
 
     @Autowired
     private IChatService chatService;
+
+    @Autowired
+    private RedisService redisService;
 
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
@@ -83,17 +85,14 @@ public class FriendService implements IFriendService {
             return !deleteIt;
         }
     }
-
+    @Override
     public Boolean checkIsDeletedByFriend(String uid,String friendId){
-        FriendRelation friendRelation = friendDao.selectFriendRelation(uid, friendId);
-        if (friendRelation == null) {
-            return true;
+        // 先从缓存读取，缓存没有的话，再到数据库读取，并把读取出来的数据填入缓存中
+        if(! redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET+uid)){
+            loadFriendListIntoRedis(uid);
         }
-        if (friendRelation.getUidA().equals(uid)) {
-            return friendRelation.getBDeleteA();
-        } else {
-            return friendRelation.getADeleteB();
-        }
+        boolean isFriend = redisService.sHasKey(GlobalConst.Redis.KEY_FRIEND_SET+uid,friendId);
+        return !isFriend;
     }
 
     @Override
@@ -293,6 +292,29 @@ public class FriendService implements IFriendService {
         }
         boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) > 0;
         return isSuccess;
+    }
+
+    private Long loadFriendListIntoRedis(String uid){
+        Set<String> twoWayFriendIdList = friendDao.selectTwoWayFriendId(uid);
+        if(twoWayFriendIdList != null){
+            return redisService.sSetAndTime(GlobalConst.Redis.KEY_FRIEND_SET +uid,60*60L, twoWayFriendIdList.toArray());
+        }
+        return 0L;
+    }
+
+
+    private boolean addFriendIntoRedis(String uid, String friendId){
+        if(redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid)){
+            return redisService.sSet(GlobalConst.Redis.KEY_FRIEND_SET+uid,friendId)>0L;
+        }
+        return false;
+    }
+
+    private boolean removeFriendFromRedis(String uid, String friendId){
+        if(redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid)){
+            return redisService.setRemove(GlobalConst.Redis.KEY_FRIEND_SET+uid,friendId)>0L;
+        }
+        return false;
     }
 
 

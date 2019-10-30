@@ -66,6 +66,7 @@ public class GlobalConst {
         public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
         public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
         public static final String KEY_FILE_SIZE = "file_size";
+        public static final String KEY_FRIEND_SET = "user_friend_set_";
     }
 
     public static class ChatType{

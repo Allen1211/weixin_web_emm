@@ -14,6 +14,8 @@ public interface FriendMapper {
 
     List<String> selectFriendId(String uid);
 
+    Set<String> selectTwoWayFriendId(String uid);
+
     List<String> selectAquiredId(String uid);
 
     Integer selectGroupId(@Param("uid")String uid, @Param("groupName")String groupName);

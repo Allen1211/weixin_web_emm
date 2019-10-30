@@ -4,6 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.impl.ChatService;
 import com.allen.imsystem.service.impl.RedisService;
 import org.junit.Assert;
@@ -33,6 +34,9 @@ public class TestSDR {
 
     @Autowired
     IChatService chatService;
+
+    @Autowired
+    IFriendService friendService;
 
     @Autowired
     RedisUtil redisUtil;
@@ -147,5 +151,9 @@ public class TestSDR {
 //        System.out.println(num);
     }
 
-
+    @Test
+    public void test(){
+        boolean isDelete = friendService.checkIsDeletedByFriend("28661270","66666666");
+        System.out.println(isDelete);
+    }
 }

@@ -96,10 +96,6 @@ public class FileService implements IFileService {
         File tmpFile = new File(tmpDir,tempFileName.toString());
 
 
-        System.out.println(tmpDir);
-        System.out.println(confFile);
-        System.out.println(tmpFile);
-
         if (!tmpDir.exists()) { // 如果文件夹不存在，新创建一个。
             tmpDir.mkdirs();
         }
@@ -116,7 +112,6 @@ public class FileService implements IFileService {
         accessTmpFile.write(param.getFileItem().get());
 
         //把该分段标记为 true 表示完成
-        System.out.println("set part " + param.getCurrBlock() + " complete");
         accessConfFile.setLength(param.getBlockNum()+1);
         accessConfFile.seek(param.getCurrBlock());
         accessConfFile.write(Byte.MAX_VALUE);
@@ -140,7 +135,6 @@ public class FileService implements IFileService {
                 File newFileName = new File(tempDirStr, fileName);
                 boolean success = tmpFile.renameTo(newFileName);
             }
-            System.out.println("upload complete !!");
             System.out.println(responseDTO);
 
             // 缓存一下文件大小
@@ -154,7 +148,6 @@ public class FileService implements IFileService {
 
         accessTmpFile.close();
         accessConfFile.close();
-        System.out.println("end !!!");
         return responseDTO;
 
     }
@@ -221,8 +214,6 @@ public class FileService implements IFileService {
             int end = url.lastIndexOf('/');
             md5 = url.substring(begin,end);
         }
-        System.out.println("url:"+url);
-        System.out.println("md5:"+md5);
         return md5;
     }
 

@@ -45,6 +45,7 @@ public class MessageService implements IMessageService {
     @Override
     @Transactional
     public void sendPrivateMessage(SendMsgDTO sendMsgDTO) {
+
         // 0、检查是否被对方删除
         boolean isDeleteByFriend = friendService.checkIsDeletedByFriend(sendMsgDTO.getSrcId(), sendMsgDTO.getDestId());
         if (isDeleteByFriend) {

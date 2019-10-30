@@ -46,15 +46,19 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        TalkChannelGroup.removeChannel(ctx.channel().id().toString());
 
         String uid = (String) ctx.channel().attr(AttributeKey.valueOf("uid")).get();
-        Channel channel = TalkChannelGroup.removeChannel(uid);
-
-        redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,GlobalConst.UserStatus.OFFLINE);
-
-        System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())+
-                " websocket client closed : " + uid + "  channelId: " + channel.id());
+        Channel channel = ctx.channel();
+        boolean removeSuccess = GlobalChannelGroup.removeChannel(uid,channel);
+        boolean hasChannelExist = GlobalChannelGroup.hasChannel(uid);
+        // 如果没有了，设置为离线状态
+        if(! hasChannelExist){
+            redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,GlobalConst.UserStatus.OFFLINE);
+        }
+        if(removeSuccess){
+            System.out.println(new SimpleDateFormat("yy/MM/dd HH:mm:ss").format(new Date())+
+                    " websocket client closed : " + uid + "  channelId: " + channel.id());
+        }
     }
 
     /**
@@ -64,7 +68,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if(msg instanceof FullHttpRequest){
-            System.out.println("http request");
             handleHttpUpgradeRequest(ctx,(FullHttpRequest)msg);
         }else if(msg instanceof WebSocketFrame){
             handlerWebSocketFrame(ctx,(WebSocketFrame)msg);
@@ -89,8 +92,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         // 如果是关闭帧，处理用户离线的业务
         if(frame instanceof CloseWebSocketFrame){
             // TODO 用户离线
-            System.out.println("websocket close: "+ctx.channel().id().toString());
-            TalkChannelGroup.removeChannel(ctx.channel().id().toString());
             handshaker.close(ctx.channel(),(CloseWebSocketFrame)frame.retain());
         }
         // 如果是PING帧，返回一个PONG
@@ -186,17 +187,20 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     private void addUserChannelToContainer(ChannelHandlerContext ctx){
         String uid = (String) ctx.channel().attr(AttributeKey.valueOf("uid")).get();
         Channel newChannel = ctx.channel();
-        Channel oldChannel = TalkChannelGroup.removeChannel(uid);
-        if(oldChannel == null){ // 新channel
-            System.out.println("user "+uid + " join websocket");
-            // 加入到容器
-            TalkChannelGroup.addChannel(uid,ctx.channel());
-        }else{  // 该账户已经建立了一个channel了，挤掉。
-            newChannel.writeAndFlush(new TextWebSocketFrame("{\"err\":\"该账户已经建立了连接！你已把对方挤掉\"}"));
-            System.out.println("user "+uid + " replace original channel :" + oldChannel.id());
-            oldChannel.close();
-            TalkChannelGroup.addChannel(uid,newChannel);
-        }
+        boolean addSuccess = GlobalChannelGroup.addChannel(uid,newChannel);
+        System.out.println("user "+uid + " join websocket");
+
+//        Channel oldChannel = GlobalChannelGroup.removeChannel(uid,);
+//        if(oldChannel == null){ // 新channel
+//            // 加入到容器
+//            GlobalChannelGroup.addChannel(uid,ctx.channel());
+//        }else{  // 该账户已经建立了一个channel了，挤掉。
+//            newChannel.writeAndFlush(new TextWebSocketFrame("{\"err\":\"该账户已经建立了连接！你已把对方挤掉\"}"));
+//            System.out.println("user "+uid + " replace original channel :" + oldChannel.id());
+//            oldChannel.close();
+//            GlobalChannelGroup.addChannel(uid,newChannel);
+//        }
+
         // 更新用户登录状态
         redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,GlobalConst.UserStatus.ONLINE);
         return;
