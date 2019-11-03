@@ -53,6 +53,10 @@
         <result property="isDefault" column="is_default" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
     </resultMap>
 
+    <resultMap id="FriendInfoForInviteMap" type="com.allen.imsystem.model.dto.FriendInfoForInvite">
+        <association property="friendInfo" resultMap="userInfoMap"/>
+    </resultMap>
+
     <select id="selectFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
         INNER JOIN user_info as ui on ui.uid = uid_b
@@ -125,6 +129,20 @@
     </select>
 
     <select id="selectFriendList" resultMap="userInfoMap">
+        SELECT uid_b as uid, username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc` from friend as f
+        INNER JOIN user_info as ui on ui.uid = uid_b
+        WHERE f.uid_a = #{uid} and f.a_delete_b=0
+        UNION ALL
+        SELECT uid_a as uid, username ,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc` from friend as f
+        INNER JOIN user_info as ui on ui.uid = uid_a
+        WHERE f.uid_b = #{uid} and f.b_delete_a=0
+    </select>
+
+    <select id="selectFriendListForInvite" resultMap="FriendInfoForInviteMap">
         SELECT uid_b as uid, username,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
         `desc` from friend as f

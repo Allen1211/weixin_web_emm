@@ -4,6 +4,7 @@ import com.allen.imsystem.model.dto.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -24,6 +25,8 @@ public interface IFriendService {
      * @return
      */
     Boolean checkIsMyFriend(String uid, String friendId);
+
+    Boolean checkIsTwoWayFriend(String uid, String friendId);
 
     /**
      * 检查对方是否已经把自己删除
@@ -56,7 +59,7 @@ public interface IFriendService {
     /**
      * 按分组获取好友列表
      */
-     List<FriendListByGroupDTO> getFriendListByGroup(String uid);
+     Map<String,Object> getFriendListByGroup(String uid);
     /**
      * 新建一个好友分组
      */
@@ -66,6 +69,8 @@ public interface IFriendService {
      * 获取好友列表
      */
     Set<UserInfoDTO> getFriendList(String uid);
+
+    List<FriendInfoForInvite> getFriendListForInvite(String uid,String gid);
 
     /**
      * 获取好友信息

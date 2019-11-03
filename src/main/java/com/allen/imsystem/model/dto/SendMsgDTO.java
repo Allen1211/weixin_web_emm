@@ -13,8 +13,9 @@ public class SendMsgDTO {
     private String destId;
     private String messageImgUrl;
     private MsgFileInfo fileInfo;
-    private String timestamp;
+    private String timeStamp;
     private Boolean isGroup;
+    private String gid;
 }
 
 

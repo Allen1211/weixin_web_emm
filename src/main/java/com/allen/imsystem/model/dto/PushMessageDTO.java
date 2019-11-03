@@ -8,4 +8,5 @@ public class PushMessageDTO {
     private MsgRecord messageData;
     private Boolean isNewTalk;
     private ChatSessionDTO talkData;
+    private Long lastTimeStamp;
 }

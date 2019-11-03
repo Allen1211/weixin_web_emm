@@ -52,7 +52,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         boolean removeSuccess = GlobalChannelGroup.removeChannel(uid,channel);
         boolean hasChannelExist = GlobalChannelGroup.hasChannel(uid);
         // 如果没有了，设置为离线状态
-        if(! hasChannelExist){
+        if(! hasChannelExist && uid!=null){
             redisService.hset(GlobalConst.Redis.KEY_USER_STATUS,uid,GlobalConst.UserStatus.OFFLINE);
         }
         if(removeSuccess){

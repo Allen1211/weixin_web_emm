@@ -153,7 +153,7 @@ public class TestSDR {
 
     @Test
     public void test(){
-        boolean isDelete = friendService.checkIsDeletedByFriend("28661270","66666666");
-        System.out.println(isDelete);
+        redisService.sSet("213","hh");
+        Set<Object> set = redisTemplate.opsForSet().members("213");
     }
 }

@@ -41,14 +41,11 @@
     </bean>
 
 
-    <bean id="userMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
-        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.UserMapper" />
-        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
-    </bean>
     <bean id="searchMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.SearchMapper" />
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
     </bean>
+
 
     <bean id="friendMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
         <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.FriendMapper" />
@@ -65,6 +62,15 @@
         <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
     </bean>
 
+    <bean id="groupChatMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.GroupChatMapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="userMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.UserMapper" />
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+    </bean>
 
     <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>

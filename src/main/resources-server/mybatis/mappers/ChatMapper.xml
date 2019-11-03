@@ -6,12 +6,15 @@
 
     <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
         <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
-        <result property="talkTitle" column="username" />
-        <result property="avatar" column="icon_id" />
+        <result property="talkTitle" column="talkTitle" />
+        <result property="avatar" column="avatar" />
         <result property="lastMessage" column="content"/>
-        <result property="isGroup" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="isGroupChat" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
         <result property="lastMessageDate" column="created_time" />
         <result property="friendId" column="uid"/>
+        <result property="gid" column="gid"/>
+        <result property="lastSenderName" column="lastSenderName"/>
+        <result property="updateTime" column="update_time"/>
     </resultMap>
 
     <resultMap id="privateChatInfoMap" type="com.allen.imsystem.model.pojo.PrivateChat">
@@ -42,21 +45,24 @@
         <result property="size" column="new_msg_size"/>
     </resultMap>
 
-    <resultMap id="privateMsgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
+    <resultMap id="msgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
         <result property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
         <result property="messageType" column="msg_type"/>
         <result property="messageText" column="content"/>
         <result property="msgTimeDate" column="created_time"/>
         <result property="messageImgUrl" column="resource_url"/>
+        <result property="groupAlias" column="user_alias"/>
         <association property="userInfo" resultMap="userInfoMap"/>
         <association property="fileInfo" resultMap="fileInfoMap"/>
     </resultMap>
 
-    <resultMap id="privateChatDataMap" type="com.allen.imsystem.model.dto.ChatSessionInfo">
+    <resultMap id="chatSessionInfoMap" type="com.allen.imsystem.model.dto.ChatSessionInfo">
         <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
-        <result property="title" column="username"/>
+        <result property="title" column="title"/>
         <result property="srcId" column="src_id"/>
         <result property="destId" column="dest_id"/>
+        <result property="isGroup" column="isGroup" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="gid" column="dest_id"/>
     </resultMap>
 
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
@@ -71,32 +77,36 @@
         <result property="size" column="size" javaType="java.lang.Long" jdbcType="BIGINT"/>
     </resultMap>
 
-<!--    <resultMap id="groupChatMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">-->
-<!--        <result property="charId" column="chat_id" jdbcType="bigint" javaType="java.lang.Long"/>-->
-<!--        <result property="avatar" column="icon_id" jdbcType="varchar" javaType="java.lang.String"/>-->
-<!--        <result property="lastMsgContent" column="content"/>-->
-<!--        <result property="isGroupChat" column="isGroup" jdbcType="tinyint" javaType="java.lang.Boolean"/>-->
-<!--        <result property="lastMsgTime" column="created_time" jdbcType="datetime" javaType="java.util.Date"/>-->
-<!--    </resultMap>-->
-
 
     <select id="selectPrivateChatList" resultMap="chatSessionDTOMap">
-        (SELECT pc.chat_id, ui.username,ui.uid,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
-        pmr.content, pmr.created_time, 0 as is_group
+        (SELECT pc.chat_id, ui.username as talkTitle,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as avatar,
+        pmr.content, pmr.created_time,pc.update_time, 0 as is_group
         FROM private_chat as pc
         LEFT JOIN user_info as ui ON pc.uid_b = ui.uid
         LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
         WHERE (pc.uid_a = #{uid} AND pc.user_a_status=1) )
         UNION ALL
-        (SELECT pc.chat_id,ui.username,ui.uid,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
-        pmr.content, pmr.created_time, 0 as is_group
+        (SELECT pc.chat_id,ui.username as talkTitle,ui.uid,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as avatar,
+        pmr.content, pmr.created_time,pc.update_time, 0 as is_group
         FROM private_chat as pc
         LEFT JOIN user_info as ui ON pc.uid_a = ui.uid
         LEFT JOIN pri_msg_record as pmr ON pmr.msg_id = pc.last_msg_id
         WHERE (pc.uid_b = #{uid} AND pc.user_b_status=1) )
-        ORDER BY created_time DESC
+        ORDER BY update_time DESC
+    </select>
+
+    <select id="selectGroupChatList" resultMap="chatSessionDTOMap">
+        SELECT ucg.gid,ucg.chat_id,cg.group_name as talkTitle ,ui.username as lastSenderName,cg.update_time,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',cg.avatar) as avatar,
+        gmr.content, gmr.created_time, 1 as isGroup
+        FROM user_chat_group as ucg
+        INNER JOIN chat_group as cg ON ucg.gid = cg.gid
+        LEFT JOIN user_info as ui ON cg.last_sender_id = ui.uid
+        LEFT JOIN group_msg_record as gmr ON cg.last_msg_id = gmr.msg_id
+        WHERE ucg.uid = #{uid} AND ucg.`should_display`=1
+        ORDER BY update_time DESC
     </select>
 
     <select id="selectNewMsgPrivateChatData" resultMap="chatSessionDTOMap">
@@ -117,17 +127,7 @@
         WHERE pc.chat_id = #{chatId} AND pc.uid_b = #{uid}
     </select>
 
-<!--    <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">-->
-<!--        SELECT msg_id , msg_type, content, resource_url, mr.created_time ,ui.uid, ui.username,-->
-<!--        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id-->
-<!--        FROM pri_msg_record as mr-->
-<!--        INNER JOIN user_info as ui ON ui.uid = mr.from_uid-->
-<!--        WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}-->
-<!--        ORDER BY mr.created_time DESC-->
-<!--        LIMIT #{pageBean.from},#{pageBean.offset}-->
-<!--    </select>-->
-
-    <select id="selectPrivateChatHistoryMsg" resultMap="privateMsgRecordMap">
+    <select id="selectPrivateChatHistoryMsg" resultMap="msgRecordMap">
         SELECT msg_id , msg_type, content,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
         fm.file_name , fm.size, mr.created_time ,ui.uid, ui.username,
@@ -137,6 +137,22 @@
         LEFT JOIN file_msg_md5 as fm ON mr.file_md5 = fm.md5
         WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}
         ORDER BY mr.created_time DESC
+        LIMIT #{pageBean.from},#{pageBean.offset}
+    </select>
+
+    <select id="selectGroupChatHistoryMsg" resultMap="msgRecordMap">
+        SELECT gmr.msg_id,gmr.msg_type,gmr.content,gmr.created_time,
+        fm.file_name,fm.size,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
+        ucg.user_alias,
+        ui.uid,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
+        FROM user_chat_group as ucg
+        INNER JOIN group_msg_record as gmr ON gmr.gid = ucg.gid
+        LEFT JOIN user_info as ui ON ui.uid = gmr.sender_id
+        LEFT JOIN file_msg_md5 fm ON fm.md5 = gmr.file_md5
+        WHERE ucg.chat_id = #{chatId} AND gmr.created_time &lt; #{beginTime}
+        ORDER BY gmr.created_time DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
     </select>
 
@@ -153,16 +169,25 @@
         SELECT COUNT(*) FROM pri_msg_record WHERE chat_id = #{chatId} AND to_uid = #{uid} AND has_read=0
     </select>
 
-    <select id="selectPrivateChatData" resultMap="privateChatDataMap">
-        SELECT pc.chat_id,pc.uid_a as dest_id,pc.uid_b as src_id ,ui.username,0 as isGroup FROM private_chat as pc
+    <select id="selectPrivateChatData" resultMap="chatSessionInfoMap">
+        SELECT pc.chat_id,pc.uid_a as dest_id,pc.uid_b as src_id ,ui.username as title,0 as isGroup FROM private_chat as pc
         INNER JOIN user_info as ui ON ui.uid = pc.uid_a
         WHERE chat_id=#{chatId} AND uid_b = #{uid}
         UNION ALL
-        SELECT pc.chat_id,pc.uid_b as dest_id,pc.uid_a as src_id,ui.username,0 as isGroup FROM private_chat as pc
+        SELECT pc.chat_id,pc.uid_b as dest_id,pc.uid_a as src_id,ui.username as title,0 as isGroup FROM private_chat as pc
         INNER JOIN user_info as ui ON ui.uid = pc.uid_b
         WHERE chat_id=#{chatId} AND pc.uid_a = #{uid}
         LIMIT 1
     </select>
+
+    <select id="selectGroupChatData" resultMap="chatSessionInfoMap">
+        SELECT ucg.chat_id,ucg.gid as dest_id,cg.owner_id as src_id,1 as isGroup, group_name as title
+        FROM user_chat_group as ucg
+        INNER JOIN chat_group as cg ON ucg.gid = cg.gid
+        WHERE ucg.chat_id = #{chatId}
+        LIMIT 1
+    </select>
+
 
     <select id="selectPrivateChatNewMsgSize" resultMap="chatNewMsgSizeMap">
         SELECT chat_id, COUNT(*) as new_msg_size FROM pri_msg_record WHERE to_uid=#{uid} AND has_read=0
@@ -189,9 +214,15 @@
     </select>
 
 
-    <select id="countAllHistoryMsg" resultType="java.lang.Integer">
+    <select id="countAllPrivateHistoryMsg" resultType="java.lang.Integer">
         SELECT COUNT(*) FROM pri_msg_record
         WHERE chat_id = #{chatId} AND status = 1 AND created_time &lt; #{beginTime}
+    </select>
+
+    <select id="countAllGroupHistoryMsg" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM group_msg_record as gmr
+        INNER JOIN user_chat_group as ucg ON ucg.gid = gmr.gid
+        WHERE ucg.chat_id = #{chatId} AND gmr.`status` = 1 AND gmr.created_time &lt; #{beginTime}
     </select>
 
 

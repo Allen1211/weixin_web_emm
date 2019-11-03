@@ -19,6 +19,7 @@ public enum ExceptionType {
     APPLY_HAS_BEEN_HANDLER(1013,"申请已经被处理，申请已过期"),
     HTTP_REQUEST_ERROR(1014,"HTTP请求解析错误，请检查是否缺少body参数"),
     TALK_NOT_VALID(1015,"该会话所对应的聊天不存在或已被删除"),
+    PERMISSION_DENIED(1016,"没有权限"),
     CANNOT_OPEN_PRIVATE_CHAT(2001,"对方还不是你的好友或你已被对方删除，无法开启新聊天")
     ;
 

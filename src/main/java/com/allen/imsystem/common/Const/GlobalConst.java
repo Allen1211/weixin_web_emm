@@ -1,6 +1,8 @@
 package com.allen.imsystem.common.Const;
 
 public class GlobalConst {
+
+
     public static final String ENCODING = "UTF-8";
 
     public static final Long MAX_NOT_SHOW_TIME_SPACE = 1000*60*5L;
@@ -10,6 +12,8 @@ public class GlobalConst {
     public static final Long BLOCK_SIZE = 2 * 1024 * 1024L; // 2MB
 
     public static final Integer NETTY_PORT = 9898;
+
+    public static final String DEFAULT_GROUP_NAME = "新群聊";
     /**
      * 路径类
      */
@@ -30,6 +34,8 @@ public class GlobalConst {
         public static final String FILE_ICON_URL = "http://121.199.10.4:8088/imsystem/static/msg_file/file_icon.png";
 
         public static final String IMG_NOT_FOUND = "http://121.199.10.4:8088/imsystem/static/msg_img/img_not_found.jpg";
+
+        public static final String DEFAULT_GROUP_AVATAR = "avatar/default/default_group_avatar.jpg";
     }
 
     /**
@@ -67,6 +73,8 @@ public class GlobalConst {
         public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
         public static final String KEY_FILE_SIZE = "file_size";
         public static final String KEY_FRIEND_SET = "user_friend_set_";
+        public static final String KET_GROUP_CHAT_MEMBERS = "group_chat_members_";
+
     }
 
     public static class ChatType{

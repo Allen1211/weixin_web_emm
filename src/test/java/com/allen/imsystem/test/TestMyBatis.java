@@ -3,6 +3,8 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.SearchDao;
 import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.dao.mappers.ChatMapper;
+import com.allen.imsystem.dao.mappers.GroupChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.UidPool;
@@ -22,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext*.xml"})
 public class TestMyBatis {
 
     @Autowired
@@ -36,6 +38,12 @@ public class TestMyBatis {
 
     @Autowired
     UserMapper userMapper;
+
+    @Autowired
+    ChatMapper chatMapper;
+
+    @Autowired
+    GroupChatMapper groupChatMapper;
 
     @Autowired
     IFriendService friendService;
@@ -108,8 +116,9 @@ public class TestMyBatis {
 
     @Test
     public void test8(){
-        List<FriendListByGroupDTO> result = friendService.getFriendListByGroup("28661270");
-        System.out.println(result.size());
+//        List<FriendListByGroupDTO> result = friendService.getFriendListByGroup("28661270");
+//        System.out.println(result.size());
+
     }
 
     @Test
@@ -132,5 +141,29 @@ public class TestMyBatis {
             System.out.println(uid);
             friendDao.insertNewFriendGroup(uid,"我的好友",true);
         }
+    }
+
+
+
+    @Test
+    public void testGroupChatMapper(){
+        try {
+            groupChatMapper.selectUnUsedGid();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+
+
+    @Test
+    public void testInvite(){
+        List<ChatSessionDTO> chatSessionDTOList = chatMapper.selectGroupChatList("28661270");
+        System.out.println(chatSessionDTOList);
+    }
+
+    @Test
+    public void testC(){
+        groupChatMapper.selectGroupAllChatData("138867442");
     }
 }

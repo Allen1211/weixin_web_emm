@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.GroupChatMapper">
+
+    <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
+        <result property="talkId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="talkTitle" column="talkTitle" />
+        <result property="avatar" column="avatar" />
+        <result property="lastMessage" column="content"/>
+        <result property="isGroupChat" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="lastMessageDate" column="created_time" />
+        <result property="friendId" column="uid"/>
+        <result property="gid" column="gid"/>
+        <result property="lastSenderName" column="lastSenderName"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="myId" column="myId"/>
+    </resultMap>
+
+    <resultMap id="groupChatMap" type="com.allen.imsystem.model.pojo.GroupChat">
+        <result property="gid" column="gid"/>
+        <result property="groupName" column="group_name"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="lastMsgId" column="last_msg_id"/>
+        <result property="lastSenderId" column="last_sender_id"/>
+        <result property="avatar" column="avatar"/>
+        <result property="status" column="status" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="GroupChatInfoDTOMap" type="com.allen.imsystem.model.dto.GroupChatInfoDTO">
+        <result property="gid" column="gid"/>
+        <result property="groupName" column="group_name"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="groupAvatar" column="avatar"/>
+    </resultMap>
+
+    <resultMap id="userChatGroupRelationMap" type="com.allen.imsystem.model.pojo.UserChatGroup">
+        <result property="chatId" column="chat_id"/>
+        <result property="uid" column="uid"/>
+        <result property="gid" column="gid"/>
+        <result property="lastAckMsgId" column="last_ack_msg_id"/>
+        <result property="userAlias" column="user_alias"/>
+        <result property="inviterId" column="inviter_id"/>
+        <result property="status" column="status" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="shouldDisplay" column="should_display" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="GroupMemberMap" type="com.allen.imsystem.model.dto.GroupMemberDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="groupAlias" column="user_alias"/>
+        <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+    </resultMap>
+
+    <select id="selectGroupOwnerId" resultType="java.lang.String">
+        SELECT owner_id FROM chat_group WHERE gid=#{gid} AND `status` = 1 LIMIT 1
+    </select>
+
+    <select id="selectUnUsedGid" resultType="java.lang.String">
+        SELECT gid FROM gid_pool WHERE has_used=0 LIMIT 1
+    </select>
+
+    <select id="selectGroupMemberIdSet" resultType="java.lang.String">
+        SELECT uid FROM user_chat_group WHERE gid = #{gid} AND `status`=1
+    </select>
+
+    <select id="selectGroupMemberList" resultMap="GroupMemberMap">
+        SELECT ui.uid,ui.username,ucg.user_alias,ui.`desc`,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
+        FROM user_chat_group as ucg INNER JOIN user_info as ui ON ucg.uid = ui.uid
+        WHERE ucg.gid = #{gid} AND ucg.`status`=1
+    </select>
+
+    <select id="selectGroupAllChatData" resultMap="chatSessionDTOMap">
+        SELECT ucg.uid as myId,ucg.chat_id,ucg.gid, cg.group_name as talkTille, gmr.content, 1 as isGroup,gmr.created_time,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',cg.avatar) as avatar
+        FROM user_chat_group as ucg
+        INNER JOIN chat_group as cg ON ucg.gid = cg.gid
+        LEFT JOIN group_msg_record as gmr ON cg.last_msg_id = gmr.msg_id
+        WHERE ucg.gid = #{gid} AND ucg.`status`=1
+    </select>
+
+    <select id="selectUserChatGroupRelation" resultMap="userChatGroupRelationMap">
+        SELECT * FROM user_chat_group WHERE uid=#{uid} AND gid=#{gid} AND status=1 LIMIT 1
+    </select>
+
+    <select id="selectUserChatGroupRelationByChatId" resultMap="userChatGroupRelationMap">
+        SELECT * FROM user_chat_group WHERE chat_id=#{chatId} LIMIT 1
+    </select>
+
+    <select id="selectGroupChatList" resultMap="GroupChatInfoDTOMap">
+        SELECT cg.gid,cg.group_name,cg.owner_id,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',avatar) as avatar
+        FROM chat_group cg INNER JOIN user_chat_group as ucg ON cg.gid = ucg.gid
+        WHERE ucg.uid=#{uid} AND ucg.`status` = 1 AND cg.`status`=1
+    </select>
+
+    <insert id="insertNewGroupChat" parameterType="com.allen.imsystem.model.pojo.GroupChat">
+        INSERT INTO `chat_group` (
+        <trim suffixOverrides=",">
+            <if test="gid!=null">gid,</if>
+            <if test="groupName!=null">group_name,</if>
+            <if test="ownerId!=null">owner_id,</if>
+            <if test="avatar!=null">avatar,</if>
+            <if test="lastMsgId!=null">last_msg_id,</if>
+            <if test="lastSenderId!=null">last_sender_id,</if>
+            <if test="status!=null">status,</if>
+            <if test="createdTime!=null">created_time,</if>
+            <if test="updateTime!=null">update_time,</if>
+        </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="gid!=null">#{gid},</if>
+            <if test="groupName!=null">#{groupName},</if>
+            <if test="ownerId!=null">#{ownerId},</if>
+            <if test="avatar!=null">#{avatar},</if>
+            <if test="lastMsgId!=null">#{lastMsgId},</if>
+            <if test="lastSenderId!=null">#{lastSenderId},</if>
+            <if test="status!=null">#{status},</if>
+            <if test="createdTime!=null">#{createdTime},</if>
+            <if test="updateTime!=null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+
+    <insert id="insertNewGroupMsgRecord" parameterType="com.allen.imsystem.model.pojo.GroupMsgRecord">
+        INSERT INTO group_msg_record (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">msg_id,</if>
+            <if test="senderId!=null">sender_id,</if>
+            <if test="gid!=null">gid,</if>
+            <if test="msgType!=null">msg_type,</if>
+            <if test="content!=null">content,</if>
+            <if test="fileMd5!=null">file_md5,</if>
+            <if test="status!=null">status,</if>
+            <if test="createdTime!=null">created_time,</if>
+            <if test="updateTime!=null">update_time,</if>
+        </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">#{msgId},</if>
+            <if test="senderId!=null">#{senderId},</if>
+            <if test="gid!=null">#{gid},</if>
+            <if test="msgType!=null">#{msgType},</if>
+            <if test="content!=null">#{content},</if>
+            <if test="fileMd5!=null">#{fileMd5},</if>
+            <if test="status!=null">#{status},</if>
+            <if test="createdTime!=null">#{createdTime},</if>
+            <if test="updateTime!=null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+
+    <insert id="insertNewGroupMsgRecordBatch" parameterType="com.allen.imsystem.model.pojo.GroupMsgRecord">
+        INSERT INTO group_msg_record (msg_id, sender_id, gid, msg_type, content, file_md5, status, created_time, update_time)
+        VALUES
+        <foreach collection="msgList" item="item" separator=",">
+            (#{item.msgId},#{item.senderId},#{item.gid},#{item.msgType},#{item.content},#{item.fileMd5},#{item.status},NOW(),NOW())
+        </foreach>
+    </insert>
+
+    <insert id="insertUserChatGroup" parameterType="com.allen.imsystem.model.pojo.UserChatGroup">
+        INSERT INTO `user_chat_group` (
+        <trim suffixOverrides=",">
+            <if test="chatId!=null">chat_id,</if>
+            <if test="gid!=null">gid,</if>
+            <if test="uid!=null">uid,</if>
+            <if test="lastAckMsgId!=null">last_ack_msg_id,</if>
+            <if test="userAlias!=null">user_alias,</if>
+            <if test="inviterId!=null">inviter_id,</if>
+            <if test="status!=null">status,</if>
+            <if test="shouldDisplay!=null">`should_display`,</if>
+            <if test="createdTime!=null">created_time,</if>
+            <if test="updateTime!=null">update_time,</if>
+        </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="chatId!=null">#{chatId},</if>
+            <if test="gid!=null">#{gid},</if>
+            <if test="uid!=null">#{uid},</if>
+            <if test="lastAckMsgId!=null">#{lastAckMsgId},</if>
+            <if test="userAlias!=null">#{userAlias},</if>
+            <if test="inviterId!=null">#{inviterId},</if>
+            <if test="status!=null">#{status},</if>
+            <if test="shouldDisplay!=null">#{shouldDisplay},</if>
+            <if test="createdTime!=null">#{createdTime},</if>
+            <if test="updateTime!=null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+
+    <insert id="insertUserChatGroupBatch">
+        INSERT INTO user_chat_group
+        (chat_id,uid,gid, status,`should_display`, last_ack_msg_id, user_alias, inviter_id, created_time, update_time)
+        VALUES
+        <foreach collection="friendList" item="item" separator=",">
+            (#{item.chatId},#{item.uid},#{relation.gid},#{relation.status},#{relation.shouldDisplay},#{relation.lastAckMsgId},
+            #{item.username},#{relation.inviterId},NOW(6),NOW(6))
+        </foreach>
+    </insert>
+
+    <update id="softDeleteUsedGid" parameterType="java.lang.String">
+        UPDATE gid_pool SET has_used = 1 WHERE gid=#{gid}
+    </update>
+
+    <update id="softDeleteGroupMember" >
+        UPDATE user_chat_group SET `status` = 0,should_display=0,update_time=NOW(6) WHERE uid=#{uid} AND gid=#{gid}
+    </update>
+
+    <update id="softDeleteGroupMemberBatch">
+        UPDATE user_chat_group SET `status` = 0,update_time=NOW(6)
+        where gid=#{gid} AND uid IN (
+        <foreach collection="memberList" item="item" separator="," >
+            #{item.uid}
+        </foreach>
+        )
+    </update>
+
+    <update id="softDeleteAllMember">
+        UPDATE user_chat_group SET `status` = 0,update_time=NOW(6)  WHERE gid=#{gid}
+    </update>
+
+    <update id="softDeleteGroupChat" >
+        UPDATE chat_group SET `status` = 0,update_time=NOW(6) WHERE gid=#{gid}
+    </update>
+
+    <update id="updateGroupLastMsg" >
+        UPDATE chat_group SET last_msg_id=#{lastMsgId} ,last_sender_id=#{lastSenderId},update_time=NOW(6) WHERE gid=#{gid}
+    </update>
+
+    <update id="updateUserGroupChat" parameterType="com.allen.imsystem.model.pojo.UserChatGroup">
+        UPDATE `user_chat_group`
+        <set>
+            <if test="chatId!=null">chat_id = #{chatId},</if>
+            <if test="gid!=null">gid = #{gid},</if>
+            <if test="uid!=null">uid = #{uid},</if>
+            <if test="lastAckMsgId!=null">last_ack_msg_id = #{lastAckMsgId},</if>
+            <if test="userAlias!=null">user_alias = #{userAlias},</if>
+            <if test="inviterId!=null">inviter_id = #{inviterId},</if>
+            <if test="status!=null">status = #{status},</if>
+            <if test="shouldDisplay!=null">`should_display` = #{shouldDisplay},</if>
+            <if test="createdTime!=null">created_time = #{createdTime},</if>
+            <if test="updateTime!=null">update_time = NOW(6),</if>
+        </set>
+        <where>
+            <if test="uid != null">
+                uid = #{uid}
+            </if>
+            <if test="gid != null">
+                AND gid = #{gid}
+            </if>
+            <if test="chatId != null">
+                AND chat_id = #{chatId}
+            </if>
+        </where>
+    </update>
+</mapper>

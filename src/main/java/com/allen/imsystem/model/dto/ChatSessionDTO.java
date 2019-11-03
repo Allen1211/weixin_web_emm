@@ -18,7 +18,6 @@ public class ChatSessionDTO implements Serializable {
     // 最后一条消息的时间
     @JSONField(format = "yy/MM/dd")
     private Date lastMessageDate;
-
     // 最后一条消息的时间,前端显示的字符串
     private String lastMessageTime;
 
@@ -34,10 +33,10 @@ public class ChatSessionDTO implements Serializable {
     private String friendId;
 
     // 以下字段是群会话特有，
-    private String groupName;
-    private Long groupId;
+    private String gid;
     private String lastSenderName;
-
-
+    private String myId;
+    // 用于排序的时间
+    private Date updateTime;
 
 }

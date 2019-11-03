@@ -10,6 +10,8 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class WebSocketEventHandler implements MessageListener {
 
@@ -21,11 +23,16 @@ public class WebSocketEventHandler implements MessageListener {
 
     }
 
+
     public void handleRequest(Integer eventCode, JSONObject data){
         switch (eventCode){
             case 101:{
                 SendMsgDTO sendMsgDTO = data.getObject("data", SendMsgDTO.class);
-                messageService.sendPrivateMessage(sendMsgDTO);
+                if(sendMsgDTO.getIsGroup()){
+                    messageService.saveAndForwardGroupMessage(sendMsgDTO);
+                }else{
+                    messageService.saveAndForwardPrivateMessage(sendMsgDTO);
+                }
                 break;
             }
             case 102:{
@@ -43,7 +50,8 @@ public class WebSocketEventHandler implements MessageListener {
     public void handleResponse(Integer eventCode,String destId, Integer code, Object errMsg, Object data){
         switch (eventCode){
             case 201:
-            case 202: {
+            case 202:
+            case 204: {
                 SocketResponse socketResponse = new SocketResponse(eventCode,1,data);
                 GlobalChannelGroup.send(destId,socketResponse);
                 break;
@@ -62,5 +70,9 @@ public class WebSocketEventHandler implements MessageListener {
 
     public void handleResponse(String destId, MultiDataSocketResponse socketResponse){
         GlobalChannelGroup.send(destId,socketResponse);
+    }
+
+    public void handleMultiResponse(List<String> destId, SocketResponse socketResponse){
+
     }
 }

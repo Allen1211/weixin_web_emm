@@ -2,6 +2,7 @@ package com.allen.imsystem.dao.mappers;
 
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
+import com.allen.imsystem.model.dto.FriendInfoForInvite;
 import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
@@ -29,6 +30,8 @@ public interface FriendMapper {
     Set<UserInfoDTO> selectFriendList(@Param("uid")String uid);
 
     List<UserInfoDTO> selectFriendListOrderByGroupId(@Param("uid")String uid);
+
+    List<FriendInfoForInvite> selectFriendListForInvite(String uid);
 
     UserInfoDTO selectFriendInfo(@Param("friendId")String friendId);
 

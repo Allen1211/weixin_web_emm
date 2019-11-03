@@ -61,19 +61,19 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public JSONResponse handleDataIntegrityViolationException(DataIntegrityViolationException ex){
         ex.printStackTrace();
-        throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL);
+        return handleBusinessException(new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseBody
     public JSONResponse handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex){
-        throw new BusinessException(ExceptionType.REQUEST_METHOD_WRONG);
+        return handleBusinessException(new BusinessException(ExceptionType.REQUEST_METHOD_WRONG));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseBody
     public JSONResponse handleHttpMediaTypeNotSupportedException(HttpRequestMethodNotSupportedException ex){
-        throw new BusinessException(ExceptionType.SERVER_ERROR, "不支持的content-type");
+        return handleBusinessException(new BusinessException(ExceptionType.SERVER_ERROR, "不支持的content-type"));
     }
 
 

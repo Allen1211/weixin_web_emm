@@ -1,6 +1,7 @@
 package com.allen.imsystem.service;
 
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.GroupChat;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import org.springframework.stereotype.Service;
 
@@ -73,11 +74,21 @@ public interface IChatService {
     Map<String, Object> openNewPrivateChat(String uid, String friendId);
 
     /**
+     * 开启一个群聊会话
+     * @param uid
+     * @param gid
+     * @return
+     */
+    Map<String, Object> openGroupChat(String uid, String gid);
+
+    /**
      * 移除一个对好友的私聊会话
      * @param uid
      * @param chatId
      */
     void removePrivateChat(String uid,Long chatId);
+
+    void removeGroupChat(String uid,Long chatId);
 
     /**
      * 移除一个对好友的私聊会话
@@ -115,7 +126,7 @@ public interface IChatService {
      * @param pageSize
      * @return
      */
-    Map<String,Object> getMessageRecord(String uid, String talkId,Date beginTime,Integer index, Integer pageSize);
+    Map<String,Object> getMessageRecord(boolean isGroup,String uid, String talkId,Date beginTime,Integer index, Integer pageSize);
 
     /**
      * 获取某个会话所有聊天记录的条数
@@ -124,7 +135,7 @@ public interface IChatService {
      * @param beginTime
      * @return
      */
-    Integer getAllHistoryMessageSize(String talkId, String uid, Date beginTime);
+    Integer getAllHistoryMessageSize(boolean isgGroup,String talkId, String uid, Date beginTime);
 
     /**
      * 私聊消息入库
@@ -141,4 +152,7 @@ public interface IChatService {
      * @return
      */
     Boolean updateChatLastMsg(Long chatId, Long msgId,String senderId);
+
+
+
 }

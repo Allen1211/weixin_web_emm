@@ -16,6 +16,10 @@ import java.util.Map;
 public interface ChatMapper {
     List<ChatSessionDTO> selectPrivateChatList(String uid);
 
+
+
+    List<ChatSessionDTO> selectGroupChatList(String uid);
+
     ChatSessionDTO selectNewMsgPrivateChatData(@Param("chatId") Long chatId,
                                                @Param("uid")String uid ,@Param("friendId")String friendId);
 
@@ -33,11 +37,23 @@ public interface ChatMapper {
 
     ChatSessionInfo selectPrivateChatData(@Param("chatId")Long chatId, @Param("uid")String uid);
 
+    ChatSessionInfo selectGroupChatData(Long chatId);
+
+    @MapKey("uid")
+    Map<String,ChatSessionInfo> selectGroupAllChatData(String gid);
 
     List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
-    Integer countAllHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
+                                                @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
+
+
+
+    Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+
+    Integer countAllGroupHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+
 
     Integer countPrivateChatUnReadMsgForUser(@Param("chatId")Long chatId, @Param("uid")String uid);
 
@@ -54,10 +70,7 @@ public interface ChatMapper {
 
     Integer insertPrivateMsgToRecord(PrivateMsgRecord privateMsgRecord);
 
-
     List<ChatLastMessageTime> selectChatSessionLastMsgTime();
-
-
 
     List<FixBean> fixSelect();
 

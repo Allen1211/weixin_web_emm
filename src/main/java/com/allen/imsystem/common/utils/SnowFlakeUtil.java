@@ -1,5 +1,7 @@
 package com.allen.imsystem.common.utils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class SnowFlakeUtil {
@@ -10,6 +12,13 @@ public class SnowFlakeUtil {
         return snowflakeIdWorker.nextId();
     }
 
+    public static List<Long> getSnowFlakeIdList(int size){
+        List<Long> list = new ArrayList<>(size);
+        for(int i=0;i<size;i++){
+            list.add(getNextSnowFlakeId());
+        }
+        return list;
+    }
 
     /**
      * 把long 64位数转化为长度为64的字节数组，数组每一项代表一个位,0或1

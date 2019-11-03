@@ -15,7 +15,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext*.xml"})
 public class TestInit {
 
     @Autowired
@@ -45,12 +45,13 @@ public class TestInit {
 //        System.out.println(mailService.getVelocityEngine());
     }
 
-    @Test
-    public void testIdGenerator(){
-        uidGenerator.generateUid();
-    }
+//    @Test
+//    public void testIdGenerator(){
+//        uidGenerator.generateUid();
+//    }
 
     @Test
     public  void testNIO(){
+        uidGenerator.generateGid();
     }
 }

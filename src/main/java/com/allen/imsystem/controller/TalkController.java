@@ -1,14 +1,18 @@
 package com.allen.imsystem.controller;
 
+import com.alibaba.fastjson.JSONArray;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.MultipartFileUtil;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.GroupChat;
 import com.allen.imsystem.model.pojo.PrivateChat;
+import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFileService;
+import com.allen.imsystem.service.IGroupChatService;
 import com.allen.imsystem.service.impl.RedisService;
 import org.apache.commons.beanutils.BeanMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +22,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @RequestMapping("/api/talk")
 @RestController
@@ -38,6 +42,9 @@ public class TalkController {
     private RedisService redisService;
 
     @Autowired
+    private IGroupChatService groupChatService;
+
+    @Autowired
     private IFileService fileService;
 
     /**
@@ -52,16 +59,7 @@ public class TalkController {
         String uid = cacheHolder.getUid(request);
         ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
         chatService.setTalkAllMsgHasRead(uid,talkIdStr);
-        Long talkLastMsgTimestamp = chatService.getChatLastMsgTimestamp(Long.parseLong(talkIdStr));
-        return new JSONResponse(1)
-                .putData("isGroup", chatSessionInfo.getIsGroup())
-                .putData("title", chatSessionInfo.getTitle())
-                .putData("isGroupOwner", chatSessionInfo.getIsGroupOwner())
-                .putData("talkId", chatSessionInfo.getTalkId().toString())
-                .putData("srcId",chatSessionInfo.getSrcId())
-                .putData("destId",chatSessionInfo.getDestId())
-                .putData("avatar",chatSessionInfo.getAvatar())
-                .putData("lastTimeStamp",talkLastMsgTimestamp);
+        return new JSONResponse(1).putAllData(new BeanMap(chatSessionInfo));
     }
 
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
@@ -75,7 +73,6 @@ public class TalkController {
     public JSONResponse setHasRead(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String talkId = params.get("talkId");
         String uid = cacheHolder.getUid(request);
-        System.out.println("setHasRead: " + talkId);
         chatService.setTalkAllMsgHasRead(uid, talkId);
         return new JSONResponse(1);
     }
@@ -89,7 +86,8 @@ public class TalkController {
         if (params.get("pageSize") != null) {
             pageSize = Integer.valueOf(params.get("pageSize"));
         }
-        Map<String,Object> resultMap = chatService.getMessageRecord(uid,talkId,new Date(),index,pageSize);
+        boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(Long.valueOf(talkId)));
+        Map<String,Object> resultMap = chatService.getMessageRecord(isGroup,uid,talkId,new Date(),index,pageSize);
         return new JSONResponse(1).putAllData(resultMap);
     }
 
@@ -105,11 +103,27 @@ public class TalkController {
                 .putData("isNewTalk", result.get("isNewTalk"));
     }
 
+    @RequestMapping("/openGroupTalk")
+    public JSONResponse openGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        String uid = cacheHolder.getUid(request);
+        String gid = params.get("gid");
+        Map<String, Object> result = chatService.openGroupChat(uid, gid);
+        UserChatGroup relation = (UserChatGroup) result.get("relation");
+        return new JSONResponse(1)
+                .putData("talkId", relation.getChatId().toString())
+                .putData("isNewTalk", result.get("isNewTalk"));
+    }
+
     @RequestMapping("/removeTalk")
     public JSONResponse removeTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        String talkId = params.get("talkId");
-        chatService.removePrivateChat(uid, Long.valueOf(talkId));
+        Long chatId = Long.valueOf(params.get("talkId"));
+        Integer chatType = chatService.getChatType(chatId);
+        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)){
+            chatService.removePrivateChat(uid, chatId);
+        }else{
+            chatService.removeGroupChat(uid,chatId);
+        }
         return new JSONResponse(1);
     }
 
@@ -133,9 +147,83 @@ public class TalkController {
         return new JSONResponse(1).putAllData(new BeanMap(responseDTO));
     }
 
+
     @RequestMapping(value = "/getFileUploadInfo",method = RequestMethod.GET)
     public JSONResponse getFileUploadInfo(@RequestParam("md5")String md5){
         FileUploadInfo fileUploadInfo = fileService.getUnCompleteParts(md5);
         return new JSONResponse(1).putAllData(new BeanMap(fileUploadInfo));
     }
+
+    @RequestMapping(value = "/createGroupTalk",method = RequestMethod.POST)
+    public JSONResponse createGroupTalk(@RequestBody Map<String ,String> params,HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        String groupName = params.get("groupName");
+        CreateGroupDTO groupChat = groupChatService.createNewGroupChat(uid,groupName);
+        groupChat.setGroupAvatar(GlobalConst.Path.RESOURCES_URL+groupChat.getGroupAvatar());
+        return new JSONResponse(1).putAllData(new BeanMap(groupChat));
+    }
+
+    @RequestMapping(value = "/getGroupTalkList",method = RequestMethod.GET)
+    public JSONResponse getGroupTalkList(HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        List<GroupChatInfoDTO> resultList = groupChatService.getGroupChatList(uid);
+        return new JSONResponse(1).putData("groupTalkList",resultList);
+    }
+
+    @RequestMapping(value = "/getGroupTalkMember",method = RequestMethod.GET)
+    public JSONResponse getGroupTalkMember(@RequestParam("gid")String gid,HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        List<GroupMemberDTO> groupMemberList = groupChatService.getGroupMemberList(uid,gid);
+        return new JSONResponse(1).putData("memberList",groupMemberList);
+    }
+
+
+    @RequestMapping(value = "/inviteFriendToGroupTalk",method = RequestMethod.POST)
+    public JSONResponse inviteFriendToGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+        String gid = params.get("gid");
+        String list =  params.get("friendList");
+        List<InviteDTO> inviteDTOList = JSONArray.parseArray(list,InviteDTO.class);
+        String inviterId = cacheHolder.getUid(request);
+        boolean success = groupChatService.inviteFriendToChatGroup(inviterId,gid,inviteDTOList);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/leaveGroupTalk",method = RequestMethod.POST)
+    public JSONResponse leaveGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+        String uid = cacheHolder.getUid(request);
+        String gid = params.get("gid");
+        groupChatService.leaveGroupChat(uid,gid);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/dismissGroupTalk",method = RequestMethod.POST)
+    public JSONResponse dismissGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+        String uid = cacheHolder.getUid(request);
+        String gid = params.get("gid");
+        groupChatService.dismissGroupChat(uid,gid);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/removeMemberFromGroupTalk",method = RequestMethod.POST)
+    public JSONResponse removeMemberFromGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+        String uid = cacheHolder.getUid(request);
+        String gid = params.get("gid");
+        String list =  params.get("memberList");
+        List<GroupMemberDTO> memberList = JSONArray.parseArray(list,GroupMemberDTO.class);
+        groupChatService.kickOutGroupMember(memberList,gid,uid);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/changeGroupAlias",method = RequestMethod.POST)
+    public JSONResponse changeGroupAlias(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+        String gid = params.get("gid");
+        String groupAlias =  params.get("groupAlias");
+        String uid = cacheHolder.getUid(request);
+        groupChatService.changeUserGroupAlias(uid,gid,groupAlias);
+        return new JSONResponse(1);
+    }
+
+
+
+
 }

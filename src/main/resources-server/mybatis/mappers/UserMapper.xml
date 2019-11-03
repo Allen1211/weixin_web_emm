@@ -79,6 +79,7 @@
         WHERE u.id = #{userId}
     </select>
 
+
     <select id="selectCountUid" resultType="java.lang.Integer">
         SELECT COUNT(*) FROM `user` WHERE uid = #{uid}
     </select>
@@ -214,6 +215,15 @@
     <insert id="insertBatchIntoUidPool" parameterType="java.util.List" useGeneratedKeys="false">
         insert into uid_pool
         (uid)
+        values
+        <foreach collection="list" item="str"  separator=",">
+            (#{str})
+        </foreach>
+    </insert>
+
+    <insert id="insertBatchIntoGidPool" parameterType="java.util.List" useGeneratedKeys="false">
+        insert into gid_pool
+        (gid)
         values
         <foreach collection="list" item="str"  separator=",">
             (#{str})

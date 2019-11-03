@@ -7,11 +7,14 @@ import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
 
 public interface UserMapper {
+
+
     User selectUserWithUid(String uid);
 
     User selectUserWithEmail(String email);
@@ -41,6 +44,8 @@ public interface UserMapper {
     Integer updateUserInfo(UserInfo userInfo);
 
     Integer insertBatchIntoUidPool(List<String> list);
+
+    Integer insertBatchIntoGidPool(List<String> list);
 
     Integer sortDeleteUsedUid(Integer id);
 

@@ -158,18 +158,30 @@ public class FriendController {
     }
 
     /**
+     * 获取好友列表，群聊拉人用
+     */
+    @RequestMapping(value = "/getFriendListForInvite",method = RequestMethod.GET)
+    @ResponseBody
+    public JSONResponse getFriendListForInvite(@RequestParam("gid")String gid,  HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        List<FriendInfoForInvite> friendList = friendService.getFriendListForInvite(uid,gid);
+        JSONResponse jsonResponse = new JSONResponse(1);
+        jsonResponse.putData("friendList",friendList);
+        return jsonResponse;
+    }
+
+    /**
      * 按分组获取好友列表
      */
     @RequestMapping(value = "/getFriendListByGroup",method = RequestMethod.GET)
     @ResponseBody
     public JSONResponse getFriendListByGroup(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        List<FriendListByGroupDTO> result = friendService.getFriendListByGroup(uid);
+        Map<String,Object> result = friendService.getFriendListByGroup(uid);
         JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("groupList",result);
+        jsonResponse.setData(result);
         return jsonResponse;
     }
-
 
     @RequestMapping(value = "/getFriendInfo",method = RequestMethod.GET)
     @ResponseBody
@@ -187,7 +199,6 @@ public class FriendController {
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
         boolean success = friendService.deleteFriend(uid,friendId);
-        System.out.println("try to delete a friend that not your friend");
         return new JSONResponse(1);
     }
 
