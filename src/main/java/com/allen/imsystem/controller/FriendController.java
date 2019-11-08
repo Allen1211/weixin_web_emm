@@ -207,7 +207,7 @@ public class FriendController {
         Integer newGroupId = Integer.valueOf(params.get("newGroupId"));
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
-        boolean isSucess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
+        boolean isSuccess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
         return new JSONResponse(1);
     }
 

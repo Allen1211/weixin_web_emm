@@ -67,20 +67,21 @@ public class MessageService implements IMessageService {
         // 2.1 插入聊天记录 , 并更新会话的最后一条消息
         boolean bool1 = chatService.savePrivateMsgRecord(sendMsgDTO);
         boolean bool2 = chatService.updateChatLastMsg(chatId, msgId, sendMsgDTO.getSrcId());
-//        boolean bool3 = chatService.setChatLastMsgTimestamp(chatId, Long.parseLong(sendMsgDTO.getTimeStamp()));
-        boolean bool3 = chatService.setChatLastMsgTimestamp(chatId,System.currentTimeMillis());
+        boolean bool3 = chatService.setChatLastMsgTimestamp(chatId, Long.parseLong(sendMsgDTO.getTimeStamp()));
 
         messageCounter.incrPrivateChatNewMsgCount(sendMsgDTO.getDestId(), chatId);
         // 3、入库成功，发送服务端收到确认回执
-        if (true) {
+        if (bool1) {
             sendServerAck(sendMsgDTO, msgId, chatId);
+        }else{
+            handleSendFail(sendMsgDTO,"消息入库失败");
         }
 
         // 4、查看接收者是否在线
         boolean isOnline = userService.isOnline(sendMsgDTO.getSrcId());
-        if (isOnline) {   // 如果在线，转发消息，并把消息存入缓存，等待接收者已读回执。
+        if (isOnline) {   // 如果在线，转发消息，TODO 并把消息存入缓存，等待接收者已读回执。
             PushMessageDTO pushMessageDTO = packPushMessageDTO(chatLastMsgTime,sendMsgDTO);
-            webSocketEventHandler.handleResponse(201, sendMsgDTO.getDestId(), pushMessageDTO);
+            webSocketEventHandler.handleResponse(GlobalConst.WsEvent.SERVER_PUSH_MSG, sendMsgDTO.getDestId(), pushMessageDTO);
         }
     }
 
@@ -117,7 +118,7 @@ public class MessageService implements IMessageService {
 
     private void handleSendFail(SendMsgDTO sendMsgDTO,String content) {
         MultiDataSocketResponse socketResponse =
-                new MultiDataSocketResponse(203, 0,
+                new MultiDataSocketResponse(GlobalConst.WsEvent.SERVER_MSG_ACK_FAIL, 0,
                         2001, new ErrMsg(content))
                         .putData("timeStamp", sendMsgDTO.getTimeStamp());
 
@@ -134,7 +135,7 @@ public class MessageService implements IMessageService {
         serverAckDTO.setLastMessageTime(messageTime);
         new Thread(() -> {
             webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
-                    new SocketResponse(202, 1, serverAckDTO));
+                    new SocketResponse(GlobalConst.WsEvent.SERVER_MSG_ACK_SUCCESS, 1, serverAckDTO));
         }).start();
     }
 

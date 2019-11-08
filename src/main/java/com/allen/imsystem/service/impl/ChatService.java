@@ -21,6 +21,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
@@ -371,7 +372,7 @@ public class ChatService implements IChatService {
     }
 
     @Override
-    public Map<String, Object> getMessageRecord(boolean isGroup, String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
+    public Map<String, Object> getMessageRecord(boolean isGroup, String uid, String talkId, Integer index, Integer pageSize) {
         Map<String, Object> resultMap = new HashMap<>(3);
         List<MsgRecord> messageList = null;
         // 如果是第一页，要获取一次总页数，记录一下统计的起始时间
@@ -395,16 +396,21 @@ public class ChatService implements IChatService {
             } else {
                 totalPage = totalSize / pageSize + 1;
             }
-            messageList = doGetMessageList(isGroup, uid, talkId, new Date(now), index, pageSize);
+            messageList = doGetMessageList(isGroup, uid, talkId, null, index, pageSize);
+            if(!CollectionUtils.isEmpty(messageList)){
+                Long latestMsgId = messageList.get(0).getMessageId();
+                redisService.hset(GlobalConst.Redis.KEY_RECORD_BEGIN_ID,talkId,latestMsgId.toString());
+            }
             resultMap.put("messageList", messageList);
             resultMap.put("allPageSize", totalPage);
             resultMap.put("curPageIndex", index);
         } else {
-            String nowStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_TIME, talkId);
-            if (nowStr != null) {
-                beginTime = new Date(Long.parseLong(nowStr));
+            String beginMsgIdStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_ID,talkId);
+            Long beginMsgId = null;
+            if(StringUtils.isNotEmpty(beginMsgIdStr)){
+                beginMsgId = Long.parseLong(beginMsgIdStr);
             }
-            messageList = doGetMessageList(isGroup, uid, talkId, beginTime, index, pageSize);
+            messageList = doGetMessageList(isGroup, uid, talkId, beginMsgId, index, pageSize);
             resultMap.put("messageList", messageList);
             resultMap.put("curPageIndex", index);
         }
@@ -412,18 +418,15 @@ public class ChatService implements IChatService {
         return resultMap;
     }
 
-    private List<MsgRecord> doGetMessageList(boolean isGroup, String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
-        if (beginTime == null) {
-            beginTime = new Date();
-        }
+    private List<MsgRecord> doGetMessageList(boolean isGroup, String uid, String talkId, Long beginMsgId, Integer index, Integer pageSize) {
 
         PageBean pageBean = new PageBean(index, pageSize);
         List<MsgRecord> msgRecordList = null;
         if (isGroup) {
-            msgRecordList = chatMapper.selectGroupChatHistoryMsg(Long.valueOf(talkId), beginTime, uid, pageBean);
+            msgRecordList = chatMapper.selectGroupChatHistoryMsg(Long.valueOf(talkId), beginMsgId, uid, pageBean);
         } else {
             msgRecordList =
-                    chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), beginTime, uid, pageBean);
+                    chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), beginMsgId, uid, pageBean);
         }
 
         if (msgRecordList == null) {

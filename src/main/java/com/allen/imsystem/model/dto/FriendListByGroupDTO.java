@@ -7,7 +7,7 @@ import java.util.List;
 @Data
 public class FriendListByGroupDTO {
 
-    private String groupId;
+    private Integer groupId;
 
     private String groupName;
 

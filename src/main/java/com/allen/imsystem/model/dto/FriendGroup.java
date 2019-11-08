@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 public class FriendGroup {
 
-    private String groupId;
+    private Integer groupId;
 
     private String groupName;
 

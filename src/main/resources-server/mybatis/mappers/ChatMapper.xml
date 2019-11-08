@@ -120,8 +120,15 @@
         FROM pri_msg_record as mr
         INNER JOIN user_info as ui ON ui.uid = mr.from_uid
         LEFT JOIN file_msg_md5 as fm ON mr.file_md5 = fm.md5
-        WHERE mr.chat_id = #{chatId} AND mr.created_time &lt; #{beginTime}
-        ORDER BY mr.created_time DESC
+        <where>
+            <if test="chatId != null">
+                mr.chat_id = #{chatId}
+            </if>
+            <if test="beginMsgId != null">
+                AND mr.msg_id &lt;= #{beginMsgId}
+            </if>
+        </where>
+        ORDER BY mr.msg_id DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
     </select>
 
@@ -136,8 +143,15 @@
         INNER JOIN group_msg_record as gmr ON gmr.gid = ucg.gid
         LEFT JOIN user_info as ui ON ui.uid = gmr.sender_id
         LEFT JOIN file_msg_md5 fm ON fm.md5 = gmr.file_md5
-        WHERE ucg.chat_id = #{chatId} AND gmr.created_time &lt; #{beginTime}
-        ORDER BY gmr.created_time DESC
+        <where>
+            <if test="chatId != null">
+                ucg.chat_id = #{chatId}
+            </if>
+            <if test="beginMsgId != null">
+                AND gmr.msg_id &lt;= #{beginMsgId}
+            </if>
+        </where>
+        ORDER BY gmr.msg_id DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
     </select>
 

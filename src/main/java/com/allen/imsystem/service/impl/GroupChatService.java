@@ -77,8 +77,8 @@ public class GroupChatService implements IGroupChatService {
     public void saveGroupChatMsgRecord(SendMsgDTO msg){
         GroupMsgRecord groupMsgRecord = new GroupMsgRecord();
         groupMsgRecord.setMsgId(msg.getMsgId());
-//        Date createdTime = new Date(Long.parseLong(msg.getTimeStamp()));
-        Date createdTime = new Date();
+        Date createdTime = new Date(Long.parseLong(msg.getTimeStamp()));
+//        Date createdTime = new Date();
         groupMsgRecord.setCreatedTime(createdTime);
         groupMsgRecord.setUpdateTime(createdTime);
         groupMsgRecord.setGid(msg.getGid());

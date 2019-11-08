@@ -152,7 +152,9 @@ public class FriendService implements IFriendService {
                 notify.setApplicantInfo(applicantInfo);
                 notify.setApplicationReason(reason);
                 notify.setHasAccept(false);
-                messageService.sendNotify(204,params.getFriendId(),notify);
+                List<FriendApplicationDTO> notifyList = new ArrayList<>(1);
+                notifyList.add(notify);
+                messageService.sendNotify(204,params.getFriendId(),notifyList);
             }
         }
         return insertSuccess;
@@ -164,7 +166,8 @@ public class FriendService implements IFriendService {
         // 1 查询对方要把ta放到什么组
         FriendApply friendApply = friendMapper.selectFriendApply(friendId,uid);
         if(friendApply == null){
-            throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER,"没有未处理的申请");
+//            throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER,"没有未处理的申请");
+            return true;
         }
         Integer bePutInGroupId = friendApply.getGroupId();
 
@@ -175,7 +178,7 @@ public class FriendService implements IFriendService {
         }
         // 2 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
         boolean successUpdate = friendMapper.updateFriendApplyPass(true, friendId, uid) > 0
-                || friendMapper.updateFriendApplyPass(true, uid, friendId) > 0;
+                | friendMapper.updateFriendApplyPass(true, uid, friendId) > 0;
         if (!successUpdate) { // 如果更新行数为0，说明不存在此申请或者申请已经被同意
             throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
         }
@@ -209,14 +212,27 @@ public class FriendService implements IFriendService {
         addFriendIntoRedis(uid, friendId);
         addFriendIntoRedis(friendId, uid);
 
-        // 6 TODO 推送
+        // 6 TODO 双向推送
         if(successInsert){
-            ApplyNotify applyNotify = new ApplyNotify(friendId,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
-            notifyService.addNewApplyNotify(applyNotify);
-            UserInfoDTO friendInfo = friendMapper.selectFriendInfo(uid);
-            NewFriendNotify notify = new NewFriendNotify(friendInfo,bePutInGroupId);
+            ApplyNotify applyNotifySelf = new ApplyNotify(uid,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+            ApplyNotify applyNotifyFriend = new ApplyNotify(friendId,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+            notifyService.addNewApplyNotify(applyNotifySelf);
+            notifyService.addNewApplyNotify(applyNotifyFriend);
+
             if(userService.isOnline(friendId)){
+                UserInfoDTO friendInfo = friendMapper.selectFriendInfo(uid);
+                NewFriendNotify notify = new NewFriendNotify(friendInfo,bePutInGroupId);
+//                List<NewFriendNotify> notifyList = new ArrayList<>(1);
+//                notifyList.add(notify);
                 messageService.sendNotify(205,friendId,notify);
+            }
+
+            if(userService.isOnline(uid)){
+                UserInfoDTO friendInfo = friendMapper.selectFriendInfo(friendId);
+                NewFriendNotify notify = new NewFriendNotify(friendInfo,groupId);
+//                List<NewFriendNotify> notifyList = new ArrayList<>(1);
+//                notifyList.add(notify);
+                messageService.sendNotify(205,uid,notify);
             }
         }
         return successInsert && successUpdate;
@@ -236,7 +252,7 @@ public class FriendService implements IFriendService {
     @Override
     public Map<String,Object> getFriendListByGroup(String uid) {
         // 默认组的id
-        String defaultGroupId = "";
+        Integer defaultGroupId = null;
         // 按组id升序排列的 好友列表
         List<UserInfoDTO> friendListOrderByGroup = friendMapper.selectFriendListOrderByGroupId(uid);
         // 按组id升序排列的 分组列表

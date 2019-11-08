@@ -95,7 +95,7 @@ public class TalkController {
             pageSize = Integer.valueOf(params.get("pageSize"));
         }
         boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(Long.valueOf(talkId)));
-        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, talkId, new Date(), index, pageSize);
+        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, talkId, index, pageSize);
         return new JSONResponse(1).putAllData(resultMap);
     }
 

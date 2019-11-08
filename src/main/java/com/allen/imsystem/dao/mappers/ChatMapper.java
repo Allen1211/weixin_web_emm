@@ -14,8 +14,6 @@ import java.util.Map;
 public interface ChatMapper {
     List<ChatSessionDTO> selectPrivateChatList(String uid);
 
-
-
     List<ChatSessionDTO> selectGroupChatList(String uid);
 
     ChatSessionDTO selectNewMsgPrivateChatData(@Param("chatId") Long chatId,
@@ -29,14 +27,20 @@ public interface ChatMapper {
 
     ChatSessionInfo selectGroupChatData(Long chatId);
 
-    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
+    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginMsgId")Long beginMsgId,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
-    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
+    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginMsgId")Long beginMsgId,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
-
+//    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
+//                                                @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
+//
+//    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
+//                                                @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
     Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+
+//    Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginMsgId")Long beginMsgId);
 
     Integer countAllGroupHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
 
