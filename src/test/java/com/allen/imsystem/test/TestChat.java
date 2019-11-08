@@ -3,15 +3,11 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.mappers.ChatMapper;
-import com.allen.imsystem.model.FixBean;
-import com.allen.imsystem.model.dto.ChatLastMessageTime;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
-import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.impl.RedisService;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +15,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath:spring/springmvc.xml", "classpath:spring/applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath:spring/springmvc.xml", "classpath:spring/applicationContext*.xml"})
 public class TestChat {
 
     @Autowired
@@ -55,7 +52,7 @@ public class TestChat {
 
     @Test
     public void setAllHasRead(){
-        chatService.setTalkAllMsgHasRead("28661270","633786567424475138");
+        chatService.setPrivateChatAllMsgHasRead("28661270","633786567424475138");
     }
 
     @Test
@@ -107,27 +104,14 @@ public class TestChat {
 
     @Test
     public void wtf(){
-        List<ChatLastMessageTime> list = chatMapper.selectChatSessionLastMsgTime();
-        for(ChatLastMessageTime bean : list){
-
-            Long chatId = bean.getChatId();
-            Long timestamp = 0L;
-            if(bean.getLastMsgTime() != null){
-                timestamp = bean.getLastMsgTime().getTime();
-            }
-            if(!redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_LAST_MSG_TIME,chatId.toString())){
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_LAST_MSG_TIME,chatId.toString(),timestamp.toString());
-//                System.out.println(chatId);
-            }
-            System.out.println();
-        }
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
+        String format = simpleDateFormat.format(new Date(1573143971586L));
+        System.out.println(format);
     }
 
 
     @Test
-    public void fix(){
-        List<FixBean> fixBeanList = chatMapper.fixSelect();
-        Integer affect = chatMapper.fix(fixBeanList);
-        System.out.println(affect);
+    public void fuck(){
+        System.out.println(chatMapper.selectPrivateChatInfoByUid("66666666","81309655"));;
     }
 }

@@ -28,4 +28,10 @@ public class User implements Serializable {
         this.email = email;
     }
 
+    public User(String password, String salt, String email, Date updateTime) {
+        this.password = password;
+        this.salt = salt;
+        this.email = email;
+        this.updateTime = updateTime;
+    }
 }

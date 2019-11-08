@@ -12,6 +12,18 @@
         <association property="applicantInfo" resultMap="userInfoMap"/>
     </resultMap>
 
+    <resultMap id="FriendApplyMap" type="com.allen.imsystem.model.pojo.FriendApply">
+        <result property="id" column="id"/>
+        <result property="fromUid" column="from_uid"/>
+        <result property="toUid" column="to_uid"/>
+        <result property="groupId" column="group_id"/>
+        <result property="pass" column="pass" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="hasRead" column="has_read" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="reason" column="reason"/>
+        <result property="createdTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
     <resultMap id="friendRelationMap" type="com.allen.imsystem.model.pojo.FriendRelation">
         <result property="id" column="id"/>
         <result property="uidA" column="uid_a"/>
@@ -57,6 +69,12 @@
         <association property="friendInfo" resultMap="userInfoMap"/>
     </resultMap>
 
+    <resultMap id="newFriendNotifyMap" type="com.allen.imsystem.model.dto.NewFriendNotify">
+        <result property="groupId" column="group_id"/>
+        <association property="friendInfo" resultMap="userInfoMap"/>
+    </resultMap>
+
+
     <select id="selectFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
         INNER JOIN user_info as ui on ui.uid = uid_b
@@ -85,12 +103,16 @@
         SELECT group_id FROM friend_apply where from_uid=#{fromUid} and to_uid=#{toUid} and pass=0 LIMIT 1
     </select>
 
+    <select id="selectFriendApply" resultMap="FriendApplyMap">
+        SELECT * FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid} AND pass=0 LIMIT 1
+    </select>
+
     <select id="selectFriendGroupList" resultMap="friendGroupMap">
         SELECT id,fri_group_name,is_default FROM friend_group status = 1 and friend_group where uid=#{uid}
     </select>
 
     <select id="selectGroupId" resultType="java.lang.Integer">
-        SELECT id FROM friend_group where status = 1 and uid=#{uid} and fri_group_name=#{groupName}
+        SELECT id FROM friend_group where status = 1 and uid=#{uid} and fri_group_name=#{groupName} and `status`=1
     </select>
 
     <select id="isGroupValid" resultType="java.lang.Boolean">
@@ -206,7 +228,7 @@
         SELECT * FROM friend_group WHERE is_default = 1 AND uid=#{uid} AND status = 1
     </select>
 
-    <insert id="addFriendApply" >
+    <insert id="addFriendApply" parameterType="com.allen.imsystem.model.pojo.FriendApply" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
         values (#{fromUid},#{toUid},#{groupId},#{reason})
     </insert>
@@ -258,16 +280,45 @@
         DELETE FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </delete>
 
-<!-- 测试用-->
+    <delete id="deleteFriendApply">
+        DELETE FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid}
+    </delete>
 
-    <select id="selectAllFriendRelation" resultMap="friendRelationMap">
-        SELECT * FROM friend
+    <select id="selectNewFriendNotify" resultMap="newFriendNotifyMap">
+        SELECT ui.uid,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        f.a_in_b_fgroup_id as group_id
+        FROM apply_notify as an
+        INNER JOIN friend_apply as fa ON an.apply_id = fa.id
+        INNER JOIN friend as f ON (fa.to_uid = f.uid_a and f.uid_b=#{uid})
+        INNER JOIN user_info as ui ON ui.uid = fa.to_uid
+        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
+        UNION ALL
+        SELECT ui.uid,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        f.b_in_a_fgroup_id as group_id
+        FROM apply_notify as an
+        INNER JOIN friend_apply as fa ON an.apply_id = fa.id
+        INNER JOIN friend as f ON (fa.to_uid = f.uid_b and f.uid_a=#{uid})
+        INNER JOIN user_info as ui ON ui.uid = fa.to_uid
+        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
     </select>
 
-    <update id="updateFriendRelation" parameterType="com.allen.imsystem.model.pojo.FriendRelation">
-        UPDATE friend SET uid_a = #{uidA} , uid_b = #{uidB},
-        a_in_b_fgroup_id = #{aInbGroupId},b_in_a_fgroup_id = #{bInaGroupId}, update_time=NOW()
-        WHERE id = #{id}
-    </update>
+    <select id="selectNewApplyNotify" resultMap="FriendApplicationMap">
+        SELECT ui.uid,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
+        fa.reason , fa.pass
+        FROM apply_notify as an
+        INNER JOIN friend_apply as fa ON fa.id=an.apply_id
+        INNER JOIN user_info ui on ui.uid = fa.from_uid
+        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
+    </select>
 
+    <insert id="insertNewApplyNotify" parameterType="com.allen.imsystem.model.pojo.ApplyNotify" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO apply_notify (uid, type, apply_id, status) VALUES (#{uid},#{type},#{applyId},true)
+    </insert>
+
+    <update id="deleteAllNotify">
+        UPDATE apply_notify SET `status` = 0, update_time=NOW(6) WHERE uid=#{uid} and type=#{type}
+    </update>
 </mapper>

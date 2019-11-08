@@ -40,6 +40,21 @@ public class JSONResponse {
         this.data = data;
     }
 
+    public JSONResponse success(){
+        this.status = 1;
+        return this;
+    }
+
+    public JSONResponse fail(){
+        this.status = 0;
+        return this;
+    }
+
+    public JSONResponse setCode(Integer code){
+        this.code = code;
+        return this;
+    }
+
     public JSONResponse putData(String key, Object value){
         if(data == null){
             data = new HashMap<>();

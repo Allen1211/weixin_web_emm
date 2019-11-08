@@ -50,7 +50,7 @@ public class MailService implements IMailService, MessageListener {
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        RedisSerializer<EmailMessage> serializer = (RedisSerializer<EmailMessage>) redisTemplate.getDefaultSerializer();
+        RedisSerializer<EmailMessage> serializer = (RedisSerializer<EmailMessage>) redisTemplate.getValueSerializer();
         EmailMessage emailMessage = serializer.deserialize(message.getBody());
         boolean success = this.sendMailVelocity(emailMessage.getSubject(),emailMessage.getFileLocation(),
                 emailMessage.getEmailAddress(),emailMessage.getModel());

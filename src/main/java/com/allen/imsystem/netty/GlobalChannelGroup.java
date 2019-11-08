@@ -4,14 +4,21 @@ import com.alibaba.fastjson.JSON;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
+@Component
 public class GlobalChannelGroup {
-    private static ConcurrentHashMap<String, Set<Channel>> channelGroup = new ConcurrentHashMap<>(20);
+    private ConcurrentHashMap<String, Set<Channel>> channelGroup;
 
+
+    public GlobalChannelGroup(){
+        System.out.println("load");
+        channelGroup = new ConcurrentHashMap<>(20);
+    }
 //    public static Channel getChannel(String key){
 //        if(StringUtils.isEmpty(key)){
 //            return null;
@@ -24,7 +31,8 @@ public class GlobalChannelGroup {
 //        return channelSet.get(key);
 //    }
 
-    public static boolean addChannel(String key, Channel channel){
+    public boolean addChannel(String key, Channel channel){
+        System.out.println("add channel to container:" + channelGroup.hashCode());
         if(StringUtils.isEmpty(key) || channel == null){
             return false;
         }
@@ -33,18 +41,18 @@ public class GlobalChannelGroup {
             channelSet = new HashSet<>(2);
             channelGroup.put(key,channelSet);
         }
-        return channelSet.add(channel);
-
+        channelSet.add(channel);
+        return channelGroup.put(key,channelSet)!=null;
     }
 
-    public static Set<Channel> removeAllChannel(String key){
+    public Set<Channel> removeAllChannel(String key){
         if(!StringUtils.isEmpty(key)){
             return channelGroup.remove(key);
         }
         return null;
     }
 
-    public static Boolean removeChannel(String key, Channel channel){
+    public Boolean removeChannel(String key, Channel channel){
         if(!StringUtils.isEmpty(key) && channel!=null){
             Set<Channel> channelSet = channelGroup.get(key);
             if(channelSet!=null){
@@ -54,7 +62,7 @@ public class GlobalChannelGroup {
         return false;
     }
 
-    public static boolean hasChannel(String key){
+    public boolean hasChannel(String key){
         if(StringUtils.isEmpty(key)){
             return false;
         }
@@ -62,7 +70,7 @@ public class GlobalChannelGroup {
         return channelSet!=null && !channelSet.isEmpty();
     }
 
-    public static boolean send(String key,Object msg){
+    public boolean send(String key,Object msg){
         if(StringUtils.isEmpty(key) || msg==null){
             return false;
         }

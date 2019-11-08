@@ -16,7 +16,7 @@ public class ChatSessionInfo implements Serializable {
     // 只对群有效
     private Boolean isGroupOwner = false;
     private String gid;
-
+    private String groupAlias;
 
 
 

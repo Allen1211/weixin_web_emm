@@ -12,9 +12,10 @@ import java.io.IOException;
 public interface IFileService {
 
     /**
-     * 上传头像
+     * 上传用户头像
      */
     String uploadAvatar(MultipartFile multipartFile, String uid);
+
 
     /**
      * 上传聊天图片

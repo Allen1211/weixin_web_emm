@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -41,7 +42,6 @@ public class UserController {
     private ICacheHolder cacheHolder;
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-    @ResponseBody
     @CrossOrigin
     public JSONResponse login(@RequestBody Map<String, Object> params,
                               HttpServletRequest request, HttpServletResponse response) {
@@ -73,7 +73,6 @@ public class UserController {
 
 
     @RequestMapping(value = "/regist", method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse regist(@RequestBody @Validated RegistFormDTO registFormDTO, HttpSession session) {
         String email = registFormDTO.getEmail();
         String password = registFormDTO.getPassword();
@@ -99,7 +98,6 @@ public class UserController {
 
 
     @RequestMapping(value = "/logout", method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse logout(HttpServletRequest request, HttpServletResponse response,
                                HttpSession session) {
         /**
@@ -118,7 +116,6 @@ public class UserController {
     }
 
     @RequestMapping(value = "/uploadAvatar", method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse uploadAvatar(@RequestParam("avatar") MultipartFile multipartFile, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String avatarURL = userService.uploadAvatar(multipartFile, uid);
@@ -126,7 +123,6 @@ public class UserController {
     }
 
     @RequestMapping(value = "/updateUserInfo", method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse updateUserInfo(@RequestBody EditUserInfoDTO editUserInfoDTO, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         editUserInfoDTO.setUid(uid);
@@ -145,6 +141,26 @@ public class UserController {
     public JSONResponse getUserOnlineStatus(@RequestParam("uid")String uid){
         Integer onlineStatus = userService.getUserOnlineStatus(uid);
         return new JSONResponse(1).putData("onlineStatus",onlineStatus);
+    }
+
+    @RequestMapping(value = "/resetUserPassword",method = RequestMethod.POST)
+    public JSONResponse resetPassword(@RequestBody Map<String,String> params){
+        String email = params.get("email");
+        String emailCode = params.get("emailCode");
+        String newPassword = params.get("newPassword");
+        securityService.verifyEmailCode(emailCode,cacheHolder.getEmailCode(email));
+        userService.forgetPassword(email,newPassword);
+        cacheHolder.removeEmailCode(email);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/updateUserPassword",method = RequestMethod.POST)
+    public JSONResponse modifyPassword(@RequestBody Map<String,String> params, HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        String oldPassword = params.get("oldPassword");
+        String newPassword = params.get("newPassword");
+        String token = userService.modifyPassword(uid,oldPassword,newPassword);
+        return new JSONResponse(1).putData("token",token);
     }
 
     @RequestMapping("/*")

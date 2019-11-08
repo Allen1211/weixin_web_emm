@@ -3,21 +3,15 @@ package com.allen.imsystem.service.impl;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.dao.ChatDao;
-import com.allen.imsystem.dao.FriendDao;
-import com.allen.imsystem.dao.SearchDao;
-import com.allen.imsystem.dao.UserDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.FriendMapper;
+import com.allen.imsystem.dao.mappers.SearchMapper;
 import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.ApplyNotify;
+import com.allen.imsystem.model.pojo.FriendApply;
 import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
-import com.allen.imsystem.model.pojo.GroupChat;
-import com.allen.imsystem.model.pojo.UserInfo;
-import com.allen.imsystem.service.IChatService;
-import com.allen.imsystem.service.IFriendService;
-import com.allen.imsystem.service.IGroupChatService;
-import jdk.nashorn.internal.objects.Global;
+import com.allen.imsystem.service.*;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,11 +22,9 @@ import java.util.*;
 @Service
 public class FriendService implements IFriendService {
 
-    @Autowired
-    private SearchDao searchDao;
 
     @Autowired
-    private FriendDao friendDao;
+    private SearchMapper searchMapper;
 
     @Autowired
     private FriendMapper friendMapper;
@@ -44,18 +36,27 @@ public class FriendService implements IFriendService {
     private IChatService chatService;
 
     @Autowired
+    private IUserService userService;
+
+    @Autowired
     private RedisService redisService;
 
     @Autowired
     private IGroupChatService groupChatService;
 
+    @Autowired
+    private IMessageService messageService;
+
+    @Autowired
+    private INotifyService notifyService;
+
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
-        Map<String, UserSearchResult> map = searchDao.searchUserByKeyword(keyword);
+        Map<String, UserSearchResult> map = searchMapper.search(keyword);
         if (map == null)
             new ArrayList<UserSearchResult>();
-        List<String> friendId = friendDao.getAllFriendId(uid);
-        List<String> requiredId = friendDao.getAllRequiredToId(uid);
+        List<String> friendId = friendMapper.selectFriendId(uid);
+        List<String> requiredId = friendMapper.selectAquiredId(uid);
         for (String id : friendId) {
             UserSearchResult result = map.get(id);
             if (result != null) {
@@ -87,7 +88,7 @@ public class FriendService implements IFriendService {
         if(isFriend){
             return true;
         }
-        FriendRelation friendRelation = friendDao.selectFriendRelation(uid, friendId);
+        FriendRelation friendRelation = friendMapper.selectFriendRelation(uid, friendId);
         if (friendRelation == null) {
             return false;
         }
@@ -102,6 +103,9 @@ public class FriendService implements IFriendService {
 
     @Override
     public Boolean checkIsTwoWayFriend(String uid, String friendId) {
+        if (!redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid)) {
+            loadFriendListIntoRedis(uid);
+        }
         return redisService.sHasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid, friendId);
     }
 
@@ -123,30 +127,55 @@ public class FriendService implements IFriendService {
         String reason = params.getApplicationReason();
         if (reason == null) reason = "";
 
+        // 删掉旧申请
+        friendMapper.deleteFriendApply(fromUId,toUId);
         Integer groupId = null;
 
         if (params.getGroupId() == null) {
-            FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+            FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uid);
             groupId = defaultGroup.getGroupId();
         } else {
             groupId = Integer.valueOf(params.getGroupId());
         }
-        return friendDao.addFriendApply(fromUId, toUId, groupId, reason) > 0;
+        FriendApply friendApply = new FriendApply(fromUId,toUId,groupId,reason);
+        boolean insertSuccess = friendMapper.addFriendApply(friendApply) > 0;
+        // 新增一条通知
+        if(insertSuccess){
+            Integer applyId = friendApply.getId();
+            ApplyNotify applyNotify = new ApplyNotify(params.getFriendId(),applyId,GlobalConst.NotifyType.NEW_APPLY_NOTIFY);
+            notifyService.addNewApplyNotify(applyNotify);
+
+            //TODO  推送
+            if(userService.isOnline(params.getFriendId())){
+                FriendApplicationDTO notify = new FriendApplicationDTO();
+                UserInfoDTO applicantInfo = friendMapper.selectFriendInfo(uid);
+                notify.setApplicantInfo(applicantInfo);
+                notify.setApplicationReason(reason);
+                notify.setHasAccept(false);
+                messageService.sendNotify(204,params.getFriendId(),notify);
+            }
+        }
+        return insertSuccess;
     }
 
     @Override
     @Transactional
     public boolean passFriendApply(String uid, String friendId, Integer groupId) {
         // 1 查询对方要把ta放到什么组
-        Integer bePutInGroupId = friendDao.selectApplyGroupId(friendId, uid);
+        FriendApply friendApply = friendMapper.selectFriendApply(friendId,uid);
+        if(friendApply == null){
+            throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER,"没有未处理的申请");
+        }
+        Integer bePutInGroupId = friendApply.getGroupId();
+
         // 如果没有设定组，则默认放入默认组
         if (groupId == null) {
-            FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+            FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uid);
             groupId = defaultGroup.getGroupId();
         }
         // 2 更新用户申请表，将对方对当前用户的申请通过，同时也把当前用户对对方的申请全部通过
-        boolean successUpdate = friendDao.updateFriendApplyPass(true, friendId, uid) > 0
-                || friendDao.updateFriendApplyPass(true, uid, friendId) > 0;
+        boolean successUpdate = friendMapper.updateFriendApplyPass(true, friendId, uid) > 0
+                || friendMapper.updateFriendApplyPass(true, uid, friendId) > 0;
         if (!successUpdate) { // 如果更新行数为0，说明不存在此申请或者申请已经被同意
             throw new BusinessException(ExceptionType.APPLY_HAS_BEEN_HANDLER);
         }
@@ -155,44 +184,53 @@ public class FriendService implements IFriendService {
         boolean isMyFriend = checkIsMyFriend(uid, friendId);
         if (isMyFriend) {
             // 删掉原有的好友关系
-            friendDao.deleteFriend(uid, friendId);
-            // 删除原有的会话
-            String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
-            String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
-            chatMapper.hardDeletePrivateChat(uidA, uidB);
+            friendMapper.deleteFriend(uid, friendId);
+            // 如果对方原来已经是自己的好友了，说明是对方单项删除了自己，而自己没有删除对方，不删除原有的会话
+//            String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
+//            String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
+//            chatMapper.hardDeletePrivateChat(uidA, uidB);
+        }else{// 新的好友，新建一个新的会话
+            new Thread(() -> {
+                chatService.initNewPrivateChat(uid, friendId, false);
+            }).start();
         }
 
         // 4 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
         boolean successInsert = false;
         if (uid.compareTo(friendId) < 0) {
-            successInsert = friendDao.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
+            successInsert = friendMapper.insertNewFriend(uid, friendId, bePutInGroupId, groupId) > 0;
         } else if (uid.compareTo(friendId) > 0) {
-            successInsert = friendDao.insertNewFriend(friendId, uid, groupId, bePutInGroupId) > 0;
+            successInsert = friendMapper.insertNewFriend(friendId, uid, groupId, bePutInGroupId) > 0;
         } else {
             throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL, "不能添加自己为好友");
         }
-
-        // 4 为该对好友新建个会话
-        new Thread(() -> {
-            chatService.initNewPrivateChat(uid, friendId, false);
-        }).start();
 
         // 5 更新缓存
         addFriendIntoRedis(uid, friendId);
         addFriendIntoRedis(friendId, uid);
 
+        // 6 TODO 推送
+        if(successInsert){
+            ApplyNotify applyNotify = new ApplyNotify(friendId,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+            notifyService.addNewApplyNotify(applyNotify);
+            UserInfoDTO friendInfo = friendMapper.selectFriendInfo(uid);
+            NewFriendNotify notify = new NewFriendNotify(friendInfo,bePutInGroupId);
+            if(userService.isOnline(friendId)){
+                messageService.sendNotify(205,friendId,notify);
+            }
+        }
         return successInsert && successUpdate;
     }
 
     @Override
     public List<FriendApplicationDTO> getFriendApplicationList(String uid) {
-        List<FriendApplicationDTO> friendApplicationDTOList = friendDao.selectLatestApply(uid, 50);
+        List<FriendApplicationDTO> friendApplicationDTOList = friendMapper.selectLatestApply(uid, 50);
         return friendApplicationDTOList;
     }
 
     @Override
     public List<FriendGroup> getFriendGroupList(String uid) {
-        return friendDao.selectFriendGroupListWithSize(uid);
+        return friendMapper.selectFriendGroupListWithSize(uid);
     }
 
     @Override
@@ -200,9 +238,9 @@ public class FriendService implements IFriendService {
         // 默认组的id
         String defaultGroupId = "";
         // 按组id升序排列的 好友列表
-        List<UserInfoDTO> friendListOrderByGroup = friendDao.selectFriendListOrderByGroupId(uid);
+        List<UserInfoDTO> friendListOrderByGroup = friendMapper.selectFriendListOrderByGroupId(uid);
         // 按组id升序排列的 分组列表
-        List<FriendGroup> friendGroupList = friendDao.selectFriendGroupListWithSize(uid);
+        List<FriendGroup> friendGroupList = friendMapper.selectFriendGroupListWithSize(uid);
         // 按组id升序排列的 分组好友列表
         List<FriendListByGroupDTO> resultList = new ArrayList<>(friendGroupList.size());
         int begin = 0;
@@ -240,17 +278,21 @@ public class FriendService implements IFriendService {
         }
         if (groupName.length() > 10)
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名长度应小于10");
-        Integer affect = friendDao.insertNewFriendGroup(uid, groupName, isDefault);
+        boolean groupNameHasExist = friendMapper.selectGroupId(uid,groupName) !=null ;
+        if(groupNameHasExist){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"组名重复");
+        }
+        Integer affect = friendMapper.insertNewFriendGroup(uid, groupName, isDefault);
         Integer groupId = 0;
         if (affect > 0) {
-            groupId = friendDao.selectGroupId(uid, groupName);
+            groupId = friendMapper.selectGroupId(uid, groupName);
         }
         return groupId;
     }
 
     @Override
     public Set<UserInfoDTO> getFriendList(String uid) {
-        return friendDao.selectFriendList(uid);
+        return friendMapper.selectFriendList(uid);
     }
 
     @Override
@@ -272,37 +314,44 @@ public class FriendService implements IFriendService {
 
     @Override
     public UserInfoDTO getFriendInfo(String uid, String friendId) {
-        boolean isNotFriend = friendDao.checkIsFriend(uid, friendId) == 0;
+        boolean isNotFriend = friendMapper.checkIsFriend(uid, friendId) == 0;
         if (isNotFriend) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "这不是你的好友");
         }
-        return friendDao.selectFriendInfo(friendId);
+        return friendMapper.selectFriendInfo(friendId);
     }
 
     @Override
     @Transactional
     public boolean deleteFriend(String uid, String friendId) {
-        // 1、移除掉与好友的会话
-        chatService.removePrivateChat(uid, friendId);
-        // 2、检查是否已经被好友删除
+        // 1、检查是否已经被好友删除
         Boolean isDeletedByFriend = checkIsDeletedByFriend(uid, friendId);
         if (isDeletedByFriend)//如果已经被对方删除，则执行物理删除
         {
-            friendDao.deleteFriend(uid, friendId);
+            //物理删除好友关系
+            friendMapper.deleteFriend(uid, friendId);
+            //物理删除旧的会话
+            String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
+            String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
+            chatMapper.hardDeletePrivateChat(uidA,uidB);
+//            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
         } else {   // 否则执行逻辑删除
             sortDeleteFriend(uid, friendId);
+            // 移除掉与好友的会话
+            chatService.removePrivateChat(uid, friendId);
         }
 
-        // 3、更新缓存
-        return removeFriendFromRedis(uid, friendId) &&
-                removeFriendFromRedis(friendId, uid);
+        // 2、更新缓存
+        removeFriendFromRedis(uid, friendId);
+        removeFriendFromRedis(friendId, uid);
+        return true;
     }
 
     private boolean sortDeleteFriend(String uid, String friendId) {
         if (uid.compareTo(friendId) < 0) {
-            return friendDao.sortDeleteFriendA2B(uid, friendId) > 0;
+            return friendMapper.sortDeleteFriendA2B(uid, friendId) > 0;
         } else {
-            return friendDao.sortDeleteFriendB2A(uid, friendId) > 0;
+            return friendMapper.sortDeleteFriendB2A(uid, friendId) > 0;
         }
     }
 
@@ -311,27 +360,27 @@ public class FriendService implements IFriendService {
         if (StringUtils.isEmpty(groupName)) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能为空");
         }
-        return friendDao.updateFriendGroupName(groupId, groupName, uid) > 0;
+        return friendMapper.updateFriendGroupName(groupId, groupName, uid) > 0;
     }
 
     @Override
     @Transactional
     public boolean deleteFriendGroup(Integer groupId, String uid) {
         // 1 判断该分组下是否有好友，如果没有直接删除组，结束
-        Integer size = friendDao.selectGroupSize(groupId, uid);
+        Integer size = friendMapper.selectGroupSize(groupId, uid);
         // 2 获取该用户的默认分组，若删除的是默认分组，报错。
-        FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uid);
+        FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uid);
         if (groupId.equals(defaultGroup.getGroupId())) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "不能删除默认分组");
         }
         boolean moveSuccess = true;
         if (size > 0) {// 若有好友，将该分组下所有好友转至默认分组
-            Integer affect = friendDao.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid);
+            Integer affect = friendMapper.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid);
             System.out.println(affect);
-            moveSuccess = friendDao.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid) > 0;
+            moveSuccess = friendMapper.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid) > 0;
         }
         // 3 删除掉该分组
-        boolean deleteSuccess = friendDao.deleteFriendGroup(groupId, uid) > 0;
+        boolean deleteSuccess = friendMapper.deleteFriendGroup(groupId, uid) > 0;
 
         return moveSuccess && deleteSuccess;
     }
@@ -339,16 +388,22 @@ public class FriendService implements IFriendService {
     @Override
     @Transactional
     public boolean moveFriendToOtherGroup(String uid, String friendId, Integer oldGroupId, Integer newGroupId) {
-        Boolean isGroupValid = friendDao.isGroupValid(newGroupId);
+        Boolean isGroupValid = friendMapper.isGroupValid(newGroupId);
         if (isGroupValid == null || isGroupValid.booleanValue() == false) {
             throw new BusinessException(ExceptionType.DATA_CONSTRAINT_FAIL, "要移动到的组不存在或已被删除");
         }
-        boolean isSuccess = friendDao.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) > 0;
+        boolean isSuccess = friendMapper.moveFriendToAnotherGroup(uid, friendId, oldGroupId, newGroupId) > 0;
         return isSuccess;
     }
 
+    @Override
+    public void receiveAllNotify(String uid) {
+        redisService.del(GlobalConst.Redis.KEY_NEW_FRIEND_NOTIFY_LIST +uid);
+        redisService.del(GlobalConst.Redis.KEY_NEW_APPLY_NOTIFY_LIST+uid);
+    }
+
     private Long loadFriendListIntoRedis(String uid) {
-        Set<String> twoWayFriendIdList = friendDao.selectTwoWayFriendId(uid);
+        Set<String> twoWayFriendIdList = friendMapper.selectTwoWayFriendId(uid);
         if (twoWayFriendIdList != null) {
             return redisService.sSetAndTime(GlobalConst.Redis.KEY_FRIEND_SET + uid, 60 * 60L, twoWayFriendIdList.toArray());
         }

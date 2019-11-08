@@ -1,9 +1,7 @@
 package com.allen.imsystem.dao.mappers;
 
 import com.allen.imsystem.common.PageBean;
-import com.allen.imsystem.model.FixBean;
 import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.model.pojo.ChatGroup;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import org.apache.ibatis.annotations.MapKey;
@@ -23,14 +21,6 @@ public interface ChatMapper {
     ChatSessionDTO selectNewMsgPrivateChatData(@Param("chatId") Long chatId,
                                                @Param("uid")String uid ,@Param("friendId")String friendId);
 
-    @MapKey("talkId")
-    Map<Long, ChatNewMsgSizeDTO> selectPrivateChatNewMsgSize(@Param("chatList") List<ChatSessionDTO> chatList,
-                                                             @Param("uid")String uid);
-
-    String selectPrivateChatTitleName(@Param("chatId")Long chatId, @Param("uid")String uid);
-
-    ChatGroup selectChatGroupInfoByChatId(String chatId);
-
     PrivateChat selectPrivateChatInfoByUid(@Param("uidA")String uidA, @Param("uidB")String uidB);
 
     PrivateChat selectPrivateChatInfoByChatId(String chatId);
@@ -39,9 +29,6 @@ public interface ChatMapper {
 
     ChatSessionInfo selectGroupChatData(Long chatId);
 
-    @MapKey("uid")
-    Map<String,ChatSessionInfo> selectGroupAllChatData(String gid);
-
     List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
@@ -49,11 +36,9 @@ public interface ChatMapper {
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
 
-
     Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
 
     Integer countAllGroupHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
-
 
     Integer countPrivateChatUnReadMsgForUser(@Param("chatId")Long chatId, @Param("uid")String uid);
 
@@ -70,9 +55,4 @@ public interface ChatMapper {
 
     Integer insertPrivateMsgToRecord(PrivateMsgRecord privateMsgRecord);
 
-    List<ChatLastMessageTime> selectChatSessionLastMsgTime();
-
-    List<FixBean> fixSelect();
-
-    Integer fix(@Param("fixBeanList")List<FixBean> fixBeanList);
 }

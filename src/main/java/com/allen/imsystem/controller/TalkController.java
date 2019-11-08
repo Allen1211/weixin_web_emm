@@ -7,7 +7,6 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.MultipartFileUtil;
 import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.model.pojo.GroupChat;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
@@ -22,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +47,7 @@ public class TalkController {
 
     /**
      * 获取会话的一些信息，只在用户点击一个会话的时候，调用此接口，故可认为对于该用户该会话所有消息已读。
+     *
      * @param talkIdStr
      * @param request
      * @return
@@ -58,7 +57,11 @@ public class TalkController {
         Long talkId = Long.valueOf(talkIdStr);
         String uid = cacheHolder.getUid(request);
         ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
-        chatService.setTalkAllMsgHasRead(uid,talkIdStr);
+        if(chatSessionInfo.getIsGroup()){
+            chatService.setGroupChatAllMsgHasRead(uid,chatSessionInfo.getGid());
+        }else{
+            chatService.setPrivateChatAllMsgHasRead(uid, talkIdStr);
+        }
         return new JSONResponse(1).putAllData(new BeanMap(chatSessionInfo));
     }
 
@@ -73,7 +76,12 @@ public class TalkController {
     public JSONResponse setHasRead(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String talkId = params.get("talkId");
         String uid = cacheHolder.getUid(request);
-        chatService.setTalkAllMsgHasRead(uid, talkId);
+        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatService.getChatType(talkId))){
+            chatService.setPrivateChatAllMsgHasRead(uid, talkId);
+        }else{
+            String gid = params.get("gid");
+            chatService.setGroupChatAllMsgHasRead(uid,gid);
+        }
         return new JSONResponse(1);
     }
 
@@ -87,7 +95,7 @@ public class TalkController {
             pageSize = Integer.valueOf(params.get("pageSize"));
         }
         boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(Long.valueOf(talkId)));
-        Map<String,Object> resultMap = chatService.getMessageRecord(isGroup,uid,talkId,new Date(),index,pageSize);
+        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, talkId, new Date(), index, pageSize);
         return new JSONResponse(1).putAllData(resultMap);
     }
 
@@ -119,27 +127,27 @@ public class TalkController {
         String uid = cacheHolder.getUid(request);
         Long chatId = Long.valueOf(params.get("talkId"));
         Integer chatType = chatService.getChatType(chatId);
-        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)){
+        if (GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)) {
             chatService.removePrivateChat(uid, chatId);
-        }else{
-            chatService.removeGroupChat(uid,chatId);
+        } else {
+            chatService.removeGroupChat(uid, chatId);
         }
         return new JSONResponse(1);
     }
 
 
-    @RequestMapping(value = "/uploadMessageImage",method = RequestMethod.POST)
-    public JSONResponse uploadMessageImage(@RequestParam("image") MultipartFile multipartFile){
-       try {
-           String url = fileService.uploadMsgImg(multipartFile);
-           return new JSONResponse(1).putData("imageUrl",url);
-       }catch(IOException e){
-           e.printStackTrace();
-           throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE, "文件保存失败");
-       }
+    @RequestMapping(value = "/uploadMessageImage", method = RequestMethod.POST)
+    public JSONResponse uploadMessageImage(@RequestParam("image") MultipartFile multipartFile) {
+        try {
+            String url = fileService.uploadMsgImg(multipartFile);
+            return new JSONResponse(1).putData("imageUrl", url);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE, "文件保存失败");
+        }
     }
 
-    @RequestMapping(value = "/uploadMultipartFile",method = RequestMethod.POST)
+    @RequestMapping(value = "/uploadMultipartFile", method = RequestMethod.POST)
     public JSONResponse uploadMultipartFile(HttpServletRequest request) throws Exception {
         //使用 工具类解析相关参数，工具类代码见下面
         MultipartFileDTO param = MultipartFileUtil.parse(request);
@@ -148,82 +156,90 @@ public class TalkController {
     }
 
 
-    @RequestMapping(value = "/getFileUploadInfo",method = RequestMethod.GET)
-    public JSONResponse getFileUploadInfo(@RequestParam("md5")String md5){
+    @RequestMapping(value = "/getFileUploadInfo", method = RequestMethod.GET)
+    public JSONResponse getFileUploadInfo(@RequestParam("md5") String md5) {
         FileUploadInfo fileUploadInfo = fileService.getUnCompleteParts(md5);
         return new JSONResponse(1).putAllData(new BeanMap(fileUploadInfo));
     }
 
-    @RequestMapping(value = "/createGroupTalk",method = RequestMethod.POST)
-    public JSONResponse createGroupTalk(@RequestBody Map<String ,String> params,HttpServletRequest request){
+    @RequestMapping(value = "/createGroupTalk", method = RequestMethod.POST)
+    public JSONResponse createGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String groupName = params.get("groupName");
-        CreateGroupDTO groupChat = groupChatService.createNewGroupChat(uid,groupName);
-        groupChat.setGroupAvatar(GlobalConst.Path.RESOURCES_URL+groupChat.getGroupAvatar());
+        CreateGroupDTO groupChat = groupChatService.createNewGroupChat(uid, groupName);
+        groupChat.setGroupAvatar(GlobalConst.Path.RESOURCES_URL + groupChat.getGroupAvatar());
         return new JSONResponse(1).putAllData(new BeanMap(groupChat));
     }
 
-    @RequestMapping(value = "/getGroupTalkList",method = RequestMethod.GET)
-    public JSONResponse getGroupTalkList(HttpServletRequest request){
+    @RequestMapping(value = "/getGroupTalkList", method = RequestMethod.GET)
+    public JSONResponse getGroupTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         List<GroupChatInfoDTO> resultList = groupChatService.getGroupChatList(uid);
-        return new JSONResponse(1).putData("groupTalkList",resultList);
+        return new JSONResponse(1).putData("groupTalkList", resultList);
     }
 
-    @RequestMapping(value = "/getGroupTalkMember",method = RequestMethod.GET)
-    public JSONResponse getGroupTalkMember(@RequestParam("gid")String gid,HttpServletRequest request){
+    @RequestMapping(value = "/getGroupTalkMember", method = RequestMethod.GET)
+    public JSONResponse getGroupTalkMember(@RequestParam("gid") String gid, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<GroupMemberDTO> groupMemberList = groupChatService.getGroupMemberList(uid,gid);
-        return new JSONResponse(1).putData("memberList",groupMemberList);
+        List<GroupMemberDTO> groupMemberList = groupChatService.getGroupMemberList(uid, gid);
+        return new JSONResponse(1).putData("memberList", groupMemberList);
     }
 
 
-    @RequestMapping(value = "/inviteFriendToGroupTalk",method = RequestMethod.POST)
-    public JSONResponse inviteFriendToGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/inviteFriendToGroupTalk", method = RequestMethod.POST)
+    public JSONResponse inviteFriendToGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String gid = params.get("gid");
-        String list =  params.get("friendList");
-        List<InviteDTO> inviteDTOList = JSONArray.parseArray(list,InviteDTO.class);
+        String list = params.get("friendList");
+        List<InviteDTO> inviteDTOList = JSONArray.parseArray(list, InviteDTO.class);
         String inviterId = cacheHolder.getUid(request);
-        boolean success = groupChatService.inviteFriendToChatGroup(inviterId,gid,inviteDTOList);
+        boolean success = groupChatService.inviteFriendToChatGroup(inviterId, gid, inviteDTOList);
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "/leaveGroupTalk",method = RequestMethod.POST)
-    public JSONResponse leaveGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/leaveGroupTalk", method = RequestMethod.POST)
+    public JSONResponse leaveGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        groupChatService.leaveGroupChat(uid,gid);
+        groupChatService.leaveGroupChat(uid, gid);
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "/dismissGroupTalk",method = RequestMethod.POST)
-    public JSONResponse dismissGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/dismissGroupTalk", method = RequestMethod.POST)
+    public JSONResponse dismissGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        groupChatService.dismissGroupChat(uid,gid);
+        groupChatService.dismissGroupChat(uid, gid);
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "/removeMemberFromGroupTalk",method = RequestMethod.POST)
-    public JSONResponse removeMemberFromGroupTalk(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/removeMemberFromGroupTalk", method = RequestMethod.POST)
+    public JSONResponse removeMemberFromGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        String list =  params.get("memberList");
-        List<GroupMemberDTO> memberList = JSONArray.parseArray(list,GroupMemberDTO.class);
-        groupChatService.kickOutGroupMember(memberList,gid,uid);
+        String list = params.get("memberList");
+        List<GroupMemberDTO> memberList = JSONArray.parseArray(list, GroupMemberDTO.class);
+        groupChatService.kickOutGroupMember(memberList, gid, uid);
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "/changeGroupAlias",method = RequestMethod.POST)
-    public JSONResponse changeGroupAlias(@RequestBody Map<String,String> params,HttpServletRequest request) throws Exception {
+    @RequestMapping(value = "/changeGroupAlias", method = RequestMethod.POST)
+    public JSONResponse changeGroupAlias(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String gid = params.get("gid");
-        String groupAlias =  params.get("groupAlias");
+        String groupAlias = params.get("groupAlias");
         String uid = cacheHolder.getUid(request);
-        groupChatService.changeUserGroupAlias(uid,gid,groupAlias);
+        groupChatService.changeUserGroupAlias(uid, gid, groupAlias);
         return new JSONResponse(1);
     }
 
-
+    @RequestMapping(value = "/updateGroupTalkInfo", method = RequestMethod.POST)
+    public JSONResponse updateGroupTalkInfo(@RequestParam("gid") String gid,
+                                          @RequestParam(value = "groupName", required = false) String groupName,
+                                          @RequestParam(value = "groupAvatar", required = false) MultipartFile multipartFile,
+                                          HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        Map<String, String> result = groupChatService.updateGroupInfo(multipartFile, groupName, gid, uid);
+        return new JSONResponse(1).putAllData(result);
+    }
 
 
 }

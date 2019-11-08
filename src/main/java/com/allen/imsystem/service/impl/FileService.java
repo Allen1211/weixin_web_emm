@@ -31,15 +31,16 @@ public class FileService implements IFileService {
     @Autowired
     private FileMapper fileMapper;
 
+
+
     @Override
-    public String uploadAvatar(MultipartFile multipartFile, String uid) {
+    public String uploadAvatar(MultipartFile multipartFile, String id) {
         checkImageFile(multipartFile);
 
         String linuxPath = GlobalConst.Path.AVATAR_PATH;
         String type = getFileType(multipartFile);
 
-        StringBuilder nameDotType = new StringBuilder();
-        nameDotType.append(uid).append('.').append(type);
+        StringBuilder nameDotType = new StringBuilder().append(id).append('.').append(type);
         File file = new File(linuxPath + nameDotType.toString());
         try {
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), file);
@@ -68,7 +69,7 @@ public class FileService implements IFileService {
             FileOutputStream fos = new FileOutputStream(file);
             BufferedOutputStream bfo = new BufferedOutputStream(fos);
             // 图片压缩
-//            compressImage(multipartFile.getInputStream(), bfo, multipartFile.getSize());
+            compressImage(multipartFile.getInputStream(), bfo, multipartFile.getSize());
             // IO写入服务器硬盘
             bfo.write(multipartFile.getBytes());
             bfo.flush();
@@ -104,6 +105,9 @@ public class FileService implements IFileService {
         RandomAccessFile accessConfFile = new RandomAccessFile(confFile, "rw");
 
 
+
+
+
         // 该分片的起始写入位置
         long offset = blockSize * (param.getCurrBlock() - 1);
         //定位到该分片的偏移量
@@ -135,7 +139,6 @@ public class FileService implements IFileService {
                 File newFileName = new File(tempDirStr, fileName);
                 boolean success = tmpFile.renameTo(newFileName);
             }
-            System.out.println(responseDTO);
 
             // 缓存一下文件大小
             redisService.set(md5,param.getTotalSize().toString(),60*10L);

@@ -3,9 +3,10 @@ package com.allen.imsystem.service.impl;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.common.utils.HashSaltUtil;
+import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.common.utils.ParamValidator;
-import com.allen.imsystem.common.utils.RedisUtil;
-import com.allen.imsystem.dao.UserDao;
+import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
@@ -13,8 +14,7 @@ import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.IUserService;
-import com.allen.imsystem.common.utils.HashSaltUtil;
-import com.allen.imsystem.common.utils.JWTUtil;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,7 @@ public class UserService implements IUserService {
 
 
     @Autowired
-    private UserDao userDao;
+    private UserMapper userMapper;
 
     @Autowired
     private IFriendService friendService;
@@ -40,12 +40,12 @@ public class UserService implements IUserService {
 
     @Override
     public User findUserAccountWithUid(String uid) {
-        return userDao.findUserWithUid(uid);
+        return userMapper.selectUserWithUid(uid);
     }
 
     @Override
     public UserInfo findUserInfo(String uid) {
-        return userDao.findUserInfo(uid);
+        return userMapper.selectUserInfo(uid);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class UserService implements IUserService {
         ParamValidator validator = new ParamValidator();
         validator.validateEmail(email, "邮箱格式不合法");
         validator.doValidate();
-        return userDao.countEmail(email) > 0;
+        return userMapper.selectCountEmail(email) > 0;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class UserService implements IUserService {
         /**
          * 从uid池里获取一个未使用的uid
          */
-        UidPool uidPool = userDao.selectNextUnUsedUid();
+        UidPool uidPool = userMapper.selectNextUnUsedUid();
         String uid = uidPool.getUid();
         //对密码加密
         String salt = UUID.randomUUID().toString();
@@ -74,11 +74,11 @@ public class UserService implements IUserService {
         UserInfo userInfo = new UserInfo(uid,username);
         Random random = new Random(System.currentTimeMillis());
         int defaultIconId = random.nextInt(13) + 1;
-        userInfo.setIconId(GlobalConst.Path.AVATAR_URL+"default/"+defaultIconId+".jpg");
-        userDao.insertUser(user);
-        userDao.insertUserInfo(userInfo);
-        userDao.sortDeleteUsedUid(uidPool.getId());
-        userDao.insertLoginRecord(uid,new Date());
+        userInfo.setIconId("default/"+defaultIconId+".jpg");
+        userMapper.insertUser(user);
+        userMapper.insertUserInfo(userInfo);
+        userMapper.sortDeleteUsedUid(uidPool.getId());
+        userMapper.insertLoginRecord(uid,new Date());
         // 为新用户创建一个默认分组
         friendService.addFriendGroup(uid,"我的好友",true);
         return;
@@ -94,9 +94,9 @@ public class UserService implements IUserService {
         User user = null;
         // 判断是email还是uid
         if(uidOrEmail.contains("@")){
-            user = userDao.findUserWithEmail(uidOrEmail);
+            user = userMapper.selectUserWithEmail(uidOrEmail);
         }else{
-            user = userDao.findUserWithUid(uidOrEmail);
+            user = userMapper.selectUserWithUid(uidOrEmail);
         }
 
         if(null == user)
@@ -107,7 +107,7 @@ public class UserService implements IUserService {
 //            throw new BusinessException(ExceptionType.USERNAME_PASSWORD_ERROR);
 
         // 更新最后一次登录时间
-        userDao.updateLoginRecord(user.getUid(),new Date());
+        userMapper.updateLoginRecord(user.getUid(),new Date());
         // redis更新该用户的在线状态 至在线
         redisService.hset("user_status",user.getUid(), GlobalConst.UserStatus.ONLINE);
 
@@ -121,9 +121,10 @@ public class UserService implements IUserService {
         return map;
     }
 
+
     @Override
     public void logout(String uid) {
-        User user = userDao.findUserWithUid(uid);
+        User user = userMapper.selectUserWithUid(uid);
         if(user == null){
             throw new BusinessException(ExceptionType.USER_NOT_FOUND);
         }
@@ -139,7 +140,7 @@ public class UserService implements IUserService {
             UserInfo userInfo = new UserInfo();
             userInfo.setUid(uid);
             userInfo.setIconId(avatarURL);
-            userDao.updateUserInfo(userInfo);
+            userMapper.updateUserInfo(userInfo);
         }else {
             throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE);
         }
@@ -156,7 +157,7 @@ public class UserService implements IUserService {
         userInfo.setGender(editUserInfoDTO.getGender());
         userInfo.setUsername(editUserInfoDTO.getUsername());
 
-        return userDao.updateUserInfo(userInfo)>0;
+        return userMapper.updateUserInfo(userInfo)>0;
     }
 
     @Override
@@ -164,12 +165,12 @@ public class UserService implements IUserService {
         if(userId == null){
             throw new BusinessException(ExceptionType.NO_LOGIN_ERROR);
         }
-        return userDao.selectSelfInfo(userId);
+        return userMapper.selectSelfInfo(userId);
     }
 
     @Override
     public Date getUserLastLoginTime(String uid) {
-        return userDao.getUserLastLoginTime(uid);
+        return userMapper.getUserLastLoginTime(uid);
     }
 
     @Override
@@ -184,6 +185,51 @@ public class UserService implements IUserService {
         if(uid==null) return false;
         Integer onlineStatus = getUserOnlineStatus(uid);
         return ! onlineStatus.equals(0);
+    }
+
+    @Override
+    public void forgetPassword(String email, String newPassword) {
+        User user = userMapper.selectUserWithEmail(email);
+        if(user==null){
+            throw new BusinessException(ExceptionType.USER_NOT_FOUND);
+        }
+        // 密码检验
+//        ParamValidator paramValidator = new ParamValidator();
+//        paramValidator.validatePassword(newPassword,"密码格式错误");
+        if(StringUtils.isEmpty(newPassword.trim())){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"密码不能为空");
+        }
+        String salt = UUID.randomUUID().toString();
+        newPassword = HashSaltUtil.getHashSaltPwd(newPassword,salt);
+        user.setPassword(newPassword);
+        user.setSalt(salt);
+        user.setUpdateTime(new Date());
+        userMapper.updateUserByEmail(user);
+    }
+
+    @Override
+    public String modifyPassword(String uid, String oldPassword, String newPassword) {
+        User user = userMapper.selectUserWithUid(uid);
+        if(user==null){
+            throw new BusinessException(ExceptionType.USER_NOT_FOUND);
+        }
+        if(!user.getPassword().equals(HashSaltUtil.getHashSaltPwd(oldPassword,user.getSalt()))){
+            throw new BusinessException(ExceptionType.PERMISSION_DENIED,"旧密码错误");
+        }
+        // 密码检验
+//        ParamValidator paramValidator = new ParamValidator();
+//        paramValidator.validatePassword(newPassword,"密码格式错误");
+        if(StringUtils.isEmpty(newPassword.trim())){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"新密码不能为空");
+        }
+        String salt = UUID.randomUUID().toString();
+        newPassword = HashSaltUtil.getHashSaltPwd(newPassword,salt);
+        user.setPassword(newPassword);
+        user.setSalt(salt);
+        user.setUpdateTime(new Date());
+        userMapper.updateUserByEmail(user);
+        String token = JWTUtil.createLoginToken(user.getUid(),user.getId());
+        return token;
     }
 
 }

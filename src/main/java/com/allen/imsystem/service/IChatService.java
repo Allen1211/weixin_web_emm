@@ -1,7 +1,8 @@
 package com.allen.imsystem.service;
 
-import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.model.pojo.GroupChat;
+import com.allen.imsystem.model.dto.ChatSessionDTO;
+import com.allen.imsystem.model.dto.ChatSessionInfo;
+import com.allen.imsystem.model.dto.SendMsgDTO;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import org.springframework.stereotype.Service;
 
@@ -44,18 +45,6 @@ public interface IChatService {
      */
     boolean setChatLastMsgTimestamp(Long chatId, Long timestamp);
 
-    /**
-     * 设置某用户会话的未读消息数，常用于初始化和清零。
-     * @param uid
-     * @param chatId
-     * @param count
-     * @return
-     */
-    boolean setUserChatNewMsgCount(String uid,Long chatId, Integer count);
-
-    Integer getUserChatNewMsgCount(String uid,Long chatId);
-
-    void incrUserChatNewMsgCount(String uid, Long chatId);
 
     /**
      * 初始化一个私聊会话
@@ -88,14 +77,19 @@ public interface IChatService {
      */
     void removePrivateChat(String uid,Long chatId);
 
-    void removeGroupChat(String uid,Long chatId);
-
     /**
      * 移除一个对好友的私聊会话
      * @param uid
      * @param friendId
      */
     void removePrivateChat(String uid,String friendId);
+
+    /**
+     * 移除一个群聊会话
+     * @param uid
+     * @param chatId
+     */
+    void removeGroupChat(String uid,Long chatId);
 
     /**
      * 获取会话列表
@@ -111,12 +105,18 @@ public interface IChatService {
     ChatSessionInfo getChatInfo(Long talkId,String uid);
 
     /**
-     * 标识已读
+     * 标识一个私聊会话的所有消息已读
      * @param uid
      * @param talkId
      * @return
      */
-    Boolean setTalkAllMsgHasRead(String uid, String talkId);
+    Boolean setPrivateChatAllMsgHasRead(String uid, String talkId);
+    /**
+     * 标识一个群聊会话的所有消息已读
+     * @param uid
+     * @return
+     */
+    Boolean setGroupChatAllMsgHasRead(String uid, String gid);
 
     /**
      * 获取一个会话的聊天记录

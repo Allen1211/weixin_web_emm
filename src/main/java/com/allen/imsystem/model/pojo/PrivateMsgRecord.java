@@ -18,4 +18,6 @@ public class PrivateMsgRecord {
     private Integer status;
     private Date createdTime;
     private Date updateTime;
+
+
 }

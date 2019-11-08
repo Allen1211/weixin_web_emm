@@ -60,15 +60,29 @@ public class SecurityController {
     }
 
 
-    @RequestMapping(value = "/sendRegistEmailCode",method = RequestMethod.GET)
+    @RequestMapping(value = "/sendEmailCode",method = RequestMethod.GET)
     @ResponseBody
-    public JSONResponse sendCheckCodeEmail(@RequestParam String email){
+    public JSONResponse sendCheckCodeEmail(@RequestParam("email") String email, @RequestParam("type")Integer type){
+        boolean isRegisted = userService.isEmailRegisted(email);
+        switch (type){
+            case 1:{
+                if(isRegisted){
+                    throw new BusinessException(ExceptionType.EMAIL_HAS_BEEN_REGISTED);
+                }
+                break;
+            }
+            case 2:{
+                if(!isRegisted){
+                    throw new BusinessException(ExceptionType.USER_NOT_FOUND,"该邮箱还未注册");
+                }
+                break;
+            }
+            default:{
+                throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"不支持的type类型");
+            }
+        }
 
-//        if(userService.isEmailRegisted(email)){
-//            throw new BusinessException(ExceptionType.EMAIL_HAS_BEEN_REGISTED);
-//        }
-
-        boolean sendSuccess = securityService.sendRegisterCheckEmail(email);
+        boolean sendSuccess = securityService.sendRegisterCheckEmail(type,email);
 
         // 发送成功的话, 将验证码和过期时间拼接添加到session
         if(sendSuccess){

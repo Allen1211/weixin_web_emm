@@ -22,8 +22,4 @@ public class PageBean {
         this(index,10);
     }
 
-    public static void main(String[] args) {
-        PageBean pageBean = new PageBean(5,10);
-        System.out.println(pageBean);
-    }
 }

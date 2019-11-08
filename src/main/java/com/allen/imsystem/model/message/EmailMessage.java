@@ -15,6 +15,9 @@ public class EmailMessage implements Serializable {
 
     private Map<String,Object> model;
 
+    public EmailMessage() {
+    }
+
     public EmailMessage(String subject, String emailAddress, String fileLocation, Map<String, Object> model) {
         this.subject = subject;
         this.emailAddress = emailAddress;

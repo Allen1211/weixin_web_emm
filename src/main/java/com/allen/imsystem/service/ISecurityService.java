@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface ISecurityService {
 
-    boolean sendRegisterCheckEmail(String email);
+    boolean sendRegisterCheckEmail(Integer type,String email);
 
     boolean verifyImageCode(String imageCode, String correctImageCode);
 

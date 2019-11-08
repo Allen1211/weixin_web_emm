@@ -2,11 +2,14 @@ package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
+import com.allen.imsystem.dao.mappers.GroupChatMapper;
 import com.allen.imsystem.model.pojo.User;
+import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFriendService;
 import com.allen.imsystem.service.impl.ChatService;
 import com.allen.imsystem.service.impl.RedisService;
+import lombok.Data;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,7 +20,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -44,6 +50,8 @@ public class TestSDR {
     @Autowired
     JedisConnectionFactory jedisConnectionFactory;
 
+    @Autowired
+    GroupChatMapper groupChatMapper;
 
     @Test
     public void testInject(){
@@ -68,14 +76,14 @@ public class TestSDR {
     }
     @Test
     public void test3(){
-        HashOperations<String,String,Object> hashOperations = redisTemplate.opsForHash();
-        User user = new User();
-        user.setId(1);
-        user.setUid("123");
-        hashOperations.put("user","allen",user);
-        User user1 = (User) hashOperations.get("user","allen");
-        Assert.assertNotNull(user1);
-        Assert.assertEquals("123",user1.getUid());
+//        HashOperations<String,String,Object> hashOperations = redisTemplate.opsForHash();
+//        User user = new User();
+//        user.setId(1);
+//        user.setUid("123");
+//        hashOperations.put("user","allen",user);
+//        User user1 = (User) hashOperations.get("user","allen");
+//        Assert.assertNotNull(user1);
+//        Assert.assertEquals("123",user1.getUid());
     }
 
     @Test
@@ -153,7 +161,51 @@ public class TestSDR {
 
     @Test
     public void test(){
-        redisService.sSet("213","hh");
-        Set<Object> set = redisTemplate.opsForSet().members("213");
+
+        redisService.lSet("1234",new User1("1","a"));
+        redisService.lSet("1234",new User1("2","b"));
+        redisService.lSet("1234",new User1("3","c"));
+        List<Object> list = redisService.lGet("1234",0,-1);
+        redisService.del("1234");
+        System.out.println(list);
     }
+
+    @Test
+    public void fix(){
+        List<UserChatGroup> list = groupChatMapper.fix();
+        for(UserChatGroup u:list){
+            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,u.getUid()+u.getChatId(),!u.getShouldDisplay());
+//            System.out.println(u);
+        }
+    }
+}
+@Data
+class User1 implements Serializable {
+    String id;
+    String name;
+
+    public User1() {
+    }
+
+    public User1(String id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(this == o){
+            return true;
+        }
+        if(o==null){
+            return false;
+        }
+        if(! (o instanceof User1)){
+            return false;
+        }
+        User1 obj = (User1)o;
+        return this.id.equals(obj.id);
+    }
+
+
 }

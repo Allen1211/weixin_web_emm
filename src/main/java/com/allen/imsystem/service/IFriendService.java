@@ -96,4 +96,6 @@ public interface IFriendService {
      * 移动好友到另一个分组
      */
     boolean moveFriendToOtherGroup(String uid,String friendId, Integer oldGroupId, Integer newGroupId);
+
+    void receiveAllNotify(String uid);
 }

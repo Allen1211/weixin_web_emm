@@ -79,7 +79,7 @@
 
     <select id="selectGroupAllChatData" resultMap="chatSessionDTOMap">
         SELECT ucg.uid as myId,ucg.chat_id,ucg.gid, cg.group_name as talkTille, gmr.content, 1 as isGroup,gmr.created_time,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',cg.avatar) as avatar
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',cg.avatar) as avatar
         FROM user_chat_group as ucg
         INNER JOIN chat_group as cg ON ucg.gid = cg.gid
         LEFT JOIN group_msg_record as gmr ON cg.last_msg_id = gmr.msg_id
@@ -96,7 +96,7 @@
 
     <select id="selectGroupChatList" resultMap="GroupChatInfoDTOMap">
         SELECT cg.gid,cg.group_name,cg.owner_id,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',avatar) as avatar
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',avatar) as avatar
         FROM chat_group cg INNER JOIN user_chat_group as ucg ON cg.gid = ucg.gid
         WHERE ucg.uid=#{uid} AND ucg.`status` = 1 AND cg.`status`=1
     </select>
@@ -237,6 +237,22 @@
         UPDATE chat_group SET last_msg_id=#{lastMsgId} ,last_sender_id=#{lastSenderId},update_time=NOW(6) WHERE gid=#{gid}
     </update>
 
+    <update id="updateGroupChat" parameterType="com.allen.imsystem.model.pojo.GroupChat">
+        UPDATE chat_group
+        <set>
+            <if test="gid!=null">gid = #{gid},</if>
+            <if test="groupName!=null">group_name = #{groupName},</if>
+            <if test="ownerId!=null">owner_id = #{ownerId},</if>
+            <if test="lastMsgId!=null">last_msg_id = #{lastMsgId},</if>
+            <if test="lastSenderId!=null">last_sender_id = #{lastSenderId},</if>
+            <if test="avatar!=null">avatar = #{avatar},</if>
+            <if test="status!=null">status = #{status},</if>
+            <if test="createdTime!=null">created_time = #{createdTime},</if>
+            <if test="updateTime!=null">update_time = NOW(6),</if>
+        </set>
+        WHERE gid=#{gid}
+    </update>
+
     <update id="updateUserGroupChat" parameterType="com.allen.imsystem.model.pojo.UserChatGroup">
         UPDATE `user_chat_group`
         <set>
@@ -263,4 +279,10 @@
             </if>
         </where>
     </update>
+
+
+
+    <select id="fix" resultMap="userChatGroupRelationMap">
+        SELECT * FROM user_chat_group
+    </select>
 </mapper>

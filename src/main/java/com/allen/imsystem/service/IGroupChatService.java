@@ -4,6 +4,7 @@ import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.GroupChat;
 import com.allen.imsystem.model.pojo.GroupMsgRecord;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -99,4 +100,14 @@ public interface IGroupChatService {
      * @param alias
      */
     void changeUserGroupAlias(String uid,String gid,String alias);
+
+    /**
+     * 修改群信息
+     * @param multipartFile
+     * @param groupName
+     * @param gid
+     * @param uid
+     * @return
+     */
+    Map<String,String> updateGroupInfo(MultipartFile multipartFile, String groupName, String gid, String uid);
 }

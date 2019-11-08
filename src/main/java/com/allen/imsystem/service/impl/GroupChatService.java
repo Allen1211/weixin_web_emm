@@ -17,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -76,7 +77,8 @@ public class GroupChatService implements IGroupChatService {
     public void saveGroupChatMsgRecord(SendMsgDTO msg){
         GroupMsgRecord groupMsgRecord = new GroupMsgRecord();
         groupMsgRecord.setMsgId(msg.getMsgId());
-        Date createdTime = new Date(Long.parseLong(msg.getTimeStamp()));
+//        Date createdTime = new Date(Long.parseLong(msg.getTimeStamp()));
+        Date createdTime = new Date();
         groupMsgRecord.setCreatedTime(createdTime);
         groupMsgRecord.setUpdateTime(createdTime);
         groupMsgRecord.setGid(msg.getGid());
@@ -153,37 +155,40 @@ public class GroupChatService implements IGroupChatService {
         userChatGroup.setShouldDisplay(true);
         List<InviteDTO> validList = new ArrayList<>(inviteDTOList.size());
         // 判断是否可以拉成功，根据不同情况构造不同的通知内容
-        GroupNotifyFactory factory = GroupNotifyFactory.getInstance(gid);
+        GroupNotifyFactory successFactory = GroupNotifyFactory.getInstance(gid);
+        GroupNotifyFactory failFactory = GroupNotifyFactory.getInstance(gid);
         for(InviteDTO dto : inviteDTOList){
-            String notifyContent = "";
             if(friendService.checkIsDeletedByFriend(inviterId,dto.getUid())){            // 如果被删了
-                // TODO 非好友
+                failFactory.appendNotify(dto.getUsername() + "不是您的好友或您已被对方删除");
             }else if(checkIsGroupMember(dto.getUid(),gid)){ // 如果已经是成员
-                // TODO 已经是成员
+                failFactory.appendNotify(dto.getUsername() + "已经是群成员");
             }else{
-                // TODO xxx加入了群聊
                 Long chatId = SnowFlakeUtil.getNextSnowFlakeId();
                 dto.setChatId(chatId);
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,dto.getUid()+chatId,false);
+                redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,dto.getUid()+chatId,true);
                 redisService.sSet(GlobalConst.Redis.KET_GROUP_CHAT_MEMBERS+gid,dto.getUid());
                 validList.add(dto);
-                notifyContent = dto.getUsername()+"加入了群聊";
+                successFactory.appendNotify(dto.getUsername()+" 加入了群聊");
             }
-            factory.appendNotify(notifyContent);
         }
         if(!validList.isEmpty()){
-            Integer affect = groupChatMapper.insertUserChatGroupBatch(validList,userChatGroup);
+            groupChatMapper.insertUserChatGroupBatch(validList,userChatGroup);
         }
-        new Thread(()->{
-            List<GroupMsgRecord> notifyList = factory.done();
-            // 保存群通知到数据库
-            saveGroupChatMsgRecord(notifyList);
-            // 推送
+        List<GroupMsgRecord> successNotifyList = successFactory.done();
+        if(successNotifyList.size()>0){
+            // 保存成功的群通知到数据库
+            saveGroupChatMsgRecord(successNotifyList);
+            // 推送成功的通知给所有人
             Set<Object> destIdSet = getGroupMemberFromCache(gid);
             if(destIdSet!=null){
-                messageService.sendGroupNotify(destIdSet,gid,notifyList);
+                messageService.sendGroupNotify(destIdSet,gid,successNotifyList);
             }
-        }).start();
+        }
+        // 推送失败的通知给邀请者
+        List<GroupMsgRecord> failNotifyList = failFactory.done();
+        if(failNotifyList.size() > 0){
+            messageService.sendGroupNotify(inviterId,gid,failNotifyList);
+        }
         return true;
     }
 
@@ -232,6 +237,9 @@ public class GroupChatService implements IGroupChatService {
         }
         //1、 删除用户-群关系
         UserChatGroup relation = groupChatMapper.selectUserChatGroupRelation(uid,gid);
+        if(relation == null){
+            return;
+        }
         groupChatMapper.softDeleteGroupMember(uid,gid);
         //2、 更新缓存
         redisService.setRemove(GlobalConst.Redis.KET_GROUP_CHAT_MEMBERS+gid,uid);
@@ -248,6 +256,9 @@ public class GroupChatService implements IGroupChatService {
     @Override
     @Transactional
     public void kickOutGroupMember(List<GroupMemberDTO> memberList, String gid, String ownerId) {
+        if(! checkIsGroupMember(ownerId,gid)){
+            throw new BusinessException(ExceptionType.PERMISSION_DENIED,"你还不是群成员");
+        }
         String realOwnerId = groupChatMapper.selectGroupOwnerId(gid);
         if(StringUtils.isEmpty(realOwnerId) || !ownerId.equals(realOwnerId)){
             throw new BusinessException(ExceptionType.PERMISSION_DENIED,"你不是群主");
@@ -282,7 +293,7 @@ public class GroupChatService implements IGroupChatService {
         GroupNotifyFactory factory = GroupNotifyFactory.getInstance(gid);
         factory.appendNotify("该群已被群主解散");
         List<GroupMsgRecord> notify = factory.done();
-        saveGroupChatMsgRecord(notify);
+        saveGroupChatMsgRecord(factory.done());
         // 发送群通知
         messageService.sendGroupNotify(allMember,gid,notify);
 
@@ -300,10 +311,28 @@ public class GroupChatService implements IGroupChatService {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"群昵称长度不合法");
         }
         UserChatGroup relation = groupChatMapper.selectUserChatGroupRelation(uid,gid);
-        if(relation != null){
-            relation.setUserAlias(alias);
+        if(relation == null){
+            throw new BusinessException(ExceptionType.PERMISSION_DENIED,"你还不是群成员");
         }
+        relation.setUserAlias(alias);
         groupChatMapper.updateUserGroupChat(relation);
+    }
+    @Override
+    public Map<String,String> updateGroupInfo(MultipartFile multipartFile,String groupName,String gid,String uid){
+        Map<String,String> result = new HashMap<>(3);
+        GroupChat groupChat = new GroupChat();
+        groupChat.setGid(gid);
+        if(multipartFile != null){
+            String url = fileService.uploadAvatar(multipartFile,gid);
+            result.put("groupAvatar",GlobalConst.Path.AVATAR_URL+url);
+            groupChat.setAvatar(url);
+        }
+        if(StringUtils.isNotEmpty(groupName) && groupName.length() < 10){
+            groupChat.setGroupName(groupName);
+            result.put("groupName",groupName);
+        }
+        groupChatMapper.updateGroupChat(groupChat);
+        return result;
     }
 
     private void loadGroupMemberListIntoRedis(String gid){

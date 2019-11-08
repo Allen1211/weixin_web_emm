@@ -14,6 +14,21 @@ public class GlobalConst {
     public static final Integer NETTY_PORT = 9898;
 
     public static final String DEFAULT_GROUP_NAME = "新群聊";
+
+    public static class WsEvent{
+        public static final Integer CLIENT_SEND_MSG = 101;
+        public static final Integer CLIENT_MSG_ACK = 102;
+        public static final Integer CLIENT_NEW_APPLY_NOTIFY_ACK = 104;
+        public static final Integer CLIENT_NEW_FRIEND_NOTIFY_ACK = 105;
+
+        public static final Integer SERVER_PUSH_MSG = 201;
+        public static final Integer SERVER_MSG_ACK_SUCCESS = 202;
+        public static final Integer SERVER_MSG_ACK_FAIL = 203;
+        public static final Integer SERVER_PUSH_NEW_APPLY_NOTIFY = 204;
+        public static final Integer SERVER_PUSH_NEW_FRIEND_NOTIFY = 205;
+
+    }
+
     /**
      * 路径类
      */
@@ -35,7 +50,7 @@ public class GlobalConst {
 
         public static final String IMG_NOT_FOUND = "http://121.199.10.4:8088/imsystem/static/msg_img/img_not_found.jpg";
 
-        public static final String DEFAULT_GROUP_AVATAR = "avatar/default/default_group_avatar.jpg";
+        public static final String DEFAULT_GROUP_AVATAR = "default/default_group_avatar.jpg";
     }
 
     /**
@@ -69,11 +84,15 @@ public class GlobalConst {
         public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
         public static final String KEY_RECORD_BEGIN_TIME = "msg_record_begin_time";
+        public static final String KEY_RECORD_BEGIN_ID = "msg_record_begin_msg_id";
         public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
         public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
-        public static final String KEY_FILE_SIZE = "file_size";
         public static final String KEY_FRIEND_SET = "user_friend_set_";
         public static final String KET_GROUP_CHAT_MEMBERS = "group_chat_members_";
+        public static final String KEY_EMAIL_CODE = "email_code_";
+        public static final String KEY_IMAGE_CODE = "image_code_";
+        public static final String KEY_NEW_FRIEND_NOTIFY_LIST = "offline_new_friend_notify_list_";
+        public static final String KEY_NEW_APPLY_NOTIFY_LIST = "offline_new_apply_notify_list_";
 
     }
 
@@ -81,4 +100,12 @@ public class GlobalConst {
         public static final Integer PRIVATE_CHAT = 0;
         public static final Integer GROUP_CHAT = 1;
     }
+
+    public static class NotifyType{
+        public static final Integer NEW_FRIEND_NOTIFY  = 1;
+        public static final Integer NEW_APPLY_NOTIFY  = 2;
+    }
+
+
+
 }

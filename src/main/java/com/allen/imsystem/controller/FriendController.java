@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Controller
+@RestController
 @RequestMapping("/api/friend")
 public class FriendController {
 
@@ -35,14 +35,11 @@ public class FriendController {
      * @return
      */
     @RequestMapping(value = "/searchStranger",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String keyword = params.get("keyWord");
         List<UserSearchResult> resultList = friendService.searchStranger(uid, keyword);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("selectList", resultList);
-        return jsonResponse;
+        return new JSONResponse().success().putData("selectList", resultList);
     }
 
     /**
@@ -52,7 +49,6 @@ public class FriendController {
      * @return
      */
     @RequestMapping(value = "/acceptFriendApplication",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse acceptFriendApplication(@RequestBody Map<String, String> params, HttpServletRequest request) {
         // 1、更新数据库
         String uid = cacheHolder.getUid(request);
@@ -66,7 +62,7 @@ public class FriendController {
         // TODO 2、通知申请的用户，申请已通过
 
         if (updateSuccess) {
-            return new JSONResponse(1);
+            return new JSONResponse().success();
         } else {
             throw new BusinessException(ExceptionType.SERVER_ERROR);
         }
@@ -79,7 +75,6 @@ public class FriendController {
      * @return
      */
     @RequestMapping(value = "/applyAddFriend",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse addFriendApply(@RequestBody @Validated ApplyAddFriendDTO params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
@@ -88,7 +83,7 @@ public class FriendController {
         // TODO 通知被申请的用户，新好友申请通知
 
         if (isSuccess) {
-            return new JSONResponse(1);
+            return new JSONResponse().success();
         } else {
             throw new BusinessException(ExceptionType.SERVER_ERROR);
         }
@@ -100,7 +95,6 @@ public class FriendController {
      * @return
      */
     @RequestMapping(value = "/getFriendApplication",method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse getFriendApplication(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
@@ -108,22 +102,17 @@ public class FriendController {
 
         // TODO 通知被申请的用户，新好友申请通知
 
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("applicationList", applicationList);
-        return jsonResponse;
+        return new JSONResponse().success().putData("applicationList", applicationList);
     }
 
     /**
      * 获取用户的分组列表
      */
     @RequestMapping(value = "/getFriendGroup", method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse getFriendGroup(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         List<FriendGroup> friendGroupList = friendService.getFriendGroupList(uid);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("groupList", friendGroupList);
-        return jsonResponse;
+        return new JSONResponse().success().putData("groupList", friendGroupList);
     }
 
     /**
@@ -136,9 +125,7 @@ public class FriendController {
         String groupName = (String) params.get("groupName");
         Integer groupId = friendService.addFriendGroup(uid, groupName,false);
         if (groupId != 0) {
-            JSONResponse jsonResponse = new JSONResponse(1);
-            jsonResponse.putData("groupId",groupId);
-            return jsonResponse;
+            return new JSONResponse().success().putData("groupId",groupId);
         } else {
             throw new BusinessException(ExceptionType.SERVER_ERROR, "新建失败");
         }
@@ -148,13 +135,10 @@ public class FriendController {
      * 获取好友列表
      */
     @RequestMapping(value = "/getFriendList",method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse getFriendList(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
         Set<UserInfoDTO> friendList = friendService.getFriendList(uid);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("friendList",friendList);
-        return jsonResponse;
+        return new JSONResponse().success().putData("friendList",friendList);
     }
 
     /**
@@ -165,41 +149,32 @@ public class FriendController {
     public JSONResponse getFriendListForInvite(@RequestParam("gid")String gid,  HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
         List<FriendInfoForInvite> friendList = friendService.getFriendListForInvite(uid,gid);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("friendList",friendList);
-        return jsonResponse;
+        return new JSONResponse().success().putData("friendList",friendList);
     }
 
     /**
      * 按分组获取好友列表
      */
     @RequestMapping(value = "/getFriendListByGroup",method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse getFriendListByGroup(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
         Map<String,Object> result = friendService.getFriendListByGroup(uid);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.setData(result);
-        return jsonResponse;
+        return new JSONResponse(1).putAllData(result);
     }
 
     @RequestMapping(value = "/getFriendInfo",method = RequestMethod.GET)
-    @ResponseBody
     public JSONResponse getFriendInfo(@RequestParam("friendId")String friendId,HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
         UserInfoDTO friendInfo = friendService.getFriendInfo(uid,friendId);
-        JSONResponse jsonResponse = new JSONResponse(1);
-        jsonResponse.putData("friendInfo",friendInfo);
-        return jsonResponse;
+        return new JSONResponse(1).success().putData("friendInfo",friendInfo);
     }
 
     @RequestMapping(value = "/deleteFriend",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse deleteFriendInfo(@RequestBody Map<String,String> params,HttpServletRequest request){
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
         boolean success = friendService.deleteFriend(uid,friendId);
-        return new JSONResponse(1);
+        return new JSONResponse(1).success();
     }
 
     @RequestMapping(value = "/updateFriendGroupName",method = RequestMethod.POST)
@@ -217,7 +192,6 @@ public class FriendController {
     }
 
     @RequestMapping(value = "/deleteFriendGroup",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse deleteFriendGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
         Integer groupId = Integer.valueOf(params.get("groupId"));
         String uid = cacheHolder.getUid(request);
@@ -228,13 +202,19 @@ public class FriendController {
 
 
     @RequestMapping(value = "/moveFriendToOtherGroup",method = RequestMethod.POST)
-    @ResponseBody
     public JSONResponse moveFriendToOtherGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
         Integer oldGroupId = Integer.valueOf(params.get("oldGroupId"));
         Integer newGroupId = Integer.valueOf(params.get("newGroupId"));
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
         boolean isSucess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
+        return new JSONResponse(1);
+    }
+
+    @RequestMapping(value = "/setAllNotifyHasRead",method = RequestMethod.POST)
+    public JSONResponse setAllNotifyHasRead(HttpServletRequest request){
+        String uid = cacheHolder.getUid(request);
+        friendService.receiveAllNotify(uid);
         return new JSONResponse(1);
     }
 

@@ -47,6 +47,8 @@ public interface GroupChatMapper {
 
     Integer updateUserGroupChat(UserChatGroup userChatGroup);
 
+    Integer updateGroupChat(GroupChat groupChat);
+
     Integer softDeleteGroupMember(@Param("uid")String uid, @Param("gid")String gid);
 
     Integer softDeleteGroupMemberBatch(@Param("memberList")List<GroupMemberDTO> memberList, @Param("gid")String gid);
@@ -54,4 +56,7 @@ public interface GroupChatMapper {
     Integer softDeleteAllMember(String gid);
 
     Integer softDeleteGroupChat(String gid);
+
+
+    List<UserChatGroup> fix();
 }

@@ -1,8 +1,6 @@
 package com.allen.imsystem.test;
 
-import com.allen.imsystem.dao.FriendDao;
 import com.allen.imsystem.dao.mappers.FriendMapper;
-import com.allen.imsystem.model.dto.ApplyAddFriendDTO;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
@@ -16,14 +14,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext*.xml"})
 public class TestFriendService {
 
     @Autowired
     private IFriendService friendService;
-
-    @Autowired
-    private FriendDao friendDao;
 
     @Autowired
     private FriendMapper friendMapper;
@@ -53,7 +48,7 @@ public class TestFriendService {
 
     @Test
     public void test4(){
-        Integer a = friendDao.selectApplyGroupId("28661270","10547348");;
+        Integer a = friendMapper.selectApplyGroupId("28661270","10547348");;
 //        boolean success = friendService.passFriendApply("10547348","28661270",1);
 //        System.out.println(success);
         System.out.println(a);
@@ -75,13 +70,13 @@ public class TestFriendService {
             Integer bInA = fr.getBInaGroupId();
 
             if(aInB.equals(1)){
-                FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uidB);
+                FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uidB);
                 Integer bDefaultGroupId = defaultGroup.getGroupId();
                 fr.setAInbGroupId(bDefaultGroupId);
             }
 
             if(bInA.equals(1)){
-                FriendGroupPojo defaultGroup = friendDao.selectUserDefaultFriendGroup(uidA);
+                FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uidA);
                 Integer aDefaultGroupId = defaultGroup.getGroupId();
                 fr.setBInaGroupId(aDefaultGroupId);
             }

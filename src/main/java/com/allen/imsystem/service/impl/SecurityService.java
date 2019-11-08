@@ -29,20 +29,31 @@ public class SecurityService implements ISecurityService {
     private RedisTemplate redisTemplate;
 
     @Override
-    public boolean sendRegisterCheckEmail(String email) {
+    public boolean sendRegisterCheckEmail(Integer type, String email) {
         Map<String, Object> model = new HashMap<>(2);
         Random random = new Random(System.currentTimeMillis());
         String emailCode = String.valueOf(random.nextInt(899999) + 100000);
-        model.put("emailCode",emailCode);
-        model.put("sendTime",new Date());
+        model.put("emailCode", emailCode);
+        model.put("sendTime", new Date());
+        String subject;
+        switch (type) {
+            case 1:
+                subject = "ImSystem注册邮箱验证";
+                break;
+            case 2:
+                subject = "ImSystem找回密码邮箱验证";
+                break;
+            default:
+                throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"不支持的type类型");
+        }
         // 发布到消息队列
-        EmailMessage emailMessage = new EmailMessage("Imsystem注册邮箱验证",email,null,model);
-        redisTemplate.convertAndSend("email",emailMessage);
+        EmailMessage emailMessage = new EmailMessage(subject, email, null, model);
+        redisTemplate.convertAndSend("email", emailMessage);
 
         // 验证码缓存
-        Long expriedTime = System.currentTimeMillis() + 20*60*1000; // 过期时间20分钟
+        Long expriedTime = System.currentTimeMillis() + 20 * 60 * 1000; // 过期时间20分钟
         String emailCodeToken = emailCode + "#" + expriedTime;  // 拼接
-        cacheHolder.setEmailCode(email,emailCodeToken);
+        cacheHolder.setEmailCode(emailCodeToken, email);
         return true;
     }
 
@@ -56,22 +67,22 @@ public class SecurityService implements ISecurityService {
 
     @Override
     public boolean verifyEmailCode(String emailCode, String emailCodeToken) {
-        System.out.println("emailCode->"+emailCode);
-        System.out.println("token->"+emailCodeToken);
+        System.out.println("emailCode->" + emailCode);
+        System.out.println("token->" + emailCodeToken);
 
         /**
          * 邮箱验证码校验逻辑
          */
-        if(emailCodeToken == null){
+        if (emailCodeToken == null) {
             throw new BusinessException(ExceptionType.EMAIL_CODE_WRONG, "邮箱验证码输入错误");
         }
         String[] var = emailCodeToken.split("#");
         String correctEmailCode = var[0];
         Long expriedTime = Long.valueOf(var[1]);
 
-        if(! emailCode.equals(correctEmailCode)){
+        if (!emailCode.equals(correctEmailCode)) {
             throw new BusinessException(ExceptionType.EMAIL_CODE_WRONG, "邮箱验证码输入错误");
-        }else if(System.currentTimeMillis() > expriedTime){
+        } else if (System.currentTimeMillis() > expriedTime) {
             throw new BusinessException(ExceptionType.EMAIL_CODE_WRONG, "邮箱验证码已过期，请重新获取");
         }
         return true;

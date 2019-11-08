@@ -185,7 +185,7 @@
         WHERE uid=#{uid}
     </update>
 
-    <update id="updateUser" parameterType="com.allen.imsystem.model.pojo.User">
+    <update id="updateUserByEmail" parameterType="com.allen.imsystem.model.pojo.User">
         UPDATE `user`
         <set>
             <if test="password!=null">password=#{password},</if>
@@ -196,7 +196,7 @@
             <if test="roleId!=null">role_id=#{roleId},</if>
             <if test="updateTime!=null">update_time=#{updateTime},</if>
         </set>
-        WHERE id=#{id}
+        WHERE email=#{email}
 
     </update>
 
@@ -205,7 +205,7 @@
     </select>
 
     <insert id="insertLoginRecord" useGeneratedKeys="true">
-        INSERT INTO `login_record` SET (uid,last_login_time) VALUES(#{uid},#{loginTime})
+        INSERT INTO `login_record` (uid,last_login_time) VALUES(#{uid},#{loginTime})
     </insert>
 
     <update id="updateLoginRecord" >

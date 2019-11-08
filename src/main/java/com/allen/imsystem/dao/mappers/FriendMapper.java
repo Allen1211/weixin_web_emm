@@ -1,9 +1,8 @@
 package com.allen.imsystem.dao.mappers;
 
-import com.allen.imsystem.model.dto.FriendApplicationDTO;
-import com.allen.imsystem.model.dto.FriendGroup;
-import com.allen.imsystem.model.dto.FriendInfoForInvite;
-import com.allen.imsystem.model.dto.UserInfoDTO;
+import com.allen.imsystem.model.dto.*;
+import com.allen.imsystem.model.pojo.ApplyNotify;
+import com.allen.imsystem.model.pojo.FriendApply;
 import com.allen.imsystem.model.pojo.FriendGroupPojo;
 import com.allen.imsystem.model.pojo.FriendRelation;
 import org.apache.ibatis.annotations.Param;
@@ -23,6 +22,8 @@ public interface FriendMapper {
 
     Integer  selectApplyGroupId(@Param("fromUid") String fromUid, @Param("toUid") String toUid);
 
+    FriendApply selectFriendApply(@Param("fromUid")String fromUid, @Param("toUid")String toUid);
+
     Boolean isGroupValid(Integer groupId);
 
     List<FriendApplicationDTO> selectLatestApply(@Param("uid") String uid,@Param("limit") Integer limit);
@@ -41,8 +42,7 @@ public interface FriendMapper {
 
     Integer checkIsFriend(@Param("uid")String uid, @Param("friendId")String friendId);
 
-    Integer addFriendApply(@Param("fromUid") String fromUid,@Param("toUid")String toUid
-            ,@Param("groupId")Integer groupId,@Param("reason")String reason);
+    Integer addFriendApply(FriendApply friendApply);
 
     Integer selectGroupSize(@Param("groupId") Integer groupId,@Param("uid") String uid);
 
@@ -76,4 +76,16 @@ public interface FriendMapper {
     List<FriendRelation> selectAllFriendRelation();
 
     Integer updateFriendRelation(FriendRelation friendRelation);
+
+    Integer deleteFriendApply(@Param("fromUid")String fromUid,@Param("toUid")String toUid);
+
+
+
+    List<FriendApplicationDTO> selectNewApplyNotify(@Param("uid")String uid,@Param("type")Integer type);
+
+    List<NewFriendNotify> selectNewFriendNotify(@Param("uid")String uid,@Param("type")Integer type);
+
+    Integer insertNewApplyNotify(ApplyNotify applyNotify);
+
+    Integer deleteAllNotify(@Param("type")Integer type,@Param("uid") String uid);
 }

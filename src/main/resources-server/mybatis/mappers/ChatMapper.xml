@@ -29,22 +29,6 @@
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
-    <resultMap id="chatGroupInfoMap" type="com.allen.imsystem.model.pojo.ChatGroup">
-        <result property="groupId" column="group_id"/>
-        <result property="groupName" column="group_name"/>
-        <result property="ownerId" column="owner_id"/>
-        <result property="avatar" column="avatar"/>
-        <result property="chatId" column="chatId" jdbcType="BIGINT" javaType="java.lang.Long"/>
-        <result property="status" column="status" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-        <result property="createdTIme" column="created_time"/>
-        <result property="updateTime" column="update_time"/>
-    </resultMap>
-
-    <resultMap id="chatNewMsgSizeMap" type="com.allen.imsystem.model.dto.ChatNewMsgSizeDTO">
-        <result property="talkId" column="chat_id"/>
-        <result property="size" column="new_msg_size"/>
-    </resultMap>
-
     <resultMap id="msgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
         <result property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
         <result property="messageType" column="msg_type"/>
@@ -63,6 +47,7 @@
         <result property="destId" column="dest_id"/>
         <result property="isGroup" column="isGroup" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
         <result property="gid" column="dest_id"/>
+        <result property="groupAlias" column="user_alias"/>
     </resultMap>
 
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
@@ -99,7 +84,7 @@
 
     <select id="selectGroupChatList" resultMap="chatSessionDTOMap">
         SELECT ucg.gid,ucg.chat_id,cg.group_name as talkTitle ,ui.username as lastSenderName,cg.update_time,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',cg.avatar) as avatar,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',cg.avatar) as avatar,
         gmr.content, gmr.created_time, 1 as isGroup
         FROM user_chat_group as ucg
         INNER JOIN chat_group as cg ON ucg.gid = cg.gid
@@ -160,7 +145,6 @@
         SELECT * FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB} LIMIT 1
     </select>
 
-
     <select id="selectPrivateChatInfoByChatId" resultMap="privateChatInfoMap">
         SELECT * FROM private_chat WHERE chat_id = #{chatId} LIMIT 1
     </select>
@@ -181,22 +165,13 @@
     </select>
 
     <select id="selectGroupChatData" resultMap="chatSessionInfoMap">
-        SELECT ucg.chat_id,ucg.gid as dest_id,cg.owner_id as src_id,1 as isGroup, group_name as title
+        SELECT ucg.chat_id,ucg.gid as dest_id,cg.owner_id as src_id,1 as isGroup, group_name as title,ucg.user_alias
         FROM user_chat_group as ucg
         INNER JOIN chat_group as cg ON ucg.gid = cg.gid
         WHERE ucg.chat_id = #{chatId}
         LIMIT 1
     </select>
 
-
-    <select id="selectPrivateChatNewMsgSize" resultMap="chatNewMsgSizeMap">
-        SELECT chat_id, COUNT(*) as new_msg_size FROM pri_msg_record WHERE to_uid=#{uid} AND has_read=0
-        AND chat_id in
-        <foreach item="chat" index="index" collection="chatList" open="(" separator="," close=")">
-            #{chat.talkId}
-        </foreach>
-        GROUP BY chat_id
-    </select>
 
     <select id="selectPrivateChatTitleName" resultType="java.lang.String">
         SELECT username FROM private_chat as pc
@@ -209,9 +184,6 @@
         LIMIT 1
     </select>
 
-    <select id="selectChatGroupInfoByChatId" resultMap="chatGroupInfoMap">
-        SELECT * FROM chat_group WHERE chat_id = #{chatId} AND status=1
-    </select>
 
 
     <select id="countAllPrivateHistoryMsg" resultType="java.lang.Integer">
@@ -305,35 +277,4 @@
     </delete>
 
 
-
-<!--    测试用-->
-    <select id="selectChatSessionLastMsgTime" resultType="com.allen.imsystem.model.dto.ChatLastMessageTime">
-        SELECT cs.chat_id as chatId,r.created_time as lastMsgTime FROM private_chat as cs LEFT JOIN pri_msg_record as r ON cs.last_msg_id = r.msg_id
-    </select>
-
-    <select id="fixSelect" resultType="com.allen.imsystem.model.FixBean">
-        SELECT pmr.chat_id as chatId,msg_id as msgId,pc.uid_a as toUid from pri_msg_record as pmr
-        LEFT JOIN private_chat as pc
-        ON pmr.chat_id = pc.chat_id
-        WHERE pc.uid_b=pmr.from_uid
-
-        UNION ALL
-
-        SELECT pmr.chat_id as chatId,msg_id as msgId, pc.uid_b as toUid from pri_msg_record as pmr
-        LEFT JOIN private_chat as pc
-        ON pmr.chat_id = pc.chat_id
-        WHERE pc.uid_a=pmr.from_uid
-
-        ORDER BY msgId
-    </select>
-
-    <update id="fix" parameterType="java.util.List">
-        <foreach collection="fixBeanList" item="fixBean" index="index" open="" close="" separator=";">
-            update pri_msg_record
-            <set>
-                to_uid=${fixBean.toUid}
-            </set>
-            where msg_id = ${fixBean.msgId} AND chat_id = ${fixBean.chatId}
-        </foreach>
-    </update>
 </mapper>

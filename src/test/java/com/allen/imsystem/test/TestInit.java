@@ -2,15 +2,14 @@ package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.utils.SpringBeanUtil;
 import com.allen.imsystem.common.utils.UidGenerator;
-import com.allen.imsystem.dao.UserDao;
-import com.allen.imsystem.service.IMailService;
+import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.service.impl.MailService;
-import com.allen.imsystem.service.impl.UserService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,9 +22,6 @@ public class TestInit {
 
     @Autowired
     MailService mailService;
-
-    @Autowired
-    UserDao userDao;
 
     @Autowired
     UidGenerator uidGenerator;
@@ -54,4 +50,12 @@ public class TestInit {
     public  void testNIO(){
         uidGenerator.generateGid();
     }
+
+//    @Test
+//    public void testMQ(){
+////        jmsTemplate.convertAndSend("queue_email","Hello！！");
+//        jmsTemplate.convertAndSend("queue_email",new User("12","23","45","aa"));
+//        User user = (User) jmsTemplate.receiveAndConvert("queue_email");
+//        System.out.println(user);
+//    }
 }

@@ -72,4 +72,8 @@ public interface IUserService {
     Integer getUserOnlineStatus(String uid);
 
     boolean isOnline(String uid);
+
+    void forgetPassword(String email,String newPassword);
+
+    String modifyPassword(String uid,String oldPassword,String newPassword);
 }

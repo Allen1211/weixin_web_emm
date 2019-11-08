@@ -6,12 +6,13 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
-import com.allen.imsystem.dao.ChatDao;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.GroupChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.model.pojo.*;
+import com.allen.imsystem.model.pojo.PrivateChat;
+import com.allen.imsystem.model.pojo.PrivateMsgRecord;
+import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.IFriendService;
@@ -25,9 +26,6 @@ import java.util.*;
 
 @Service
 public class ChatService implements IChatService {
-
-    @Autowired
-    private ChatDao chatDao;
 
     @Autowired
     private UserMapper userMapper;
@@ -50,17 +48,20 @@ public class ChatService implements IChatService {
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private MessageCounter messageCounter;
+
     @Override
     public Integer getChatType(String talkIdStr) {
-        Integer chatType =  (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr);
-        if(chatType == null){
+        Integer chatType = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr);
+        if (chatType == null) {
             PrivateChat privateChat = chatMapper.selectPrivateChatInfoByChatId(talkIdStr);
-            if(privateChat!=null){
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr,GlobalConst.ChatType.PRIVATE_CHAT);
+            if (privateChat != null) {
+                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr, GlobalConst.ChatType.PRIVATE_CHAT);
                 chatType = GlobalConst.ChatType.PRIVATE_CHAT;
-            }else{
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr,GlobalConst.ChatType.GROUP_CHAT);
-                chatType =  GlobalConst.ChatType.GROUP_CHAT;
+            } else {
+                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, talkIdStr, GlobalConst.ChatType.GROUP_CHAT);
+                chatType = GlobalConst.ChatType.GROUP_CHAT;
             }
         }
         return chatType;
@@ -100,40 +101,7 @@ public class ChatService implements IChatService {
                 chatId.toString(), String.valueOf(System.currentTimeMillis()));
     }
 
-    @Override
-    public boolean setUserChatNewMsgCount(String uid, Long chatId, Integer count) {
-        if(count == null) count = 0;
-        return redisService.hset(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid+chatId, count);
-    }
 
-    @Override
-    public Integer getUserChatNewMsgCount(String uid, Long chatId) {
-        Integer count = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid+chatId);
-        if(count == null){  // 如果缓存中不存在，到数据库里查询，并更新缓存
-            Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId,uid);
-            setUserChatNewMsgCount(uid,chatId,newMsgCount);
-            return newMsgCount;
-        }
-        return count == null ? 0: count;
-    }
-
-    @Override
-    public void incrUserChatNewMsgCount(String uid, Long chatId) {
-        boolean hasKey=false;
-        try {
-            hasKey = redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId);
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        if(!hasKey){
-            // 去数据库里同步。
-            Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId,uid);
-            setUserChatNewMsgCount(uid,chatId,newMsgCount!=null ? newMsgCount+1 : 1);
-            return;
-        }
-        Long val = redisService.hincr(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,uid+chatId,1L);
-        return;
-    }
 
     @Transactional
     public PrivateChat initNewPrivateChat(String uid, String friendId, Boolean status) {
@@ -155,8 +123,8 @@ public class ChatService implements IChatService {
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + chatId, !status);
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, friendId + chatId, true);
         redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString(), GlobalConst.ChatType.PRIVATE_CHAT);
-        setUserChatNewMsgCount(uid,chatId,0);   // 初始化该用户对此会话未读消息数
-        setUserChatNewMsgCount(friendId,chatId,0);   // 初始化该用户对此会话未读消息数
+        messageCounter.setUserChatNewMsgCount(uid, chatId, 0);   // 初始化该用户对此会话未读消息数
+        messageCounter.setUserChatNewMsgCount(friendId, chatId, 0);   // 初始化该用户对此会话未读消息数
         return privateChat;
     }
 
@@ -186,7 +154,7 @@ public class ChatService implements IChatService {
             result.put("privateChat", initNewPrivateChat(uid, friendId, true));
             result.put("isNewTalk", true);
             return result;
-        }else{
+        } else {
             // 没被删，有会话信息，可以跳转，更新会话对当前用户有效
             return doOpenPrivateChat(uid, friendId, privateChat);
         }
@@ -195,21 +163,21 @@ public class ChatService implements IChatService {
 
     @Override
     public Map<String, Object> openGroupChat(String uid, String gid) {
-        UserChatGroup relation = groupChatMapper.selectUserChatGroupRelation(uid,gid);
+        UserChatGroup relation = groupChatMapper.selectUserChatGroupRelation(uid, gid);
         Boolean isNewTalk = !relation.getShouldDisplay();
-        if(relation == null){
+        if (relation == null) {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID);
         }
         Long chatId = relation.getChatId();
-        if(isNewTalk){
+        if (isNewTalk) {
             relation.setShouldDisplay(true);
             relation.setUpdateTime(new Date());
             groupChatMapper.updateUserGroupChat(relation);
         }
-        redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,uid+chatId,false);
-        Map<String,Object> result = new HashMap<>(2);
-        result.put("isNewTalk",isNewTalk);
-        result.put("relation",relation);
+        redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + chatId, false);
+        Map<String, Object> result = new HashMap<>(2);
+        result.put("isNewTalk", isNewTalk);
+        result.put("relation", relation);
         return result;
     }
 
@@ -233,7 +201,7 @@ public class ChatService implements IChatService {
         // 会话类型
         redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, privateChat.getChatId().toString(), GlobalConst.ChatType.PRIVATE_CHAT);
         // 初始化该用户对此会话未读消息数
-        setUserChatNewMsgCount(uid,privateChat.getChatId(),0);
+        messageCounter.setUserChatNewMsgCount(uid, privateChat.getChatId(), 0);
         Map<String, Object> result = new HashMap<>(2);
         result.put("privateChat", privateChat);
         result.put("isNewTalk", isNewTalk);
@@ -247,7 +215,7 @@ public class ChatService implements IChatService {
         String userChatRemoveKey = uid + chatId;
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
         // 会话未读消息数清零
-        setUserChatNewMsgCount(uid,chatId,0);
+        messageCounter.setUserChatNewMsgCount(uid, chatId, 0);
         PrivateChat privateChat = chatMapper.selectPrivateChatInfoByChatId(chatId.toString());
         //
         if (uid.equals(privateChat.getUidA())) {
@@ -257,20 +225,20 @@ public class ChatService implements IChatService {
         }
         chatMapper.updatePrivateChat(privateChat);
         // 该会话所有历史消息设为已读
-        setTalkAllMsgHasRead(uid,privateChat.getChatId().toString());
+        setPrivateChatAllMsgHasRead(uid, privateChat.getChatId().toString());
     }
 
     @Override
     public void removeGroupChat(String uid, Long chatId) {
+        UserChatGroup relation = groupChatMapper.selectUserChatGroupRelationByChatId(chatId.toString());
+        if(relation == null){
+            throw new BusinessException(ExceptionType.TALK_NOT_VALID,"会话不存在");
+        }
         // 设置该用户对该会话的移除为是
-        String userChatRemoveKey = uid + chatId;
-        redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
-        // 会话未读消息数清零
-        setUserChatNewMsgCount(uid,chatId,0);
+        redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + relation.getGid(), true);
+        // 会话未读消息数全部已读
+        setGroupChatAllMsgHasRead(uid,relation.getGid());
 
-        UserChatGroup relation = new UserChatGroup();
-        relation.setUid(uid);
-        relation.setChatId(chatId);
         relation.setShouldDisplay(false);
         relation.setUpdateTime(new Date());
         groupChatMapper.updateUserGroupChat(relation);
@@ -283,6 +251,9 @@ public class ChatService implements IChatService {
         String uidB = getUidAUidB(uid, friendId)[1];
 
         PrivateChat privateChat = chatMapper.selectPrivateChatInfoByUid(uidA, uidB);
+        if(privateChat == null){
+            return;
+        }
         if (uid.equals(privateChat.getUidA())) {
             privateChat.setUserAStatus(false);
         } else {
@@ -293,7 +264,7 @@ public class ChatService implements IChatService {
         String userChatRemoveKey = uid + privateChat.getChatId();
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
         // 该会话所有历史消息设为已读
-        setTalkAllMsgHasRead(uid,privateChat.getChatId().toString());
+        setPrivateChatAllMsgHasRead(uid, privateChat.getChatId().toString());
     }
 
     @Override
@@ -305,7 +276,7 @@ public class ChatService implements IChatService {
 
         List<ChatSessionDTO> chatList = new ArrayList<>();
 
-        if(privateChatList!=null){
+        if (privateChatList != null) {
             if (privateChatList != null && !privateChatList.isEmpty()) {
                 for (int i = 0; i < privateChatList.size(); i++) {
                     ChatSessionDTO privateChat = privateChatList.get(i);
@@ -318,25 +289,25 @@ public class ChatService implements IChatService {
             chatList.addAll(privateChatList);
         }
 
-        if(groupChatList != null){
+        if (groupChatList != null) {
             chatList.addAll(groupChatList);
         }
 
         Collections.sort(chatList, (o1, o2) -> {
-            if(o1.getUpdateTime()==null){
+            if (o1.getUpdateTime() == null) {
                 return -1;
-            }else if(o2.getUpdateTime() == null){
+            } else if (o2.getUpdateTime() == null) {
                 return 1;
-            }else{
+            } else {
                 return o2.getUpdateTime().compareTo(o1.getUpdateTime());
             }
         });
 
-        for(int i=0;i<chatList.size();i++){
+        for (int i = 0; i < chatList.size(); i++) {
             ChatSessionDTO chat = chatList.get(i);
             Integer newMsgCount = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,
-                    uid+chat.getTalkId().toString());
-            chat.setNewMessageCount(newMsgCount==null?0:newMsgCount);
+                    uid + chat.getTalkId().toString());
+            chat.setNewMessageCount(newMsgCount == null ? 0 : newMsgCount);
             if (chat.getLastMessage() == null || chat.getLastMessageDate() == null) {
                 chat.setLastMessage("");
                 chat.setLastMessageTime("");
@@ -364,7 +335,7 @@ public class ChatService implements IChatService {
             }
             chatSessionInfo.setAvatar(avatar);
             chatSessionInfo.setIsGroupOwner(false);
-
+            chatSessionInfo.setLastTimeStamp(getChatLastMsgTimestamp(chatId));
         } else if (GlobalConst.ChatType.GROUP_CHAT.equals(chatType)) {// 是群聊
             chatSessionInfo = chatMapper.selectGroupChatData(chatId);
             if (chatSessionInfo == null) {
@@ -373,21 +344,20 @@ public class ChatService implements IChatService {
             chatSessionInfo.setAvatar(avatar);
             chatSessionInfo.setIsGroupOwner(uid.equals(chatSessionInfo.getSrcId()));
             chatSessionInfo.setSrcId(uid);
+            chatSessionInfo.setLastTimeStamp(getChatLastMsgTimestamp(Long.parseLong(chatSessionInfo.getGid())));
         }
-        Long lastMsgTimestamp = getChatLastMsgTimestamp(chatId);
-        chatSessionInfo.setLastTimeStamp(lastMsgTimestamp);
         return chatSessionInfo;
 
     }
 
     @Override
-    public Boolean setTalkAllMsgHasRead(String uid, String talkId) {
+    public Boolean setPrivateChatAllMsgHasRead(String uid, String talkId) {
         Integer chatType = getChatType(talkId);
         if (chatType == null) {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID, "获取会话类型失败,会话不存在");
         }
         // 会话未读消息数清零
-        setUserChatNewMsgCount(uid,Long.valueOf(talkId),0);
+        messageCounter.setUserChatNewMsgCount(uid, Long.valueOf(talkId), 0);
 
         if (chatType.equals(GlobalConst.ChatType.PRIVATE_CHAT)) {
             return chatMapper.setAllPrivateChatMsgHasRead(Long.valueOf(talkId), uid) > 0;
@@ -396,21 +366,27 @@ public class ChatService implements IChatService {
     }
 
     @Override
-    public Map<String,Object> getMessageRecord(boolean isGroup,String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
-        Map<String,Object> resultMap = new HashMap<>(3);
+    public Boolean setGroupChatAllMsgHasRead(String uid, String gid) {
+        return redisService.hset(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid+gid, 0L);
+    }
+
+    @Override
+    public Map<String, Object> getMessageRecord(boolean isGroup, String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
+        Map<String, Object> resultMap = new HashMap<>(3);
         List<MsgRecord> messageList = null;
         // 如果是第一页，要获取一次总页数，记录一下统计的起始时间
         if (index == 1) {
             long now = System.currentTimeMillis();
-            if(isGroup){
+            if (isGroup) {
                 // 如果已经不是群成员了，只显示之前的聊天记录，不显示最新的
                 UserChatGroup relation = groupChatMapper.selectUserChatGroupRelationByChatId(talkId);
-                if(!relation.getStatus()){
+                if (!relation.getStatus()) {
                     now = relation.getUpdateTime().getTime();
                 }
             }
-            redisService.hset("MSG_RECORD_BEGIN_TIME", talkId, Long.toString(now));
-            Integer totalSize = this.getAllHistoryMessageSize(isGroup,talkId, uid, new Date(now));
+//            redisService.hset("MSG_RECORD_BEGIN_TIME", talkId, Long.toString(now));
+
+            Integer totalSize = this.getAllHistoryMessageSize(isGroup, talkId, uid, new Date(now));
             int totalPage = 1;
             if (totalSize <= pageSize) {
                 totalPage = 1;
@@ -419,33 +395,33 @@ public class ChatService implements IChatService {
             } else {
                 totalPage = totalSize / pageSize + 1;
             }
-            messageList = doGetMessageList(isGroup,uid,talkId,new Date(now),index,pageSize);
-            resultMap.put("messageList",messageList);
-            resultMap.put("allPageSize",totalPage);
-            resultMap.put("curPageIndex",index);
+            messageList = doGetMessageList(isGroup, uid, talkId, new Date(now), index, pageSize);
+            resultMap.put("messageList", messageList);
+            resultMap.put("allPageSize", totalPage);
+            resultMap.put("curPageIndex", index);
         } else {
             String nowStr = (String) redisService.hget(GlobalConst.Redis.KEY_RECORD_BEGIN_TIME, talkId);
             if (nowStr != null) {
                 beginTime = new Date(Long.parseLong(nowStr));
             }
-            messageList = doGetMessageList(isGroup,uid,talkId,beginTime,index,pageSize);
-            resultMap.put("messageList",messageList);
-            resultMap.put("curPageIndex",index);
+            messageList = doGetMessageList(isGroup, uid, talkId, beginTime, index, pageSize);
+            resultMap.put("messageList", messageList);
+            resultMap.put("curPageIndex", index);
         }
 
         return resultMap;
     }
 
-    private List<MsgRecord> doGetMessageList(boolean isGroup,String uid, String talkId, Date beginTime, Integer index, Integer pageSize){
+    private List<MsgRecord> doGetMessageList(boolean isGroup, String uid, String talkId, Date beginTime, Integer index, Integer pageSize) {
         if (beginTime == null) {
             beginTime = new Date();
         }
 
         PageBean pageBean = new PageBean(index, pageSize);
         List<MsgRecord> msgRecordList = null;
-        if(isGroup){
+        if (isGroup) {
             msgRecordList = chatMapper.selectGroupChatHistoryMsg(Long.valueOf(talkId), beginTime, uid, pageBean);
-        }else{
+        } else {
             msgRecordList =
                     chatMapper.selectPrivateChatHistoryMsg(Long.valueOf(talkId), beginTime, uid, pageBean);
         }
@@ -459,7 +435,7 @@ public class ChatService implements IChatService {
             // 是否显示
             msgRecord.setShowMessage(true);
 
-            if(msgRecord.getMessageType()!=4){
+            if (msgRecord.getMessageType() != 4) {
                 // 是否是自己发的
                 msgRecord.setUserType(
                         uid.equals(msgRecord.getUserInfo().getUid()) ? 1 : 0
@@ -478,21 +454,21 @@ public class ChatService implements IChatService {
                     msgRecord.setMessageText("[图片]");
                     MsgFileInfo fileInfo = msgRecord.getFileInfo();
                     String imgUrl;
-                    if(fileInfo == null){
+                    if (fileInfo == null) {
                         imgUrl = GlobalConst.Path.IMG_NOT_FOUND;
-                    }else{
+                    } else {
                         imgUrl = fileInfo.getDownloadUrl();
                     }
-                    msgRecord.setMessageImgUrl(imgUrl == null? GlobalConst.Path.IMG_NOT_FOUND:imgUrl);
+                    msgRecord.setMessageImgUrl(imgUrl == null ? GlobalConst.Path.IMG_NOT_FOUND : imgUrl);
                     break;
                 }
                 case 3: {// 文件
                     msgRecord.setMessageImgUrl(null);
                     MsgFileInfo fileInfo = msgRecord.getFileInfo();
-                    if(fileInfo == null){
-                        msgRecord.setFileInfo(new MsgFileInfo("不存在的文件",""));
+                    if (fileInfo == null) {
+                        msgRecord.setFileInfo(new MsgFileInfo("不存在的文件", ""));
                         msgRecord.getFileInfo().setFileSize("0");
-                    }else{
+                    } else {
                         String fileSize = FormatUtil.formatFileSize(fileInfo.getSize());
                         msgRecord.getFileInfo().setFileSize(fileSize);
                     }
@@ -518,11 +494,11 @@ public class ChatService implements IChatService {
     }
 
     @Override
-    public Integer getAllHistoryMessageSize(boolean isGroup,String talkId, String uid, Date beginTime) {
+    public Integer getAllHistoryMessageSize(boolean isGroup, String talkId, String uid, Date beginTime) {
         Integer totalSize = null;
-        if(isGroup){
-            totalSize = chatMapper.countAllGroupHistoryMsg(Long.valueOf(talkId),beginTime);
-        }else{
+        if (isGroup) {
+            totalSize = chatMapper.countAllGroupHistoryMsg(Long.valueOf(talkId), beginTime);
+        } else {
             totalSize = chatMapper.countAllPrivateHistoryMsg(Long.valueOf(talkId), beginTime);
         }
         return totalSize == null ? 0 : totalSize;
@@ -531,27 +507,30 @@ public class ChatService implements IChatService {
     @Override
     public Boolean savePrivateMsgRecord(SendMsgDTO msg) {
         PrivateMsgRecord privateMsgRecord = new PrivateMsgRecord();
-        // TODO 消息类型的不同应有不同的保存方式
-        switch (msg.getMessageType()){
-            case 1:{    // 文字消息
+        switch (msg.getMessageType()) {
+            case 1: {    // 文字消息
                 privateMsgRecord.setContent(msg.getMessageText());
                 privateMsgRecord.setResourceUrl("");
                 break;
             }
-            case 2:{    // 图片消息
+            case 2: {    // 图片消息
                 privateMsgRecord.setContent("[图片]");
                 privateMsgRecord.setResourceUrl(msg.getMessageImgUrl());
                 String imgUrl = msg.getMessageImgUrl();
-                if(StringUtils.isEmpty(imgUrl)) throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
-                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(2,imgUrl));
+                if (StringUtils.isEmpty(imgUrl)) {
+                    throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
+                }
+                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(2, imgUrl));
                 break;
             }
-            case 3:{    // 文件消息
+            case 3: {    // 文件消息
                 privateMsgRecord.setContent(msg.getFileInfo().getFileName());
                 privateMsgRecord.setResourceUrl(msg.getFileInfo().getDownloadUrl());
                 String fileUrl = msg.getFileInfo().getDownloadUrl();
-                if(StringUtils.isEmpty(fileUrl)) throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
-                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(3,fileUrl));
+                if (StringUtils.isEmpty(fileUrl)) {
+                    throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL);
+                }
+                privateMsgRecord.setFileMd5(fileService.getMd5FromUrl(3, fileUrl));
                 break;
             }
         }
@@ -572,8 +551,7 @@ public class ChatService implements IChatService {
 
     @Override
     public Boolean updateChatLastMsg(Long chatId, Long msgId, String senderId) {
-        return chatMapper.updatePrivateChatLastMsg(chatId,msgId,senderId) > 0;
-
+        return chatMapper.updatePrivateChatLastMsg(chatId, msgId, senderId) > 0;
     }
 
 

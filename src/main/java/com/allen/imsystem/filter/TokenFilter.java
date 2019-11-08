@@ -22,11 +22,13 @@ import java.util.Map;
 public class TokenFilter implements Filter {
 
 
-    private static String[] passURIs = {"/imsystem/api/user/login","/imsystem/api/user/regist",
-            "/imsystem/api/user/logout","/imsystem/api/security/sendRegistEmailCode"
-            ,"/imsystem/api/security/getCodeImage","/imsystem/talk"};
-
-
+    private static String[] passURIs = {"/imsystem/api/user/login",
+            "/imsystem/api/user/regist",
+            "/imsystem/api/user/resetUserPassword",
+            "/imsystem/api/user/logout",
+            "/imsystem/api/security/sendEmailCode",
+            "/imsystem/api/security/getCodeImage",
+            "/imsystem/talk"};
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {

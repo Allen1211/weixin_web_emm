@@ -39,7 +39,7 @@ public interface UserMapper {
 
     Integer insertUserInfo(UserInfo userInfo);
 
-    Integer updateUser(User user);
+    Integer updateUserByEmail(User user);
 
     Integer updateUserInfo(UserInfo userInfo);
 

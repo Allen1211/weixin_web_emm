@@ -1,5 +1,6 @@
 package com.allen.imsystem.common;
 
+import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.JWTUtil;
@@ -41,9 +42,17 @@ public class CacheHolder implements ICacheHolder {
     }
 
     @Override
+    public String getImageCode(String key) {
+        if(key != null){
+            return (String) redisService.get(GlobalConst.Redis.KEY_IMAGE_CODE+key);
+        }
+        return null;
+    }
+
+    @Override
     public boolean setImageCode(String imageCode, String key) {
         if(imageCode != null && key != null){
-            return redisService.set(key+"_image_code", imageCode, 5*60L);
+            return redisService.set(GlobalConst.Redis.KEY_IMAGE_CODE+key, imageCode, 5*60L);
         }
         return false;
     }
@@ -51,14 +60,14 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public void removeImageCode(String key) {
         if(key != null){
-            redisService.del(key+"_image_code");
+            redisService.del(GlobalConst.Redis.KEY_IMAGE_CODE+key);
         }
     }
 
     @Override
     public boolean setEmailCode(String emailCode, String key) {
         if(emailCode != null && key != null){
-            return redisService.set(key+"_email_code", emailCode, 20*60);
+            return redisService.set(GlobalConst.Redis.KEY_EMAIL_CODE+key, emailCode, 20*60);
         }
         return false;
     }
@@ -66,22 +75,14 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public void removeEmailCode(String key) {
         if(key != null){
-            redisService.del(key+"_email_code");
+            redisService.del(GlobalConst.Redis.KEY_EMAIL_CODE+key);
         }
-    }
-
-    @Override
-    public String getImageCode(String key) {
-        if(key != null){
-            return (String) redisService.get(key+"_image_code");
-        }
-        return null;
     }
 
     @Override
     public String getEmailCode(String key) {
         if(key != null){
-            return (String) redisService.get(key+"_email_code");
+            return (String) redisService.get(GlobalConst.Redis.KEY_EMAIL_CODE+key);
         }
         return null;
     }

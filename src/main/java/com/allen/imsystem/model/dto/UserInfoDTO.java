@@ -20,4 +20,5 @@ public class UserInfoDTO {
     private Date lastLoginAt;
 
     private Boolean online;
+
 }
