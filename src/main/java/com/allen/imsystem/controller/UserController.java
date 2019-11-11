@@ -3,24 +3,20 @@ package com.allen.imsystem.controller;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.common.utils.HTTPUtil;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.dto.JSONResponse;
 import com.allen.imsystem.model.dto.RegistFormDTO;
 import com.allen.imsystem.model.pojo.User;
-import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.ISecurityService;
 import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -34,8 +30,6 @@ public class UserController {
     private IUserService userService;
     @Autowired
     private ISecurityService securityService;
-    @Autowired
-    private IFileService fileService;
 
     @Qualifier("AttrCacheHolder")
     @Autowired
@@ -48,17 +42,13 @@ public class UserController {
         String uidOrEmail = (String) params.get("uid");
         String password = (String) params.get("password");
         String code = (String) params.get("code");
-//        HttpSession session = request.getSession();
-//        String correctCode = (String) session.getAttribute("imageCode");
+
+
 
 //        securityService.verifyImageCode(code,correctCode);
         // 登录服务
         Map<String, Object> map = userService.login(uidOrEmail, password);
         User user = (User) map.get("user");
-        // 登录成功， 把存在session中的邮箱验证码去除。
-//        session.removeAttribute("code");
-        // 把当前会话用户的信息缓存到session
-//        session.setAttribute("user",user);
 
         /**
          * 把token返回到浏览器
@@ -90,28 +80,19 @@ public class UserController {
             throw new BusinessException(ExceptionType.EMAIL_HAS_BEEN_REGISTED);
         }
         userService.regist(email, password, username);
-//        session.removeAttribute("code");
-//        session.removeAttribute(email); // 注册成功， 把存在session中的邮箱验证码去除。
-        JSONResponse jsonResponse = new JSONResponse(1);
-        return jsonResponse;
+        return new JSONResponse(1);
     }
 
 
-    @RequestMapping(value = "/logout", method = RequestMethod.GET)
+    @RequestMapping(value = "/logout", method = RequestMethod.POST)
     public JSONResponse logout(HttpServletRequest request, HttpServletResponse response,
                                HttpSession session) {
-        /**
-         * 把本地保存的token cookie去除
-         */
-//        Cookie cookie = new Cookie("token",null);
-//        cookie.setMaxAge(0);
-//        cookie.setPath("/");
-//        response.addCookie(cookie);
-//        User user = (User) session.getAttribute("user");
-        String uid = JWTUtil.getMsgFromToken(HTTPUtil.getTokenFromHeader(request), "uid", String.class);
+        String uid = cacheHolder.getUid(request);
         if (uid != null) {
             userService.logout(uid);
         }
+        // 将旧token添加到黑名单
+        JWTUtil.addTokenToBlackList(request);
         return new JSONResponse(1);
     }
 
@@ -160,6 +141,8 @@ public class UserController {
         String oldPassword = params.get("oldPassword");
         String newPassword = params.get("newPassword");
         String token = userService.modifyPassword(uid,oldPassword,newPassword);
+        // 将旧token添加到黑名单
+        JWTUtil.addTokenToBlackList(request);
         return new JSONResponse(1).putData("token",token);
     }
 

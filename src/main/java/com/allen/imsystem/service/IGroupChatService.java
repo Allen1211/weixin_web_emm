@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 群聊相关的业务逻辑接口
+ */
 @Service
 public interface IGroupChatService {
     /**
@@ -110,4 +113,6 @@ public interface IGroupChatService {
      * @return
      */
     Map<String,String> updateGroupInfo(MultipartFile multipartFile, String groupName, String gid, String uid);
+
+    String getGidFromChatId(Long chatId);
 }

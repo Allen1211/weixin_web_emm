@@ -10,29 +10,20 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * 维护所有用户的ws连接，以uid作为key
+ */
 @Component
 public class GlobalChannelGroup {
     private ConcurrentHashMap<String, Set<Channel>> channelGroup;
 
 
     public GlobalChannelGroup(){
-        System.out.println("load");
         channelGroup = new ConcurrentHashMap<>(20);
     }
-//    public static Channel getChannel(String key){
-//        if(StringUtils.isEmpty(key)){
-//            return null;
-//        }
-//        Set<Channel> channelSet = channelGroup.get(key);
-//        if(channelSet == null){
-//            return null;
-//        }
-//
-//        return channelSet.get(key);
-//    }
 
     public boolean addChannel(String key, Channel channel){
-        System.out.println("add channel to container:" + channelGroup.hashCode());
         if(StringUtils.isEmpty(key) || channel == null){
             return false;
         }
@@ -70,6 +61,9 @@ public class GlobalChannelGroup {
         return channelSet!=null && !channelSet.isEmpty();
     }
 
+    /**
+     * 发送数据，对某个用户的所有channel发送
+     */
     public boolean send(String key,Object msg){
         if(StringUtils.isEmpty(key) || msg==null){
             return false;

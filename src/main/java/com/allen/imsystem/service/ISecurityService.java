@@ -1,17 +1,23 @@
 package com.allen.imsystem.service;
 
-import com.allen.imsystem.common.exception.BusinessException;
-import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.model.message.EmailMessage;
 import org.springframework.stereotype.Service;
 
+/**
+ * 安全验证相关的业务逻辑接口
+ */
 @Service
 public interface ISecurityService {
 
-    boolean sendRegisterCheckEmail(Integer type,String email);
+    /**
+     * 发送邮箱确认验证码
+     */
+    boolean sendCheckEmail(Integer type, String email);
+
+    /**
+     * 验证邮箱验证码
+     */
+    boolean verifyEmailCode(String emailCode, String emailCodeToken);
 
     boolean verifyImageCode(String imageCode, String correctImageCode);
-
-    boolean verifyEmailCode(String emailCode, String emailCodeToken);
 
 }

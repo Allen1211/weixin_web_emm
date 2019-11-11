@@ -1,8 +1,10 @@
 package com.allen.imsystem.common.utils;
 
+import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.service.IUserService;
+import com.allen.imsystem.service.impl.RedisService;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.JWTVerifier;
@@ -12,15 +14,23 @@ import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * JWT工具类，具有自定义生成Token和生成默认的用于登录验证的Token的功能
  */
+@Component
 public class JWTUtil {
+
+    private static RedisService redisService;
 
     /**
      *
@@ -42,7 +52,7 @@ public class JWTUtil {
     /**
      * 默认过期时间 60分钟
      */
-    private static final long DEFAULT_EXPIRE_TIME = 48 * 60 * 60 *1000;    //单位毫秒
+    private static final long DEFAULT_EXPIRE_TIME = 7 * 24 * 60 * 60 *1000;    //过期时间7天
 
 
     /**
@@ -51,13 +61,15 @@ public class JWTUtil {
      * @return
      */
     public static String createLoginToken(String uid,Integer userId, long expireTime){
+        String editionCode = UUID.randomUUID().toString();
         return JWT.create()
                 .withHeader(createHeader())
                 .withIssuer(DEFAULT_ISSUSER)
                 .withIssuedAt(new Date())
-                .withClaim("uid",uid)
-                .withClaim("userId",userId)
-                .withExpiresAt(createExpireDate(expireTime))
+                .withClaim("uid",uid)   // 用户账号
+                .withClaim("userId",userId) // 数据库主键
+                .withClaim("editionCode",editionCode)   // 版本号，用于黑名单失效
+                .withExpiresAt(createExpireDate(expireTime))    // 过期时间 2天
                 .sign(DEFAULT_ALGORITHM);
     }
 
@@ -70,22 +82,6 @@ public class JWTUtil {
         return createLoginToken(uid,userId,DEFAULT_EXPIRE_TIME);
     }
 
-    /**
-     * 创建任意的token
-     * @param claims
-     * @param expireTime
-     * @return
-     */
-    public static String createCommonToken(Map<String, String> claims, long expireTime){
-        JWTCreator.Builder builder =  JWT.create()
-                                        .withHeader(createHeader())
-                                        .withIssuer(DEFAULT_ISSUSER)
-                                        .withIssuedAt(new Date());
-        for(String key :claims.keySet()){
-            builder.withClaim(key, claims.get(key));
-        }
-        return builder.withExpiresAt(createExpireDate(expireTime)).sign(DEFAULT_ALGORITHM);
-    }
 
     public static <T> T getMsgFromToken(String token, String name, Class<T> clazz){
         try {
@@ -107,10 +103,10 @@ public class JWTUtil {
             JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
             DecodedJWT decodedJWT = verifier.verify(token);
             Date expiresAt = decodedJWT.getExpiresAt();
-            Date current = new Date();
-            boolean valid = current.before(expiresAt);
-            if(valid){
-                return decodedJWT.getClaims();
+            Map<String, Claim> claimMap = decodedJWT.getClaims();
+            String editionCode = claimMap.get("editionCode").asString();    // 验证版本号是否在黑名单里，若在，验证失败
+            if(new Date().before(expiresAt) && ! isInBlackList(editionCode)){
+                return claimMap;
             }else{
                 return null;
             }
@@ -122,6 +118,46 @@ public class JWTUtil {
         return null;
     }
 
+    /**
+     * 将一个token放入黑名单
+     */
+    public static boolean addTokenToBlackList(HttpServletRequest request){
+        String token =  getTokenFromRequest(request);
+        return addTokenToBlackList(token);
+    }
+    private static boolean addTokenToBlackList(String token){
+        JWTVerifier verifier = JWT.require(DEFAULT_ALGORITHM).withIssuer(DEFAULT_ISSUSER).build();
+        try {
+            DecodedJWT decodedJWT = verifier.verify(token);
+            Map<String, Claim> claimMap = decodedJWT.getClaims();
+            String editionCode = claimMap.get("editionCode").asString();
+            Long expiresAt = decodedJWT.getExpiresAt().getTime();   // 过期时间作为scope，便于定时删除过期的黑名单
+            return redisService.zSetAdd(GlobalConst.Redis.KEY_TOKEN_BLACKLIST,editionCode,expiresAt.doubleValue());
+        }catch (Exception e){
+            // 如果现在验证已经不通过（只有过期的情况） 就不用添加了
+            return true;
+        }
+    }
+
+    private static boolean isInBlackList(String editionCode){
+        return redisService.zSetHasMember(GlobalConst.Redis.KEY_TOKEN_BLACKLIST,editionCode);
+    }
+
+    public static Long cleanExpiresBalkList(){
+        Long now = System.currentTimeMillis();
+        double scope = now.doubleValue();
+        return redisService.zRemoveRangeByScore(GlobalConst.Redis.KEY_TOKEN_BLACKLIST,scope);
+    }
+
+    private static String getTokenFromRequest(HttpServletRequest request){
+        String token = request.getHeader("token");
+        return token;
+    }
+
+    @Autowired
+    public void setRedisService(RedisService redisService) {
+        JWTUtil.redisService = redisService;
+    }
 
     private static Map<String,Object> createHeader(){
         Map<String ,Object> header = new HashMap<>(2);
@@ -134,10 +170,6 @@ public class JWTUtil {
     }
     private static Date createExpireDate(long expireTime){
         return new Date(System.currentTimeMillis() + expireTime);
-    }
-
-    public static void main(String[] args) {
-
     }
 
 

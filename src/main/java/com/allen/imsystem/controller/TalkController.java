@@ -5,23 +5,19 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
-import com.allen.imsystem.common.utils.MultipartFileUtil;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
-import com.allen.imsystem.service.IFileService;
 import com.allen.imsystem.service.IGroupChatService;
-import com.allen.imsystem.service.impl.RedisService;
 import org.apache.commons.beanutils.BeanMap;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -37,34 +33,30 @@ public class TalkController {
     private IChatService chatService;
 
     @Autowired
-    private RedisService redisService;
-
-    @Autowired
     private IGroupChatService groupChatService;
-
-    @Autowired
-    private IFileService fileService;
 
     /**
      * 获取会话的一些信息，只在用户点击一个会话的时候，调用此接口，故可认为对于该用户该会话所有消息已读。
-     *
-     * @param talkIdStr
-     * @param request
-     * @return
      */
     @RequestMapping(value = "/getTalkData", method = RequestMethod.GET)
-    public JSONResponse getTalkData(@RequestParam("talkId") String talkIdStr, HttpServletRequest request) {
-        Long talkId = Long.valueOf(talkIdStr);
+    public JSONResponse getTalkData(@RequestParam("talkId") String chatIdStr, HttpServletRequest request) {
+        Long chatId = Long.valueOf(chatIdStr);
         String uid = cacheHolder.getUid(request);
-        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(talkId, uid);
+        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(chatId, uid);
+        if(chatSessionInfo == null){
+            throw new BusinessException(ExceptionType.TALK_NOT_VALID);
+        }
         if(chatSessionInfo.getIsGroup()){
             chatService.setGroupChatAllMsgHasRead(uid,chatSessionInfo.getGid());
         }else{
-            chatService.setPrivateChatAllMsgHasRead(uid, talkIdStr);
+            chatService.setPrivateChatAllMsgHasRead(uid, chatId);
         }
         return new JSONResponse(1).putAllData(new BeanMap(chatSessionInfo));
     }
 
+    /**
+     * 获取用户的会话列表（相当于一打开微信看到的那个列表）
+     */
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
     public JSONResponse getTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -72,12 +64,15 @@ public class TalkController {
         return new JSONResponse(1).putData("talkList", chatSessionDTOList);
     }
 
+    /**
+     * 将一个会话所有信息设为已读
+     */
     @RequestMapping(value = "/setHasRead", method = RequestMethod.POST)
     public JSONResponse setHasRead(@RequestBody Map<String, String> params, HttpServletRequest request) {
-        String talkId = params.get("talkId");
+        Long chatId = Long.parseLong(params.get("talkId"));
         String uid = cacheHolder.getUid(request);
-        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatService.getChatType(talkId))){
-            chatService.setPrivateChatAllMsgHasRead(uid, talkId);
+        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatService.getChatType(chatId))){
+            chatService.setPrivateChatAllMsgHasRead(uid, chatId);
         }else{
             String gid = params.get("gid");
             chatService.setGroupChatAllMsgHasRead(uid,gid);
@@ -85,21 +80,26 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 获取一个会话的聊天记录（分页）
+     */
     @RequestMapping(value = "/getMessageList", method = RequestMethod.GET)
     public JSONResponse getMessageList(@RequestParam Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        String talkId = params.get("talkId");
+        Long chatId = Long.valueOf(params.get("talkId"));
         Integer index = Integer.valueOf(params.get("index"));
         Integer pageSize = 10;
         if (params.get("pageSize") != null) {
             pageSize = Integer.valueOf(params.get("pageSize"));
         }
-        boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(Long.valueOf(talkId)));
-        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, talkId, index, pageSize);
+        boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(chatId));
+        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, chatId, index, pageSize);
         return new JSONResponse(1).putAllData(resultMap);
     }
 
-
+    /**
+     * 开启一个私聊会话（主动创建一个与好友的会话，并添加到会话列表)
+     */
     @RequestMapping("/openPrivateTalk")
     public JSONResponse openPrivateTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -111,6 +111,9 @@ public class TalkController {
                 .putData("isNewTalk", result.get("isNewTalk"));
     }
 
+    /**
+     * 开启一个群聊会话（主动创建一个与好友的会话，并添加到会话列表)
+     */
     @RequestMapping("/openGroupTalk")
     public JSONResponse openGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -122,6 +125,9 @@ public class TalkController {
                 .putData("isNewTalk", result.get("isNewTalk"));
     }
 
+    /**
+     * 从会话列表移除一个会话(群会话、私聊会话)
+     */
     @RequestMapping("/removeTalk")
     public JSONResponse removeTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -129,48 +135,27 @@ public class TalkController {
         Integer chatType = chatService.getChatType(chatId);
         if (GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)) {
             chatService.removePrivateChat(uid, chatId);
-        } else {
+        } else if(GlobalConst.ChatType.GROUP_CHAT.equals(chatType)){
             chatService.removeGroupChat(uid, chatId);
         }
         return new JSONResponse(1);
     }
 
-
-    @RequestMapping(value = "/uploadMessageImage", method = RequestMethod.POST)
-    public JSONResponse uploadMessageImage(@RequestParam("image") MultipartFile multipartFile) {
-        try {
-            String url = fileService.uploadMsgImg(multipartFile);
-            return new JSONResponse(1).putData("imageUrl", url);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new BusinessException(ExceptionType.FILE_NOT_RECEIVE, "文件保存失败");
-        }
-    }
-
-    @RequestMapping(value = "/uploadMultipartFile", method = RequestMethod.POST)
-    public JSONResponse uploadMultipartFile(HttpServletRequest request) throws Exception {
-        //使用 工具类解析相关参数，工具类代码见下面
-        MultipartFileDTO param = MultipartFileUtil.parse(request);
-        MultiFileResponse responseDTO = fileService.uploadMultipartFile(param);
-        return new JSONResponse(1).putAllData(new BeanMap(responseDTO));
-    }
-
-
-    @RequestMapping(value = "/getFileUploadInfo", method = RequestMethod.GET)
-    public JSONResponse getFileUploadInfo(@RequestParam("md5") String md5) {
-        FileUploadInfo fileUploadInfo = fileService.getUnCompleteParts(md5);
-        return new JSONResponse(1).putAllData(new BeanMap(fileUploadInfo));
-    }
-
+    /**
+     * 创建群聊
+     */
     @RequestMapping(value = "/createGroupTalk", method = RequestMethod.POST)
     public JSONResponse createGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String groupName = params.get("groupName");
         CreateGroupDTO groupChat = groupChatService.createNewGroupChat(uid, groupName);
-        groupChat.setGroupAvatar(GlobalConst.Path.RESOURCES_URL + groupChat.getGroupAvatar());
+        groupChat.setGroupAvatar(GlobalConst.Path.AVATAR_URL + groupChat.getGroupAvatar());
         return new JSONResponse(1).putAllData(new BeanMap(groupChat));
     }
 
+    /**
+     * 用户获取群聊列表
+     */
     @RequestMapping(value = "/getGroupTalkList", method = RequestMethod.GET)
     public JSONResponse getGroupTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -178,6 +163,9 @@ public class TalkController {
         return new JSONResponse(1).putData("groupTalkList", resultList);
     }
 
+    /**
+     * 用户获取某个群的群成员列表
+     */
     @RequestMapping(value = "/getGroupTalkMember", method = RequestMethod.GET)
     public JSONResponse getGroupTalkMember(@RequestParam("gid") String gid, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
@@ -185,7 +173,9 @@ public class TalkController {
         return new JSONResponse(1).putData("memberList", groupMemberList);
     }
 
-
+    /**
+     * 用户拉取好友入群（批量）
+     */
     @RequestMapping(value = "/inviteFriendToGroupTalk", method = RequestMethod.POST)
     public JSONResponse inviteFriendToGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String gid = params.get("gid");
@@ -196,6 +186,9 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 用户退群
+     */
     @RequestMapping(value = "/leaveGroupTalk", method = RequestMethod.POST)
     public JSONResponse leaveGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
@@ -204,6 +197,9 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 群主解散群聊
+     */
     @RequestMapping(value = "/dismissGroupTalk", method = RequestMethod.POST)
     public JSONResponse dismissGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
@@ -212,6 +208,9 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 群主踢人（批量）
+     */
     @RequestMapping(value = "/removeMemberFromGroupTalk", method = RequestMethod.POST)
     public JSONResponse removeMemberFromGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
@@ -222,6 +221,9 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 用户更改自己的群昵称
+     */
     @RequestMapping(value = "/changeGroupAlias", method = RequestMethod.POST)
     public JSONResponse changeGroupAlias(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String gid = params.get("gid");
@@ -231,6 +233,9 @@ public class TalkController {
         return new JSONResponse(1);
     }
 
+    /**
+     * 更新群信息（群头像、群名）
+     */
     @RequestMapping(value = "/updateGroupTalkInfo", method = RequestMethod.POST)
     public JSONResponse updateGroupTalkInfo(@RequestParam("gid") String gid,
                                           @RequestParam(value = "groupName", required = false) String groupName,
@@ -241,5 +246,18 @@ public class TalkController {
         return new JSONResponse(1).putAllData(result);
     }
 
+    /**
+     * 检验某个chatId是否有效
+     */
+    @RequestMapping(value = "/validateTalkId",method = RequestMethod.GET)
+    public JSONResponse validateTalkId(@RequestParam("talkId")String talkId,HttpServletRequest request){
+        if(StringUtils.isEmpty(talkId) || !StringUtils.isNumeric(talkId)){
+            return new JSONResponse().success().putData("hasThisTalk",false);
+        }
+        String uid = cacheHolder.getUid(request);
+        Long chatId = Long.parseLong(talkId);
+        Map<String,Object> result = chatService.validateChatId(chatId,uid);
+        return new JSONResponse().success().putAllData(result);
+    }
 
 }

@@ -1,12 +1,13 @@
 package com.allen.imsystem.model.dto;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 import java.io.Serializable;
 
 @Data
 public class ChatSessionInfo implements Serializable {
-    private Long talkId;
+    private Long chatId;
     private String title;
     private Boolean isGroup;
     private String srcId;
@@ -23,5 +24,8 @@ public class ChatSessionInfo implements Serializable {
     public ChatSessionInfo() {
     }
 
-
+    @JSONField(name = "talkId")
+    public Long getChatId() {
+        return chatId;
+    }
 }

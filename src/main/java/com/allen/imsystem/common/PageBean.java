@@ -4,10 +4,15 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import lombok.Data;
 
+/**
+ * 用于查询分页
+ */
 @Data
 public class PageBean {
     private Integer from;
     private Integer offset;
+
+
 
     public PageBean(Integer index, Integer pageSize){
         if(pageSize == null || pageSize == 0) pageSize = 10;

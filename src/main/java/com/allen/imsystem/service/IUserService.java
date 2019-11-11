@@ -9,6 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * 用户模块相关的业务逻辑接口
+ */
 @Service
 public interface IUserService {
 
@@ -73,7 +76,15 @@ public interface IUserService {
 
     boolean isOnline(String uid);
 
+    /**
+     * 忘记密码。 重设密码
+     */
     void forgetPassword(String email,String newPassword);
 
+    /**
+     * 修改密码
+     */
     String modifyPassword(String uid,String oldPassword,String newPassword);
+
+    void updatePassword(User user,String password);
 }

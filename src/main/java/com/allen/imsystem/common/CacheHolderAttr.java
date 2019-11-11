@@ -1,10 +1,12 @@
 package com.allen.imsystem.common;
 
-import com.allen.imsystem.common.utils.JWTUtil;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * 从request的attribute中获取用户信息 （验证token后添加)
+ */
 @Component("AttrCacheHolder")
 public class CacheHolderAttr extends CacheHolder {
 

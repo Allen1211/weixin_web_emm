@@ -5,6 +5,9 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 生成图片验证码的工具类
+ */
 public class VertifyCodeUtil {
 
 	private static final int LENGTH = 4;

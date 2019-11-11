@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Set;
 
-
+/**
+ * 消息接收与转发推送相关的业务逻辑接口
+ */
 @Service
 public interface IMessageService {
 
@@ -24,9 +26,7 @@ public interface IMessageService {
 
     void sendGroupNotify(Set<Object> destIdList, String gid, GroupMsgRecord notify);
 
-    void sendGroupMessage(Integer eventCode,Set<Object> destIdList,String gid, List<MsgRecord> msgRecordList);
-
-    void sendGroupMessage(Integer eventCode,Set<Object> destIdList,String gid, MsgRecord msgRecord);
-
     void sendNotify(Integer eventCode, String destId, Object notify);
+
+    void getOfflineNotifyAndSend(String uid);
 }

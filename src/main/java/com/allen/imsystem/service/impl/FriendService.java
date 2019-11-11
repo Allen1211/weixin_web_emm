@@ -7,10 +7,7 @@ import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.FriendMapper;
 import com.allen.imsystem.dao.mappers.SearchMapper;
 import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.model.pojo.ApplyNotify;
-import com.allen.imsystem.model.pojo.FriendApply;
-import com.allen.imsystem.model.pojo.FriendGroupPojo;
-import com.allen.imsystem.model.pojo.FriendRelation;
+import com.allen.imsystem.model.pojo.*;
 import com.allen.imsystem.service.*;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,10 +50,11 @@ public class FriendService implements IFriendService {
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
         Map<String, UserSearchResult> map = searchMapper.search(keyword);
-        if (map == null)
-            new ArrayList<UserSearchResult>();
-        List<String> friendId = friendMapper.selectFriendId(uid);
-        List<String> requiredId = friendMapper.selectAquiredId(uid);
+        if (map == null){
+            return new ArrayList<>();
+        }
+        List<String> friendId = friendMapper.selectFriendId(uid);   // 所有好友的id
+        List<String> requiredId = friendMapper.selectAquiredId(uid);    // 所有已发送申请的用户id
         for (String id : friendId) {
             UserSearchResult result = map.get(id);
             if (result != null) {
@@ -139,23 +137,26 @@ public class FriendService implements IFriendService {
         }
         FriendApply friendApply = new FriendApply(fromUId,toUId,groupId,reason);
         boolean insertSuccess = friendMapper.addFriendApply(friendApply) > 0;
-        // 新增一条通知
         if(insertSuccess){
-            Integer applyId = friendApply.getId();
-            ApplyNotify applyNotify = new ApplyNotify(params.getFriendId(),applyId,GlobalConst.NotifyType.NEW_APPLY_NOTIFY);
-            notifyService.addNewApplyNotify(applyNotify);
+            // 新启动一个线程推送通知
+            String finalReason = reason;
+            new Thread(()->{
+                Integer applyId = friendApply.getId();
+                ApplyNotify applyNotify = new ApplyNotify(params.getFriendId(),applyId,GlobalConst.NotifyType.NEW_APPLY_NOTIFY);
+                notifyService.saveNewApplyNotify(applyNotify);
 
-            //TODO  推送
-            if(userService.isOnline(params.getFriendId())){
-                FriendApplicationDTO notify = new FriendApplicationDTO();
-                UserInfoDTO applicantInfo = friendMapper.selectFriendInfo(uid);
-                notify.setApplicantInfo(applicantInfo);
-                notify.setApplicationReason(reason);
-                notify.setHasAccept(false);
-                List<FriendApplicationDTO> notifyList = new ArrayList<>(1);
-                notifyList.add(notify);
-                messageService.sendNotify(204,params.getFriendId(),notifyList);
-            }
+                // 推送 新申请
+                if(userService.isOnline(params.getFriendId())){
+                    FriendApplicationDTO notify = new FriendApplicationDTO();
+                    UserInfoDTO applicantInfo = friendMapper.selectFriendInfo(uid);
+                    notify.setApplicantInfo(applicantInfo);
+                    notify.setApplicationReason(finalReason);
+                    notify.setHasAccept(false);
+                    List<FriendApplicationDTO> notifyList = new ArrayList<>(1);
+                    notifyList.add(notify);
+                    messageService.sendNotify(204,params.getFriendId(),notifyList);
+                }
+            }).start();
         }
         return insertSuccess;
     }
@@ -185,17 +186,17 @@ public class FriendService implements IFriendService {
 
         // 3.5 判定对方是否已经是自己的好友，如果是，删掉原来的关系，再执行插入关系。若不是，直接执行插入
         boolean isMyFriend = checkIsMyFriend(uid, friendId);
-        if (isMyFriend) {
-            // 删掉原有的好友关系
+        if (isMyFriend) {   // 原来已经是自己的好友了，删掉原来的好友关系
             friendMapper.deleteFriend(uid, friendId);
-            // 如果对方原来已经是自己的好友了，说明是对方单项删除了自己，而自己没有删除对方，不删除原有的会话
-//            String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
-//            String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
-//            chatMapper.hardDeletePrivateChat(uidA, uidB);
-        }else{// 新的好友，新建一个新的会话
-            new Thread(() -> {
-                chatService.initNewPrivateChat(uid, friendId, false);
-            }).start();
+        }else{// 新的好友，如果他们之间还不存在会话，则新建一个新的会话
+            String uidA = getUidAUidB(uid,friendId)[0];
+            String uidB = getUidAUidB(uid,friendId)[1];
+            PrivateChat privateChat = chatMapper.selectPrivateChatInfoByUid(uidA,uidB);
+            if(privateChat == null){
+                new Thread(() -> {
+                    chatService.initNewPrivateChat(uid, friendId, false);
+                }).start();
+            }
         }
 
         // 4 插入好友表， 防止重复，限定uid小的作为uid_a,uid大的作为uid_b
@@ -212,28 +213,27 @@ public class FriendService implements IFriendService {
         addFriendIntoRedis(uid, friendId);
         addFriendIntoRedis(friendId, uid);
 
-        // 6 TODO 双向推送
+        // 6 新好友通知 双向推送
         if(successInsert){
-            ApplyNotify applyNotifySelf = new ApplyNotify(uid,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
-            ApplyNotify applyNotifyFriend = new ApplyNotify(friendId,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
-            notifyService.addNewApplyNotify(applyNotifySelf);
-            notifyService.addNewApplyNotify(applyNotifyFriend);
-
-            if(userService.isOnline(friendId)){
-                UserInfoDTO friendInfo = friendMapper.selectFriendInfo(uid);
-                NewFriendNotify notify = new NewFriendNotify(friendInfo,bePutInGroupId);
-//                List<NewFriendNotify> notifyList = new ArrayList<>(1);
-//                notifyList.add(notify);
-                messageService.sendNotify(205,friendId,notify);
-            }
-
-            if(userService.isOnline(uid)){
-                UserInfoDTO friendInfo = friendMapper.selectFriendInfo(friendId);
-                NewFriendNotify notify = new NewFriendNotify(friendInfo,groupId);
-//                List<NewFriendNotify> notifyList = new ArrayList<>(1);
-//                notifyList.add(notify);
-                messageService.sendNotify(205,uid,notify);
-            }
+            Integer finalGroupId = groupId;
+            new Thread(()->{
+                ApplyNotify applyNotifySelf = new ApplyNotify(uid,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+                ApplyNotify applyNotifyFriend = new ApplyNotify(friendId,friendApply.getId(),GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+                notifyService.saveNewApplyNotify(applyNotifySelf);
+                notifyService.saveNewApplyNotify(applyNotifyFriend);
+                // 给好友推送
+                if(userService.isOnline(friendId)){
+                    UserInfoDTO friendInfo = friendMapper.selectFriendInfo(uid);
+                    NewFriendNotify notify = new NewFriendNotify(friendInfo,bePutInGroupId);
+                    messageService.sendNotify(205,friendId,notify);
+                }
+                // 给自己推送
+                if(userService.isOnline(uid)){
+                    UserInfoDTO friendInfo = friendMapper.selectFriendInfo(friendId);
+                    NewFriendNotify notify = new NewFriendNotify(friendInfo, finalGroupId);
+                    messageService.sendNotify(205,uid,notify);
+                }
+            }).start();
         }
         return successInsert && successUpdate;
     }
@@ -346,16 +346,11 @@ public class FriendService implements IFriendService {
         {
             //物理删除好友关系
             friendMapper.deleteFriend(uid, friendId);
-            //物理删除旧的会话
-            String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
-            String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
-            chatMapper.hardDeletePrivateChat(uidA,uidB);
-//            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, true);
         } else {   // 否则执行逻辑删除
             sortDeleteFriend(uid, friendId);
-            // 移除掉与好友的会话
-            chatService.removePrivateChat(uid, friendId);
         }
+        // 移除掉与好友的会话
+        chatService.removePrivateChat(uid, friendId);
 
         // 2、更新缓存
         removeFriendFromRedis(uid, friendId);
@@ -373,8 +368,11 @@ public class FriendService implements IFriendService {
 
     @Override
     public boolean updateFriendGroupName(Integer groupId, String groupName, String uid) {
-        if (StringUtils.isEmpty(groupName)) {
+        if (StringUtils.isEmpty(groupName) ) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "组名不能为空");
+        }
+        if (StringUtils.length(groupName) > 10){
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"好友分组名长度不得超过10个字符");
         }
         return friendMapper.updateFriendGroupName(groupId, groupName, uid) > 0;
     }
@@ -412,12 +410,9 @@ public class FriendService implements IFriendService {
         return isSuccess;
     }
 
-    @Override
-    public void receiveAllNotify(String uid) {
-        redisService.del(GlobalConst.Redis.KEY_NEW_FRIEND_NOTIFY_LIST +uid);
-        redisService.del(GlobalConst.Redis.KEY_NEW_APPLY_NOTIFY_LIST+uid);
-    }
-
+    /**
+     * 从redis中加载好友列表到redis中
+     */
     private Long loadFriendListIntoRedis(String uid) {
         Set<String> twoWayFriendIdList = friendMapper.selectTwoWayFriendId(uid);
         if (twoWayFriendIdList != null) {
@@ -426,14 +421,18 @@ public class FriendService implements IFriendService {
         return 0L;
     }
 
-
+    /**
+     * 添加一个好友到redis中某用户的好友列表（如果存在缓存）
+     */
     private boolean addFriendIntoRedis(String uid, String friendId) {
         if (redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid)) {
             return redisService.sSet(GlobalConst.Redis.KEY_FRIEND_SET + uid, friendId) > 0L;
         }
         return false;
     }
-
+    /**
+     * 从redis缓存中移除一个好友（如果存在缓存）
+     */
     private boolean removeFriendFromRedis(String uid, String friendId) {
         if (redisService.hasKey(GlobalConst.Redis.KEY_FRIEND_SET + uid)) {
             return redisService.setRemove(GlobalConst.Redis.KEY_FRIEND_SET + uid, friendId) > 0L;
@@ -441,5 +440,9 @@ public class FriendService implements IFriendService {
         return false;
     }
 
-
+    private String[] getUidAUidB(String uid, String friendId) {
+        String uidA = uid.compareTo(friendId) < 0 ? uid : friendId;
+        String uidB = uid.compareTo(friendId) < 0 ? friendId : uid;
+        return new String[]{uidA, uidB};
+    }
 }

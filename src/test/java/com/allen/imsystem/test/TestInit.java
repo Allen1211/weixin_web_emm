@@ -1,15 +1,12 @@
 package com.allen.imsystem.test;
 
-import com.allen.imsystem.common.utils.SpringBeanUtil;
 import com.allen.imsystem.common.utils.UidGenerator;
-import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.service.impl.MailService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -27,10 +24,6 @@ public class TestInit {
     UidGenerator uidGenerator;
 
 
-    @Test
-    public void testSpringBeanUtil(){
-        System.out.println(SpringBeanUtil.getBean(IUserService.class));
-    }
 
     @Test
     public void testMailService(){

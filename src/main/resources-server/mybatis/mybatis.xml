@@ -41,6 +41,7 @@
         <mapper resource="mappers/ChatMapper.xml"/>
         <mapper resource="mappers/FileMapper.xml"/>
         <mapper resource="mappers/GroupChatMapper.xml"/>
+        <mapper resource="mappers/NotifyMapper.xml"/>
 
     </mappers>
 

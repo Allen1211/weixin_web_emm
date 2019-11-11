@@ -1,7 +1,6 @@
 package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.Const.GlobalConst;
-import com.allen.imsystem.common.EmailServiceMessageConsumer;
 import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.common.utils.RedisUtil;

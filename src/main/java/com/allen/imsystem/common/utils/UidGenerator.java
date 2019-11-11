@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ * uid和gid的生成器
+ */
 @Component
 public class UidGenerator {
 

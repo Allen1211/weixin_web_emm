@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 好友模块相关的业务逻辑接口
+ */
 @Service
 public interface IFriendService {
 
@@ -97,5 +100,4 @@ public interface IFriendService {
      */
     boolean moveFriendToOtherGroup(String uid,String friendId, Integer oldGroupId, Integer newGroupId);
 
-    void receiveAllNotify(String uid);
 }

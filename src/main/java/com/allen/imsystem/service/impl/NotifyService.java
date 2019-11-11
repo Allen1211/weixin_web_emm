@@ -1,7 +1,7 @@
 package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
-import com.allen.imsystem.dao.mappers.FriendMapper;
+import com.allen.imsystem.dao.mappers.NotifyMapper;
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.NewFriendNotify;
 import com.allen.imsystem.model.pojo.ApplyNotify;
@@ -16,33 +16,33 @@ import java.util.List;
 public class NotifyService implements INotifyService {
 
     @Autowired
-    private FriendMapper friendMapper;
+    private NotifyMapper notifyMapper;
 
 
     @Override
     public List<NewFriendNotify> getAllNewFriendNotify(String uid) {
-        return friendMapper.selectNewFriendNotify(uid, GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
+        return notifyMapper.selectNewFriendNotify(uid, GlobalConst.NotifyType.NEW_FRIEND_NOTIFY);
     }
 
     @Override
     public List<FriendApplicationDTO> getAllNewFriendApplyNotify(String uid) {
-        return friendMapper.selectNewApplyNotify(uid, GlobalConst.NotifyType.NEW_APPLY_NOTIFY);
+        return notifyMapper.selectNewApplyNotify(uid, GlobalConst.NotifyType.NEW_APPLY_NOTIFY);
     }
 
     @Override
     @Transactional
-    public void addNewApplyNotify(Integer type, Integer applyId, String uid) {
-        addNewApplyNotify(new ApplyNotify(uid,applyId,type));
+    public void saveNewApplyNotify(Integer type, Integer applyId, String uid) {
+        saveNewApplyNotify(new ApplyNotify(uid,applyId,type));
     }
 
     @Override
-    public void addNewApplyNotify(ApplyNotify applyNotify) {
-        friendMapper.insertNewApplyNotify(applyNotify);
+    public void saveNewApplyNotify(ApplyNotify applyNotify) {
+        notifyMapper.insertNewApplyNotify(applyNotify);
     }
 
 
     @Override
     public void deleteAllNotify(Integer type,String uid) {
-        friendMapper.deleteAllNotify(type,uid);
+        notifyMapper.deleteAllNotify(type,uid);
     }
 }

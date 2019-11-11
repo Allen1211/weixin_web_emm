@@ -15,6 +15,7 @@ import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.AttributeKey;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -41,10 +42,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     private IMessageService messageService;
 
     @Autowired
-    private INotifyService notifyService;
-
-    @Autowired
-    private WebSocketEventHandler webSocketEventHandler;
+    private WsEventHandler wsEventHandler;
 
     /**
      * 当客户端主动链接服务端的链接后，这个通道就是活跃的了。
@@ -130,7 +128,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 jsonObject.put("uid", getUidFromContext(ctx));
             }
             // 委托给处理类处理请求
-            webSocketEventHandler.handleRequest(eventCode, jsonObject);
+            wsEventHandler.handleClientSend(eventCode, jsonObject);
             return;
         }
 
@@ -229,15 +227,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         return;
     }
 
+    /**
+     * 从数据库里查询、并推送离线未送达的通知
+     * @param ctx
+     */
     private void pushOfflineNotify(ChannelHandlerContext ctx) {
         String uid = getUidFromContext(ctx);
-        List<NewFriendNotify> newFriendNotifyList = notifyService.getAllNewFriendNotify(uid);
-        List<FriendApplicationDTO> newApplyNotifyList = notifyService.getAllNewFriendApplyNotify(uid);
-        if (!CollectionUtils.isEmpty(newFriendNotifyList)) {
-            messageService.sendNotify(205, uid, newFriendNotifyList);
-        }
-        if (!CollectionUtils.isEmpty(newApplyNotifyList)) {
-            messageService.sendNotify(204, uid, newApplyNotifyList);
+        if(StringUtils.isNotEmpty(uid)){
+            messageService.getOfflineNotifyAndSend(uid);
         }
     }
 
@@ -245,6 +242,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         return (String) ctx.channel().attr(AttributeKey.valueOf("uid")).get();
     }
 
+    /**
+     * 验证token，并将解密出的uid放入context的属性
+     */
     private boolean verifyTokenAndSetAttr(ChannelHandlerContext ctx, String token) {
         if (token != null) {
             Map<String, Claim> result = JWTUtil.verifyLoginToken(token, "");

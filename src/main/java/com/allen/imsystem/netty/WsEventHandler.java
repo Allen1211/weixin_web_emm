@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class WebSocketEventHandler implements MessageListener {
+public class WsEventHandler implements MessageListener {
 
     @Autowired
     private IMessageService messageService;
@@ -32,9 +32,9 @@ public class WebSocketEventHandler implements MessageListener {
     }
 
 
-    public void handleRequest(Integer eventCode, JSONObject data){
+    public void handleClientSend(int eventCode, JSONObject data){
         switch (eventCode){
-            case 101:{
+            case GlobalConst.WsEvent.CLIENT_SEND_MSG:{
                 SendMsgDTO sendMsgDTO = data.getObject("data", SendMsgDTO.class);
                 if(sendMsgDTO.getIsGroup()){
                     messageService.saveAndForwardGroupMessage(sendMsgDTO);
@@ -43,15 +43,15 @@ public class WebSocketEventHandler implements MessageListener {
                 }
                 break;
             }
-            case 102:{
+            case GlobalConst.WsEvent.CLIENT_MSG_ACK:{
 
             }
-            case 104:{
+            case GlobalConst.WsEvent.CLIENT_NEW_APPLY_NOTIFY_ACK:{
                 String uid = data.getString("uid");
                 notifyService.deleteAllNotify(GlobalConst.NotifyType.NEW_APPLY_NOTIFY,uid);
                 break;
             }
-            case 105:{
+            case GlobalConst.WsEvent.CLIENT_NEW_FRIEND_NOTIFY_ACK:{
                 String uid = data.getString("uid");
                 notifyService.deleteAllNotify(GlobalConst.NotifyType.NEW_FRIEND_NOTIFY,uid);
                 break;
@@ -59,28 +59,26 @@ public class WebSocketEventHandler implements MessageListener {
         }
     }
 
-
-
-    public void handleResponse(Integer eventCode,String destId, Object data){
-        handleResponse(eventCode,destId,null,null,data);
-    }
-
     public void handleResponse(Integer eventCode,String destId, Integer code, Object errMsg, Object data){
         switch (eventCode){
-            case 201:
-            case 202:
-            case 205:
-            case 204: {
+            case GlobalConst.WsEvent.SERVER_PUSH_MSG:
+            case GlobalConst.WsEvent.SERVER_MSG_ACK_SUCCESS:
+            case GlobalConst.WsEvent.SERVER_PUSH_NEW_APPLY_NOTIFY:
+            case GlobalConst.WsEvent.SERVER_PUSH_NEW_FRIEND_NOTIFY: {
                 SocketResponse socketResponse = new SocketResponse(eventCode,1,data);
                 channelGroup.send(destId,socketResponse);
                 break;
             }
-            case 203:{
+            case GlobalConst.WsEvent.SERVER_MSG_ACK_FAIL:{
                 SocketResponse socketResponse = new SocketResponse(eventCode,0,code,errMsg,data);
                 channelGroup.send(destId,socketResponse);
                 break;
             }
         }
+    }
+
+    public void handleResponse(Integer eventCode,String destId, Object data){
+        handleResponse(eventCode,destId,null,null,data);
     }
 
     public void handleResponse(String destId,SocketResponse socketResponse){
@@ -91,7 +89,4 @@ public class WebSocketEventHandler implements MessageListener {
         channelGroup.send(destId,socketResponse);
     }
 
-    public void handleMultiResponse(List<String> destId, SocketResponse socketResponse){
-
-    }
 }

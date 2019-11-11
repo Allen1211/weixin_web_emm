@@ -6,8 +6,11 @@ import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
+import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.service.IChatService;
+import com.allen.imsystem.service.IUserService;
 import com.allen.imsystem.service.impl.RedisService;
+import com.allen.imsystem.service.impl.UserService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +21,14 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:spring/springmvc.xml", "classpath:spring/applicationContext*.xml"})
 public class TestChat {
+
+    @Autowired
+    IUserService userService;
 
     @Autowired
     IChatService chatService;
@@ -52,7 +59,7 @@ public class TestChat {
 
     @Test
     public void setAllHasRead(){
-        chatService.setPrivateChatAllMsgHasRead("28661270","633786567424475138");
+        chatService.setPrivateChatAllMsgHasRead("28661270",633786567424475138L);
     }
 
     @Test
@@ -112,6 +119,17 @@ public class TestChat {
 
     @Test
     public void fuck(){
-        System.out.println(chatMapper.selectPrivateChatInfoByUid("66666666","81309655"));;
+        User user1 = new User();
+        user1.setEmail("13sdaa@qq.com");
+        userService.updatePassword(user1,"20191111");
+        User user2 = new User();
+        user2.setEmail("1234@qq.com");
+        userService.updatePassword(user2,"20191111");
+        User user3 = new User();
+        user3.setEmail("124@qq.com");
+        userService.updatePassword(user3,"20191111");
+        User user4 = new User();
+        user4.setEmail("12345@qq.com");
+        userService.updatePassword(user4,"20191111");
     }
 }

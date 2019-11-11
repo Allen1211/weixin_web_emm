@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
+/**
+ * 主要用于维护和获取会话消息未读数
+ */
 @Component
 public class MessageCounter {
 

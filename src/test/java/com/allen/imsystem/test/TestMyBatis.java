@@ -1,14 +1,13 @@
 package com.allen.imsystem.test;
 
-import com.allen.imsystem.dao.mappers.ChatMapper;
-import com.allen.imsystem.dao.mappers.GroupChatMapper;
-import com.allen.imsystem.dao.mappers.SearchMapper;
-import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.dao.mappers.*;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.FriendGroup;
 import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.dto.UserSearchResult;
+import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IFriendService;
+import com.allen.imsystem.service.INotifyService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +37,9 @@ public class TestMyBatis {
 
     @Autowired
     IFriendService friendService;
+
+    @Autowired
+    NotifyMapper notifyMapper;
 
 
 //    @Test
@@ -141,6 +143,7 @@ public class TestMyBatis {
 
     @Test
     public void testC(){
-        userMapper.insertLoginRecord("123456789",new Date());
+        UserChatGroup relation = groupChatMapper.selectUserChatGroupRelationByChatId(642732701026009088L);
+        System.out.println(relation);
     }
 }

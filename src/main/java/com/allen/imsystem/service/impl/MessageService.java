@@ -4,7 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.model.pojo.GroupMsgRecord;
-import com.allen.imsystem.netty.WebSocketEventHandler;
+import com.allen.imsystem.netty.WsEventHandler;
 import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
@@ -12,7 +12,7 @@ import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
@@ -20,7 +20,7 @@ import java.util.*;
 public class MessageService implements IMessageService {
 
     @Autowired
-    private WebSocketEventHandler webSocketEventHandler;
+    private WsEventHandler wsEventHandler;
 
     @Autowired
     private IUserService userService;
@@ -41,6 +41,9 @@ public class MessageService implements IMessageService {
     private IGroupChatService groupChatService;
 
     @Autowired
+    private INotifyService notifyService;
+
+    @Autowired
     private ChatMapper chatMapper;
 
     @Autowired
@@ -55,7 +58,7 @@ public class MessageService implements IMessageService {
         // 0、检查是否被对方删除
         boolean isDeleteByFriend = friendService.checkIsDeletedByFriend(sendMsgDTO.getSrcId(), sendMsgDTO.getDestId());
         if (isDeleteByFriend) {
-            handleSendFail(sendMsgDTO,"对方还不是你的好友，无法发送消息");
+            handleSendFail(sendMsgDTO, "对方还不是你的好友，无法发送消息");
             return;
         }
         // 1、为该条信息生成id
@@ -65,23 +68,25 @@ public class MessageService implements IMessageService {
         Long chatLastMsgTime = chatService.getChatLastMsgTimestamp(Long.parseLong(sendMsgDTO.getTalkId()));
         // 2、消息入库
         // 2.1 插入聊天记录 , 并更新会话的最后一条消息
-        boolean bool1 = chatService.savePrivateMsgRecord(sendMsgDTO);
-        boolean bool2 = chatService.updateChatLastMsg(chatId, msgId, sendMsgDTO.getSrcId());
-        boolean bool3 = chatService.setChatLastMsgTimestamp(chatId, Long.parseLong(sendMsgDTO.getTimeStamp()));
-
-        messageCounter.incrPrivateChatNewMsgCount(sendMsgDTO.getDestId(), chatId);
-        // 3、入库成功，发送服务端收到确认回执
-        if (bool1) {
-            sendServerAck(sendMsgDTO, msgId, chatId);
-        }else{
-            handleSendFail(sendMsgDTO,"消息入库失败");
+        try {
+            chatService.savePrivateMsgRecord(sendMsgDTO);
+            chatService.updateChatLastMsg(chatId, msgId, sendMsgDTO.getSrcId());
+            chatService.setChatLastMsgTimestamp(chatId, Long.parseLong(sendMsgDTO.getTimeStamp()));
+        }catch(Exception e){
+            e.printStackTrace();
+            handleSendFail(sendMsgDTO, "消息入库失败");
+            return;
         }
+        // 入库成功，递增未读信息数
+        messageCounter.incrPrivateChatNewMsgCount(sendMsgDTO.getDestId(), chatId);
+        // 3、发送服务端收到确认回执
+        sendServerAck(sendMsgDTO, msgId, chatId);
 
         // 4、查看接收者是否在线
         boolean isOnline = userService.isOnline(sendMsgDTO.getSrcId());
         if (isOnline) {   // 如果在线，转发消息，TODO 并把消息存入缓存，等待接收者已读回执。
-            PushMessageDTO pushMessageDTO = packPushMessageDTO(chatLastMsgTime,sendMsgDTO);
-            webSocketEventHandler.handleResponse(GlobalConst.WsEvent.SERVER_PUSH_MSG, sendMsgDTO.getDestId(), pushMessageDTO);
+            PushMessageDTO pushMessageDTO = packPrivateMsg(chatLastMsgTime, sendMsgDTO);
+            wsEventHandler.handleResponse(GlobalConst.WsEvent.SERVER_PUSH_MSG, sendMsgDTO.getDestId(), pushMessageDTO);
         }
     }
 
@@ -91,9 +96,9 @@ public class MessageService implements IMessageService {
         Long chatId = Long.parseLong(sendMsgDTO.getTalkId());
 
         // 0、检查是否是该群成员
-        boolean isMember = groupChatService.checkIsGroupMember(sendMsgDTO.getSrcId(),gid);
-        if(!isMember){
-            handleSendFail(sendMsgDTO,"您还不是该群成员，或群已解散，无法发送消息");
+        boolean isMember = groupChatService.checkIsGroupMember(sendMsgDTO.getSrcId(), gid);
+        if (!isMember) {
+            handleSendFail(sendMsgDTO, "您还不是该群成员，或群已解散，无法发送消息");
             return;
         }
         // 1、为该条信息生成id
@@ -104,27 +109,29 @@ public class MessageService implements IMessageService {
         // 2.1 插入聊天记录 , 并更新该群的最后一条消息
         groupChatService.saveGroupChatMsgRecord(sendMsgDTO);
         groupChatService.updateGroupLastMsg(gid, msgId, sendMsgDTO.getSrcId());
+
         // 3、入库成功，发送服务端收到确认回执
         sendServerAck(sendMsgDTO, msgId, chatId);
+
         // 4、 转发给其他群员
         Set<Object> memberIdSet = groupChatService.getGroupMemberFromCache(gid);
         memberIdSet.remove(sendMsgDTO.getSrcId());  //去掉发送者
         // 组装msgRecord bean
         Long chatLastMsgTime = chatService.getChatLastMsgTimestamp(Long.parseLong(gid));
-        MsgRecord msgRecord = packNormalMsgRecord(chatLastMsgTime,sendMsgDTO);
+        MsgRecord msgRecord = packNormalMsgRecord(chatLastMsgTime, sendMsgDTO);
         // 发送
-        sendGroupMessage(201,memberIdSet,gid,msgRecord);
+        sendGroupMessage(GlobalConst.WsEvent.SERVER_PUSH_MSG, memberIdSet, gid, msgRecord);
+
     }
 
-    private void handleSendFail(SendMsgDTO sendMsgDTO,String content) {
+    private void handleSendFail(SendMsgDTO sendMsgDTO, String content) {
         MultiDataSocketResponse socketResponse =
                 new MultiDataSocketResponse(GlobalConst.WsEvent.SERVER_MSG_ACK_FAIL, 0,
                         2001, new ErrMsg(content))
                         .putData("timeStamp", sendMsgDTO.getTimeStamp());
 
-        webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(), socketResponse);
+        wsEventHandler.handleResponse(sendMsgDTO.getSrcId(), socketResponse);
     }
-
 
 
     private void sendServerAck(SendMsgDTO sendMsgDTO, Long msgId, Long chatId) {
@@ -134,23 +141,23 @@ public class MessageService implements IMessageService {
         serverAckDTO.setLastMessage(messageText);
         serverAckDTO.setLastMessageTime(messageTime);
         new Thread(() -> {
-            webSocketEventHandler.handleResponse(sendMsgDTO.getSrcId(),
+            wsEventHandler.handleResponse(sendMsgDTO.getSrcId(),
                     new SocketResponse(GlobalConst.WsEvent.SERVER_MSG_ACK_SUCCESS, 1, serverAckDTO));
         }).start();
     }
 
     /**
-     * 将发送过来的像消息组装成推送信息
+     * 将发送过来的私聊消息组装成推送信息
      *
      * @param sendMsgDTO
      * @return
      */
-    private PushMessageDTO packPushMessageDTO(Long chatLastMsgTime,SendMsgDTO sendMsgDTO) {
+    private PushMessageDTO packPrivateMsg(Long chatLastMsgTime, SendMsgDTO sendMsgDTO) {
         PushMessageDTO result = new PushMessageDTO();
 
         // 1、会话Id
         Long talkId = Long.valueOf(sendMsgDTO.getTalkId());
-        result.setTalkId(talkId);
+        result.setChatId(talkId);
 
         // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
         Boolean isNewTalk = checkIsNewPrivateChatAndActivate(sendMsgDTO.getDestId(), talkId);
@@ -165,7 +172,7 @@ public class MessageService implements IMessageService {
         result.setLastTimeStamp(talkData.getLastMessageDate().getTime());
 
         // 4、填充消息体
-        MsgRecord msgRecord = packNormalMsgRecord(chatLastMsgTime,sendMsgDTO);
+        MsgRecord msgRecord = packNormalMsgRecord(chatLastMsgTime, sendMsgDTO);
         result.setMessageData(msgRecord);
 
         return result;
@@ -174,7 +181,7 @@ public class MessageService implements IMessageService {
     public void sendGroupNotify(String destId, String gid, List<GroupMsgRecord> notifyList) {
         Set<Object> destIdSet = new HashSet<>(1);
         destIdSet.add(destId);
-        sendGroupNotify(destIdSet,gid,notifyList);
+        sendGroupNotify(destIdSet, gid, notifyList);
     }
 
     @Override
@@ -183,17 +190,16 @@ public class MessageService implements IMessageService {
         for (GroupMsgRecord msg : notifyList) {
             msgRecordList.add(packNotifyMsgRecord(msg.getMsgId(), msg.getContent()));
         }
-        sendGroupMessage(201,destIdList, gid, msgRecordList);
+        sendGroupMessage(201, destIdList, gid, msgRecordList);
     }
 
     @Override
     public void sendGroupNotify(Set<Object> destIdList, String gid, GroupMsgRecord notify) {
-        this.sendGroupMessage(201,destIdList,gid,
+        this.sendGroupMessage(201, destIdList, gid,
                 packNotifyMsgRecord(notify.getMsgId(), notify.getContent()));
     }
 
-    @Override
-    public void sendGroupMessage(Integer eventCode ,Set<Object> destIdList, String gid, List<MsgRecord> msgRecordList) {
+    private void sendGroupMessage(Integer eventCode, Set<Object> destIdList, String gid, List<MsgRecord> msgRecordList) {
         // 接收者增加一条未读信息
         messageCounter.incrGroupChatNewMsgCount(destIdList, gid);
 
@@ -214,31 +220,42 @@ public class MessageService implements IMessageService {
                     // 组装会话信息
                     ChatSessionDTO chatSessionDTO = allChatData.get(destId);
                     if (chatSessionDTO != null) {
-                        boolean isNewTalk = !chatService.isChatSessionOpenToUser(destId, chatSessionDTO.getTalkId());
+                        boolean isNewTalk = checkIsNewGroupChatAndActivate(destId,gid); //判断是否是新会话，是的话激活为显示状态
                         pushMessageDTO.setIsNewTalk(isNewTalk);
                         pushMessageDTO.setLastTimeStamp(chatSessionDTO.getLastMessageDate().getTime());
-                        pushMessageDTO.setTalkId(chatSessionDTO.getTalkId());
+                        pushMessageDTO.setChatId(chatSessionDTO.getChatId());
                         // 未读信息数
-                        chatSessionDTO.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(destId,gid));
+                        chatSessionDTO.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(destId, gid));
                     }
                     pushMessageDTO.setTalkData(chatSessionDTO);
                     // 组装完成，发送
-                    webSocketEventHandler.handleResponse(eventCode, destId, pushMessageDTO);
+                    wsEventHandler.handleResponse(eventCode, destId, pushMessageDTO);
                 }
             }
         }
     }
 
-    @Override
-    public void sendGroupMessage(Integer eventCode,Set<Object> destIdList, String gid, MsgRecord msgRecord) {
+    private void sendGroupMessage(Integer eventCode, Set<Object> destIdList, String gid, MsgRecord msgRecord) {
         List<MsgRecord> msgRecordList = new ArrayList<>(1);
         msgRecordList.add(msgRecord);
-        sendGroupMessage(eventCode,destIdList, gid, msgRecordList);
+        sendGroupMessage(eventCode, destIdList, gid, msgRecordList);
     }
 
     @Override
     public void sendNotify(Integer eventCode, String destId, Object notify) {
-        webSocketEventHandler.handleResponse(eventCode,destId,notify);
+        wsEventHandler.handleResponse(eventCode, destId, notify);
+    }
+
+    @Override
+    public void getOfflineNotifyAndSend(String uid) {
+        List<NewFriendNotify> newFriendNotifyList = notifyService.getAllNewFriendNotify(uid);
+        List<FriendApplicationDTO> newApplyNotifyList = notifyService.getAllNewFriendApplyNotify(uid);
+        if (!CollectionUtils.isEmpty(newFriendNotifyList)) {
+            sendNotify(GlobalConst.WsEvent.SERVER_PUSH_NEW_FRIEND_NOTIFY, uid, newFriendNotifyList);
+        }
+        if (!CollectionUtils.isEmpty(newApplyNotifyList)) {
+            sendNotify(GlobalConst.WsEvent.SERVER_PUSH_NEW_APPLY_NOTIFY, uid, newApplyNotifyList);
+        }
     }
 
     /**
@@ -258,69 +275,63 @@ public class MessageService implements IMessageService {
         return msgRecord;
     }
 
-    private MsgRecord packNormalMsgRecord(Long chatLastMsgTime,SendMsgDTO sendMsgDTO){
+    /**
+     *
+     * @param chatLastMsgTime
+     * @param sendMsgDTO
+     * @return
+     */
+    private MsgRecord packNormalMsgRecord(Long chatLastMsgTime, SendMsgDTO sendMsgDTO) {
         MsgRecord msgRecord = new MsgRecord();
         msgRecord.setMessageId(sendMsgDTO.getMsgId());
         msgRecord.setUserType(0);
         msgRecord.setMessageType(sendMsgDTO.getMessageType());
-        msgRecord.setMessageText(sendMsgDTO.getMessageText());
 
         switch (msgRecord.getMessageType()) {
-            case 1: {
+            case GlobalConst.MsgType.TEXT: {
                 msgRecord.setMessageText(sendMsgDTO.getMessageText());
                 break;
             }
-            case 2: {
+            case GlobalConst.MsgType.IMAGE: {
                 msgRecord.setMessageText("[图片]");
                 msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgUrl());
                 break;
             }
-            case 3: {
+            case GlobalConst.MsgType.FILE: {
                 MsgFileInfo fileInfo = sendMsgDTO.getFileInfo();
-                String md5 = fileService.getMd5FromUrl(3, fileInfo.getDownloadUrl());
+                String md5 = fileService.getMd5FromUrl(fileInfo.getDownloadUrl());
                 String sizeStr = (String) redisService.get(md5);
-                Long size = 0L;
-                if (sizeStr == null) {
-                    size = 0L;
-                } else {
-                    size = Long.parseLong(sizeStr);
-                }
+                Long size = sizeStr == null ? 0L : Long.parseLong(sizeStr);
                 String fileSize = FormatUtil.formatFileSize(size);
                 fileInfo.setFileSize(fileSize);
                 fileInfo.setSize(size);
                 msgRecord.setFileInfo(fileInfo);
+                // 文件消息内容为文件名
+                msgRecord.setMessageText(fileInfo.getFileName());
                 break;
             }
 
         }
 
-        // 图片信息，应该返回URL
-        if (msgRecord.getMessageType().equals(2))
-            msgRecord.setMessageImgUrl(sendMsgDTO.getMessageImgUrl());
-        // 文件信息，应该返回文件下载URL
-        if (msgRecord.getMessageType().equals(3))
-            msgRecord.setFileInfo(sendMsgDTO.getFileInfo());
-
         // 4.1发送者信息
         UserInfoDTO userInfo = userMapper.selectSenderInfo(sendMsgDTO.getSrcId());
         msgRecord.setUserInfo(userInfo);
         // 4.2消息时间
-        Date msgTimeDate = new Date(Long.parseLong(sendMsgDTO.getTimeStamp()));
+        Long msgSendTimestamp = Long.parseLong(sendMsgDTO.getTimeStamp());
+        Date msgTimeDate = new Date(msgSendTimestamp);
         String msgTimeStr = FormatUtil.formatMessageDate(msgTimeDate);
         msgRecord.setMsgTimeDate(msgTimeDate);
         msgRecord.setMessageTime(msgTimeStr);
-        // 4.3是否显示时间
-        Long thisMsgTime = Long.valueOf(sendMsgDTO.getTimeStamp());
-        boolean showTime = thisMsgTime - chatLastMsgTime > GlobalConst.MAX_NOT_SHOW_TIME_SPACE;
+        // 4.3是否显示时间 消息发送时间 - 会话上一条消息发送时间 > 固定时间 即显示时间
+        boolean showTime = msgSendTimestamp - chatLastMsgTime > GlobalConst.MAX_NOT_SHOW_TIME_SPACE;
         msgRecord.setShowMessageTime(showTime);
 
-        // TODO 群昵称
         return msgRecord;
     }
 
     private boolean checkIsNewPrivateChatAndActivate(String uid, Long chatId) {
         // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-        boolean isNewTalk = !chatService.isChatSessionOpenToUser(uid, chatId);
+        boolean isNewTalk = !chatService.isPrivateChatSessionOpenToUser(uid, chatId);
 
         if (isNewTalk) { // 如果是新会话，更新
             redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + chatId, false);
@@ -336,23 +347,14 @@ public class MessageService implements IMessageService {
         return isNewTalk;
     }
 
-//    private boolean checkIsNewGroupChatAndActivate(String uid, Long chatId){
-//        // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-//        boolean isNewTalk = !chatService.isChatSessionOpenToUser(uid, chatId);
-//
-//        if (isNewTalk) { // 如果是新会话，更新
-//            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid+chatId, true);
-//            new Thread(() -> {
-//                PrivateChat privateChat = new PrivateChat();
-//                privateChat.setChatId(chatId);
-//                privateChat.setUserAStatus(true);
-//                privateChat.setUserBStatus(true);
-//                privateChat.setUpdateTime(new Date());
-//                chatMapper.updatePrivateChat(privateChat);
-//            }).start();
-//        }
-//        return isNewTalk;
-//    }
+    private boolean checkIsNewGroupChatAndActivate(String uid, String gid) {
+        // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
+        boolean isNewTalk = !chatService.isGroupChatSessionOpenToUser(uid, gid);
+        if(isNewTalk){  // 如果是这个用户是新会话，那么更新为显示状态
+            chatService.openGroupChat(uid,gid);
+        }
+        return isNewTalk;
+    }
 
     private String parseMessageText(SendMsgDTO sendMsgDTO) {
         Integer msgType = sendMsgDTO.getMessageType();

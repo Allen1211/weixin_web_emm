@@ -2,7 +2,9 @@ package com.allen.imsystem.test;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
+import com.allen.imsystem.dao.mappers.ChatMapper;
 import com.allen.imsystem.dao.mappers.GroupChatMapper;
+import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
@@ -34,6 +36,9 @@ public class TestSDR {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private ChatMapper chatMapper;
 
     @Autowired
     RedisService redisService;
@@ -174,9 +179,29 @@ public class TestSDR {
     public void fix(){
         List<UserChatGroup> list = groupChatMapper.fix();
         for(UserChatGroup u:list){
-            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,u.getUid()+u.getChatId(),!u.getShouldDisplay());
-//            System.out.println(u);
+            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,u.getUid()+u.getGid(),!u.getShouldDisplay());
         }
+    }
+
+    @Test
+    public void fix1(){
+        List<PrivateChat> privateChatList = chatMapper.fix1();
+        for(PrivateChat privateChat:privateChatList){
+            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,
+                    privateChat.getUidA()+privateChat.getChatId(),!privateChat.getUserAStatus());
+            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE,
+                    privateChat.getUidB()+privateChat.getChatId(),!privateChat.getUserBStatus());
+
+        }
+    }
+
+    @Test
+    public void t(){
+        redisService.zSetAdd("1234","a",1);
+        redisService.zSetAdd("1234","b",2);
+        redisService.zSetAdd("1234","c",3);
+        System.out.println(redisService.zSetHasMember("1234","d"));
+        System.out.println(redisService.zRemoveRangeByScore("1234",3));
     }
 }
 @Data

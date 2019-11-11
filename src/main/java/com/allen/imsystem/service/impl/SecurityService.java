@@ -29,7 +29,7 @@ public class SecurityService implements ISecurityService {
     private RedisTemplate redisTemplate;
 
     @Override
-    public boolean sendRegisterCheckEmail(Integer type, String email) {
+    public boolean sendCheckEmail(Integer type, String email) {
         Map<String, Object> model = new HashMap<>(2);
         Random random = new Random(System.currentTimeMillis());
         String emailCode = String.valueOf(random.nextInt(899999) + 100000);

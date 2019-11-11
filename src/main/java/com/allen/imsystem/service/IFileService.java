@@ -8,6 +8,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+/**
+ * 文件上传相关的业务逻辑接口
+ */
 @Service
 public interface IFileService {
 
@@ -28,6 +31,6 @@ public interface IFileService {
 
     FileUploadInfo getUnCompleteParts(String md5);
 
-    String getMd5FromUrl(Integer type , String url);
+    String getMd5FromUrl(String url);
 
 }

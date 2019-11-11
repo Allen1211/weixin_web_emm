@@ -1,7 +1,5 @@
 package com.allen.imsystem.service;
 
-import org.apache.velocity.app.VelocityEngine;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;

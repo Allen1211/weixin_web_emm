@@ -5,8 +5,6 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.VertifyCodeUtil;
 import com.allen.imsystem.model.dto.JSONResponse;
-import com.allen.imsystem.model.message.EmailMessage;
-import com.allen.imsystem.service.IMailService;
 import com.allen.imsystem.service.ISecurityService;
 import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +13,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 @Controller
 @RequestMapping("/api/security")
@@ -82,7 +76,7 @@ public class SecurityController {
             }
         }
 
-        boolean sendSuccess = securityService.sendRegisterCheckEmail(type,email);
+        boolean sendSuccess = securityService.sendCheckEmail(type,email);
 
         // 发送成功的话, 将验证码和过期时间拼接添加到session
         if(sendSuccess){

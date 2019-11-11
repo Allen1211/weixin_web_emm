@@ -5,6 +5,9 @@ import org.apache.commons.codec.binary.Base64;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * 生成加密密码
+ */
 public class HashSaltUtil {
     private static String alg = "MD5";
 
@@ -17,7 +20,6 @@ public class HashSaltUtil {
         try {
             md = MessageDigest.getInstance(alg);
         } catch (NoSuchAlgorithmException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         byte[] pwd = md.digest(src.getBytes());

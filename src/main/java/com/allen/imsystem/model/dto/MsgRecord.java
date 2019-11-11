@@ -16,7 +16,7 @@ public class MsgRecord {
     private String messageImgUrl;   // 图片url
     private MsgFileInfo fileInfo;   // 文件信息
     private UserInfoDTO userInfo;   // 发送者用户信息
-    @JSONField(format = "yy/MM/dd HH:mm")
+    @JSONField(serialize = false)
     private Date msgTimeDate;         // 未处理前的发送时间
     private String messageTime;           // 处理后的发送时分
     private Boolean showMessageTime;    // 是否显示时间(两条信息超过一定时间才显示)

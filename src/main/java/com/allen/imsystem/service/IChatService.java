@@ -13,13 +13,14 @@ import java.util.Map;
 @Service
 public interface IChatService {
 
+    boolean isGroupChat(Long chatId);
+
     /**
      * 获得会话类型
-     * @param talkIdStr
      * @return
      */
-    Integer getChatType(String talkIdStr);
-    Integer getChatType(Long talkId);
+    Integer getChatType(String chatIdStr);
+    Integer getChatType(Long chatId);
 
     /**
      * 判断某个会话是否被用户移除
@@ -27,8 +28,8 @@ public interface IChatService {
      * @param chatId
      * @return
      */
-    Boolean isChatSessionOpenToUser(String uid, Long chatId);
-    Boolean isChatSessionOpenToUser(String uid, String chatId);
+    Boolean isPrivateChatSessionOpenToUser(String uid, Long chatId);
+    Boolean isGroupChatSessionOpenToUser(String uid, String gid);
 
     /**
      * 获取某个会话最后一条消息的时间
@@ -99,18 +100,18 @@ public interface IChatService {
 
     /**
      * 获取会话的一些信息
-     * @param talkId
+     * @param chatId
      * @return
      */
-    ChatSessionInfo getChatInfo(Long talkId,String uid);
+    ChatSessionInfo getChatInfo(Long chatId,String uid);
 
     /**
      * 标识一个私聊会话的所有消息已读
      * @param uid
-     * @param talkId
+     * @param chatId
      * @return
      */
-    Boolean setPrivateChatAllMsgHasRead(String uid, String talkId);
+    Boolean setPrivateChatAllMsgHasRead(String uid, Long chatId);
     /**
      * 标识一个群聊会话的所有消息已读
      * @param uid
@@ -121,21 +122,21 @@ public interface IChatService {
     /**
      * 获取一个会话的聊天记录
      * @param uid
-     * @param talkId
+     * @param chatId
      * @param index
      * @param pageSize
      * @return
      */
-    Map<String,Object> getMessageRecord(boolean isGroup,String uid, String talkId,Integer index, Integer pageSize);
+    Map<String,Object> getMessageRecord(boolean isGroup,String uid, Long chatId,Integer index, Integer pageSize);
 
     /**
      * 获取某个会话所有聊天记录的条数
-     * @param talkId
+     * @param chatId
      * @param uid
      * @param beginTime
      * @return
      */
-    Integer getAllHistoryMessageSize(boolean isgGroup,String talkId, String uid, Date beginTime);
+    Integer getAllHistoryMessageSize(boolean isgGroup,Long chatId, String uid, Date beginTime);
 
     /**
      * 私聊消息入库
@@ -153,6 +154,6 @@ public interface IChatService {
      */
     Boolean updateChatLastMsg(Long chatId, Long msgId,String senderId);
 
-
+    Map<String,Object> validateChatId(Long chatId,String uid);
 
 }

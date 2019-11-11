@@ -43,8 +43,8 @@ public class TestUpload {
 
     @Test
     public void testMD5(){
-        fileService.getMd5FromUrl(2,"http://120.77.42.156:8088/imsystem/static/msg_img/99431b0322daf5c673dca126ce6b752c.jpeg");
-        fileService.getMd5FromUrl(3,"http://120.77.42.156:8088/imsystem/static/msg_file/12345/12345.jpeg");
+        fileService.getMd5FromUrl("http://120.77.42.156:8088/imsystem/static/msg_img/99431b0322daf5c673dca126ce6b752c.jpeg");
+        fileService.getMd5FromUrl("http://120.77.42.156:8088/imsystem/static/msg_file/12345/12345.jpeg");
 
     }
 

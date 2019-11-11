@@ -69,11 +69,6 @@
         <association property="friendInfo" resultMap="userInfoMap"/>
     </resultMap>
 
-    <resultMap id="newFriendNotifyMap" type="com.allen.imsystem.model.dto.NewFriendNotify">
-        <result property="groupId" column="group_id"/>
-        <association property="friendInfo" resultMap="userInfoMap"/>
-    </resultMap>
-
 
     <select id="selectFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
@@ -284,41 +279,4 @@
         DELETE FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid}
     </delete>
 
-    <select id="selectNewFriendNotify" resultMap="newFriendNotifyMap">
-        SELECT ui.uid,ui.username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
-        f.a_in_b_fgroup_id as group_id
-        FROM apply_notify as an
-        INNER JOIN friend_apply as fa ON an.apply_id = fa.id
-        INNER JOIN friend as f ON (fa.to_uid = f.uid_a and f.uid_b=#{uid})
-        INNER JOIN user_info as ui ON ui.uid = fa.to_uid
-        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
-        UNION ALL
-        SELECT ui.uid,ui.username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
-        f.b_in_a_fgroup_id as group_id
-        FROM apply_notify as an
-        INNER JOIN friend_apply as fa ON an.apply_id = fa.id
-        INNER JOIN friend as f ON (fa.to_uid = f.uid_b and f.uid_a=#{uid})
-        INNER JOIN user_info as ui ON ui.uid = fa.to_uid
-        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
-    </select>
-
-    <select id="selectNewApplyNotify" resultMap="FriendApplicationMap">
-        SELECT ui.uid,ui.username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id,
-        fa.reason , fa.pass
-        FROM apply_notify as an
-        INNER JOIN friend_apply as fa ON fa.id=an.apply_id
-        INNER JOIN user_info ui on ui.uid = fa.from_uid
-        WHERE an.uid=#{uid} and an.type=#{type} and `status`=1
-    </select>
-
-    <insert id="insertNewApplyNotify" parameterType="com.allen.imsystem.model.pojo.ApplyNotify" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO apply_notify (uid, type, apply_id, status) VALUES (#{uid},#{type},#{applyId},true)
-    </insert>
-
-    <update id="deleteAllNotify">
-        UPDATE apply_notify SET `status` = 0, update_time=NOW(6) WHERE uid=#{uid} and type=#{type}
-    </update>
 </mapper>

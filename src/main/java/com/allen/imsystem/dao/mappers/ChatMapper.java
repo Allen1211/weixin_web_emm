@@ -21,7 +21,7 @@ public interface ChatMapper {
 
     PrivateChat selectPrivateChatInfoByUid(@Param("uidA")String uidA, @Param("uidB")String uidB);
 
-    PrivateChat selectPrivateChatInfoByChatId(String chatId);
+    PrivateChat selectPrivateChatInfoByChatId(Long chatId);
 
     ChatSessionInfo selectPrivateChatData(@Param("chatId")Long chatId, @Param("uid")String uid);
 
@@ -30,19 +30,12 @@ public interface ChatMapper {
     List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginMsgId")Long beginMsgId,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
-    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginMsgId")Long beginMsgId,
+    List<MsgRecord> selectGroupChatHistoryMsg(@Param("gid")String gid,@Param("beginMsgId")Long beginMsgId,
                                                 @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
-//    List<MsgRecord> selectPrivateChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
-//                                                @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
-//
-//    List<MsgRecord> selectGroupChatHistoryMsg(@Param("chatId")Long chatId,@Param("beginTime")Date beginTime,
-//                                                @Param("uid")String uid,@Param("pageBean") PageBean pageBean);
 
     Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
 
-//    Integer countAllPrivateHistoryMsg(@Param("chatId")Long chatId, @Param("beginMsgId")Long beginMsgId);
-
-    Integer countAllGroupHistoryMsg(@Param("chatId")Long chatId, @Param("beginTime")Date beginTime);
+    Integer countAllGroupHistoryMsg(@Param("gid")String gid,@Param("beginTime")Date beginTime);
 
     Integer countPrivateChatUnReadMsgForUser(@Param("chatId")Long chatId, @Param("uid")String uid);
 
@@ -59,4 +52,5 @@ public interface ChatMapper {
 
     Integer insertPrivateMsgToRecord(PrivateMsgRecord privateMsgRecord);
 
+    List<PrivateChat> fix1();
 }

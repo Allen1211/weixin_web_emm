@@ -15,11 +15,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author 王赛超
- * 基于spring和redis的redisTemplate工具类
- * 针对所有的hash 都是以h开头的方法
- * 针对所有的Set 都是以s开头的方法                    不含通用方法
- * 针对所有的List 都是以l开头的方法
+ * redis操作的工具类
  */
 @Service
 public class RedisService {
@@ -596,4 +592,34 @@ public class RedisService {
         }
     }
 
+    // ################ sorted set #################
+
+    public boolean zSetAdd(String key, Object member, double scope) {
+        if (StringUtils.isEmpty(key) || member == null) {
+            return false;
+        }
+        return redisTemplate.opsForZSet().add(key, member, scope);
+    }
+
+    public Long zSetRemove(String key, Object member, double scope) {
+        if (StringUtils.isEmpty(key) || member == null) {
+            return -1L;
+        }
+        return redisTemplate.opsForZSet().remove(key, member);
+    }
+
+    public Long zRemoveRangeByScore(String key, double score) {
+        if (StringUtils.isEmpty(key) || score < 0) {
+            return -1L;
+        }
+        return redisTemplate.opsForZSet().removeRangeByScore(key, 0, score);
+    }
+
+    public boolean zSetHasMember(String key,Object member){
+        if (StringUtils.isEmpty(key) || member == null) {
+            return false;
+        }
+        Long idx =  redisTemplate.opsForZSet().rank(key,member);
+        return idx != null && idx >= 0L;
+    }
 }

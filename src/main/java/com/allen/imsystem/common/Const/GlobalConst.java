@@ -15,17 +15,20 @@ public class GlobalConst {
 
     public static final String DEFAULT_GROUP_NAME = "新群聊";
 
+    /**
+     * websocket事件码
+     */
     public static class WsEvent{
-        public static final Integer CLIENT_SEND_MSG = 101;
-        public static final Integer CLIENT_MSG_ACK = 102;
-        public static final Integer CLIENT_NEW_APPLY_NOTIFY_ACK = 104;
-        public static final Integer CLIENT_NEW_FRIEND_NOTIFY_ACK = 105;
+        public static final int CLIENT_SEND_MSG = 101;              // 客户端发送信息
+        public static final int CLIENT_MSG_ACK = 102;               // 客户端收到信息确认回执
+        public static final int CLIENT_NEW_APPLY_NOTIFY_ACK = 104;  // 客户端收到新好友申请通知确认回执
+        public static final int CLIENT_NEW_FRIEND_NOTIFY_ACK = 105; // 客户端收到申请被通过获得新好友的通知确认回执
 
-        public static final Integer SERVER_PUSH_MSG = 201;
-        public static final Integer SERVER_MSG_ACK_SUCCESS = 202;
-        public static final Integer SERVER_MSG_ACK_FAIL = 203;
-        public static final Integer SERVER_PUSH_NEW_APPLY_NOTIFY = 204;
-        public static final Integer SERVER_PUSH_NEW_FRIEND_NOTIFY = 205;
+        public static final int SERVER_PUSH_MSG = 201;
+        public static final int SERVER_MSG_ACK_SUCCESS = 202;
+        public static final int SERVER_MSG_ACK_FAIL = 203;
+        public static final int SERVER_PUSH_NEW_APPLY_NOTIFY = 204;
+        public static final int SERVER_PUSH_NEW_FRIEND_NOTIFY = 205;
 
     }
 
@@ -83,7 +86,6 @@ public class GlobalConst {
         public static final String KEY_USER_STATUS = "user_status";
         public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
-        public static final String KEY_RECORD_BEGIN_TIME = "msg_record_begin_time";
         public static final String KEY_RECORD_BEGIN_ID = "msg_record_begin_msg_id";
         public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
         public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
@@ -91,12 +93,13 @@ public class GlobalConst {
         public static final String KET_GROUP_CHAT_MEMBERS = "group_chat_members_";
         public static final String KEY_EMAIL_CODE = "email_code_";
         public static final String KEY_IMAGE_CODE = "image_code_";
-        public static final String KEY_NEW_FRIEND_NOTIFY_LIST = "offline_new_friend_notify_list_";
-        public static final String KEY_NEW_APPLY_NOTIFY_LIST = "offline_new_apply_notify_list_";
+        public static final String KEY_CHAT_GID_MAP = "chat_gid_map_";
+        public static final String KEY_TOKEN_BLACKLIST = "token_black_list";
 
     }
 
     public static class ChatType{
+        public static final Integer UN_KNOW = -1;
         public static final Integer PRIVATE_CHAT = 0;
         public static final Integer GROUP_CHAT = 1;
     }
@@ -106,6 +109,11 @@ public class GlobalConst {
         public static final Integer NEW_APPLY_NOTIFY  = 2;
     }
 
-
+    public static class MsgType{
+        public static final int TEXT = 1;
+        public static final int IMAGE = 2;
+        public static final int FILE = 3;
+        public static final int GROUP_NOTIFY = 4;
+    }
 
 }

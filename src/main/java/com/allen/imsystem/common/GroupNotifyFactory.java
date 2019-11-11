@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 用于批量生成群通知的工厂
+ */
 public class GroupNotifyFactory {
     private GroupMsgRecord baseNotify;
     private List<GroupMsgRecord> notifyList;

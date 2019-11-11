@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 好友模块，负责处理与好友相关的请求
+ */
 @RestController
 @RequestMapping("/api/friend")
 public class FriendController {
@@ -29,10 +32,7 @@ public class FriendController {
     private ICacheHolder cacheHolder;
 
     /**
-     * 用户搜索功能
-     *
-     * @param params
-     * @return
+     * 通过关键字搜索陌生人
      */
     @RequestMapping(value = "/searchStranger",method = RequestMethod.POST)
     public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpServletRequest request) {
@@ -44,9 +44,6 @@ public class FriendController {
 
     /**
      * 通过好友申请
-     *
-     * @param params
-     * @return
      */
     @RequestMapping(value = "/acceptFriendApplication",method = RequestMethod.POST)
     public JSONResponse acceptFriendApplication(@RequestBody Map<String, String> params, HttpServletRequest request) {
@@ -71,16 +68,12 @@ public class FriendController {
     /**
      * 申请添加好友
      *
-     * @param params
-     * @return
      */
     @RequestMapping(value = "/applyAddFriend",method = RequestMethod.POST)
     public JSONResponse addFriendApply(@RequestBody @Validated ApplyAddFriendDTO params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
         boolean isSuccess = friendService.addFriendApply(params, uid);
-
-        // TODO 通知被申请的用户，新好友申请通知
 
         if (isSuccess) {
             return new JSONResponse().success();
@@ -99,8 +92,6 @@ public class FriendController {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
         List<FriendApplicationDTO> applicationList = friendService.getFriendApplicationList(uid);
-
-        // TODO 通知被申请的用户，新好友申请通知
 
         return new JSONResponse().success().putData("applicationList", applicationList);
     }
@@ -162,6 +153,9 @@ public class FriendController {
         return new JSONResponse(1).putAllData(result);
     }
 
+    /**
+     * 获取好友的用户信息
+     */
     @RequestMapping(value = "/getFriendInfo",method = RequestMethod.GET)
     public JSONResponse getFriendInfo(@RequestParam("friendId")String friendId,HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
@@ -169,6 +163,9 @@ public class FriendController {
         return new JSONResponse(1).success().putData("friendInfo",friendInfo);
     }
 
+    /**
+     * 删除好友
+     */
     @RequestMapping(value = "/deleteFriend",method = RequestMethod.POST)
     public JSONResponse deleteFriendInfo(@RequestBody Map<String,String> params,HttpServletRequest request){
         String friendId = params.get("friendId");
@@ -177,6 +174,9 @@ public class FriendController {
         return new JSONResponse(1).success();
     }
 
+    /**
+     * 修改用户分组名
+     */
     @RequestMapping(value = "/updateFriendGroupName",method = RequestMethod.POST)
     @ResponseBody
     public JSONResponse updateFriendGroupName(@RequestBody Map<String,String> params,HttpServletRequest request){
@@ -191,6 +191,9 @@ public class FriendController {
         }
     }
 
+    /**
+     * 删除用户分组
+     */
     @RequestMapping(value = "/deleteFriendGroup",method = RequestMethod.POST)
     public JSONResponse deleteFriendGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
         Integer groupId = Integer.valueOf(params.get("groupId"));
@@ -199,8 +202,9 @@ public class FriendController {
         return new JSONResponse(1);
     }
 
-
-
+    /**
+     * 将好友移动到别的分组
+     */
     @RequestMapping(value = "/moveFriendToOtherGroup",method = RequestMethod.POST)
     public JSONResponse moveFriendToOtherGroup(@RequestBody Map<String,String> params,HttpServletRequest request){
         Integer oldGroupId = Integer.valueOf(params.get("oldGroupId"));
@@ -211,14 +215,15 @@ public class FriendController {
         return new JSONResponse(1);
     }
 
-    @RequestMapping(value = "/setAllNotifyHasRead",method = RequestMethod.POST)
-    public JSONResponse setAllNotifyHasRead(HttpServletRequest request){
+    /**
+     * 检验这个friendId的合法性
+     */
+    @RequestMapping(value = "/validateFriendId",method = RequestMethod.GET)
+    public JSONResponse moveFriendToOtherGroup(@RequestParam("friendId")String friendId,HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        friendService.receiveAllNotify(uid);
-        return new JSONResponse(1);
+        boolean hasThisFriend = friendService.checkIsMyFriend(uid,friendId);
+        return new JSONResponse(1).putData("hasThisFriend",hasThisFriend);
     }
-
-
 
 
     @RequestMapping("/*")

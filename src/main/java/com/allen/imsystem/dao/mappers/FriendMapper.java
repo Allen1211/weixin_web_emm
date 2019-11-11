@@ -80,12 +80,4 @@ public interface FriendMapper {
     Integer deleteFriendApply(@Param("fromUid")String fromUid,@Param("toUid")String toUid);
 
 
-
-    List<FriendApplicationDTO> selectNewApplyNotify(@Param("uid")String uid,@Param("type")Integer type);
-
-    List<NewFriendNotify> selectNewFriendNotify(@Param("uid")String uid,@Param("type")Integer type);
-
-    Integer insertNewApplyNotify(ApplyNotify applyNotify);
-
-    Integer deleteAllNotify(@Param("type")Integer type,@Param("uid") String uid);
 }

@@ -24,8 +24,8 @@
         <property name="jdbcUrl" value="${mysql.url}"/>
         <property name="user" value="${mysql.username}"/>
         <property name="password" value="${mysql.password}"/>
-        <property name="initialPoolSize" value="3"/>
-        <property name="maxPoolSize" value="10"/>
+        <property name="initialPoolSize" value="10"/>
+        <property name="maxPoolSize" value="100"/>
         <property name="maxStatements" value="100"/>
         <property name="acquireIncrement" value="2"/>
     </bean>
@@ -72,6 +72,11 @@
         <property name="sqlSessionFactory" ref="sqlSessionFactory" />
     </bean>
 
+    <bean id="notifyMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="mapperInterface" value="com.allen.imsystem.dao.mappers.NotifyMapper" />
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+    </bean>
+
     <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
     </bean>
@@ -83,11 +88,6 @@
             <tx:method name="*" read-only="false"/>
         </tx:attributes>
     </tx:advice>
-
-    <!--    <aop:config>
-            <aop:pointcut id="test1" expression="execution(* spittr.service.UserService.testTransactional(..))"/>
-            <aop:advisor advice-ref="txAdvice" pointcut-ref="test1"/>
-        </aop:config>-->
 
 
 

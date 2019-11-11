@@ -1,6 +1,5 @@
 package com.allen.imsystem.model.dto;
 
-import com.allen.imsystem.model.pojo.UserInfo;
 import lombok.Data;
 
 import java.io.Serializable;

@@ -13,13 +13,17 @@ import java.util.Set;
 
 public interface GroupChatMapper {
 
+    Boolean selectGroupChatStatus(String gid);
+
     String selectGroupOwnerId(String gid);
 
     String selectUnUsedGid();
 
+    String selectGidFromChatId(Long chatId);
+
     UserChatGroup selectUserChatGroupRelation(@Param("uid")String uid,@Param("gid")String gid);
 
-    UserChatGroup selectUserChatGroupRelationByChatId(@Param("chatId")String chatId);
+    UserChatGroup selectUserChatGroupRelationByChatId(@Param("chatId")Long chatId);
 
     Set<String> selectGroupMemberIdSet(String gid);
 
@@ -29,6 +33,8 @@ public interface GroupChatMapper {
 
     @MapKey("myId")
     Map<String, ChatSessionDTO> selectGroupAllChatData(String gid);
+
+    ChatSessionDTO selectOneGroupChatData(Long chatId);
 
     Integer softDeleteUsedGid(String gid);
 

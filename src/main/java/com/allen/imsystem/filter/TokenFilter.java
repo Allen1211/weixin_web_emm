@@ -41,6 +41,11 @@ public class TokenFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
         String URI = request.getRequestURI();
+        String method = request.getMethod();
+        if(method.equals("OPTIONS")){
+            filterChain.doFilter(request,response);
+            return;
+        }
         for(String pass : passURIs){
             if(pass.equals(URI)){
                 filterChain.doFilter(servletRequest,servletResponse);

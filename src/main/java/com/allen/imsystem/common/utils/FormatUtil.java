@@ -4,6 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+/**
+ * 负责时间和文件大小的一些格式化
+ */
 public class FormatUtil {
 
     private static String[] day_of_week = {"","星期日","星期一","星期二","星期三","星期四","星期五","星期六"};
@@ -95,10 +98,6 @@ public class FormatUtil {
         }else{
             return String.format("%.2fG",size/(1024.0*1024*1024));
         }
-    }
-
-    public static void main(String[] args) {
-        System.out.println(formatFileSize(1024*234L));
     }
 
     private static boolean isSameDay(Calendar cal1, Calendar cal2) {

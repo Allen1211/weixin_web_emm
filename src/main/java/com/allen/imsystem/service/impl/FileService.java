@@ -205,14 +205,14 @@ public class FileService implements IFileService {
     }
 
     @Override
-    public String getMd5FromUrl(Integer type, String url) {
+    public String getMd5FromUrl(String url) {
         String md5 = null;
-        if(type.equals(2)){
+        if(url.startsWith(GlobalConst.Path.MSG_IMG_URL)){
             // http://120.77.42.156:8088/imsystem/static/msg_img/99431b0322daf5c673dca126ce6b752c.jpeg
             int begin = url.lastIndexOf(GlobalConst.Path.MSG_IMG_URL) + GlobalConst.Path.MSG_IMG_URL.length();
             int end = url.lastIndexOf('.');
             md5 = url.substring(begin,end);
-        }else if(type.equals(3)){
+        }else if(url.startsWith(GlobalConst.Path.MSG_FILE_URL)){
             int begin = url.lastIndexOf(GlobalConst.Path.MSG_FILE_URL)+ GlobalConst.Path.MSG_FILE_URL.length();
             int end = url.lastIndexOf('/');
             md5 = url.substring(begin,end);
@@ -260,14 +260,14 @@ public class FileService implements IFileService {
      * @throws IOException
      */
     private void compressImage(InputStream is, OutputStream os, Long size) throws IOException {
-        double quality = 0.5;
-        if (size < 1024 * 1024) { // 1M以下
-            quality = 0.75;
-        } else if (size < 1024 * 1024 * 3) {   // 3M以下
-            quality = 0.5;
-        } else {  // 3M以上
-            quality = 0.25;
-        }
+        double quality = 0.25;
+//        if (size < 1024 * 1024) { // 1M以下
+//            quality = 0.5;
+//        } else if (size < 1024 * 1024 * 3) {   // 3M以下
+//            quality = 0.5;
+//        } else {  // 3M以上
+//            quality = 0.25;
+//        }
         Thumbnails.of(is).scale(1).outputQuality(quality).toOutputStream(os);
         is.close();
     }

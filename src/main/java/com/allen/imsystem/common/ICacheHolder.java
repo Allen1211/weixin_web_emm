@@ -2,6 +2,9 @@ package com.allen.imsystem.common;
 
 import org.springframework.stereotype.Component;
 
+/**
+ * 从缓存中获取用一些信息的方法。具体实现可以由session，redis，cookie等实现
+ */
 @Component
 public interface ICacheHolder {
 
