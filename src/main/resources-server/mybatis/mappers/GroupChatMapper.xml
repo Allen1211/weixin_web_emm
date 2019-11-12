@@ -111,6 +111,14 @@
         SELECT * FROM user_chat_group WHERE chat_id=#{chatId} LIMIT 1
     </select>
 
+    <select id="selectUserChatGroupRelationByUidList" resultMap="userChatGroupRelationMap">
+        SELECT * FROM user_chat_group WHERE gid=#{gid} AND uid in (
+        <foreach collection="list" item="item" separator=",">
+            #{item.uid}
+        </foreach>
+        )
+
+    </select>
 
     <select id="selectGroupChatList" resultMap="GroupChatInfoDTOMap">
         SELECT cg.gid,cg.group_name,cg.owner_id,
@@ -298,7 +306,13 @@
         </where>
     </update>
 
-
+    <update id="reActivateRelation" >
+        UPDATE user_chat_group SET `status`=1,update_time=NOW(6) WHERE gid=#{gid} AND uid in (
+            <foreach collection="list" item="item" separator="," >
+                #{item.uid}
+            </foreach>
+        )
+    </update>
 
     <select id="fix" resultMap="userChatGroupRelationMap">
         SELECT * FROM user_chat_group

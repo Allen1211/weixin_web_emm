@@ -104,8 +104,8 @@ public class UserService implements IUserService {
             throw new BusinessException(ExceptionType.USERNAME_PASSWORD_ERROR);
         String hashPassword = user.getPassword();
         String salt = user.getSalt();
-//        if(!hashPassword.equals(HashSaltUtil.getHashSaltPwd(password,salt)))
-//            throw new BusinessException(ExceptionType.USERNAME_PASSWORD_ERROR);
+        if (!hashPassword.equals(HashSaltUtil.getHashSaltPwd(password, salt)))
+            throw new BusinessException(ExceptionType.USERNAME_PASSWORD_ERROR);
 
         // 更新最后一次登录时间
         userMapper.updateLoginRecord(user.getUid(), new Date());
@@ -150,6 +150,9 @@ public class UserService implements IUserService {
 
     @Override
     public boolean updateUserInfo(EditUserInfoDTO editUserInfoDTO, String uid) {
+        if (StringUtils.isEmpty(editUserInfoDTO.getUsername()) || editUserInfoDTO.getUsername().length() > 10) {
+            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"用户名长度不应超过十个字符");
+        }
         UserInfo userInfo = new UserInfo();
         userInfo.setUid(uid);
         userInfo.setUpdateTime(new Date());
@@ -195,7 +198,7 @@ public class UserService implements IUserService {
             throw new BusinessException(ExceptionType.USER_NOT_FOUND);
         }
         // 密码检验并更新
-        updatePassword(user,newPassword);
+        updatePassword(user, newPassword);
     }
 
     @Override
@@ -208,14 +211,14 @@ public class UserService implements IUserService {
             throw new BusinessException(ExceptionType.PERMISSION_DENIED, "旧密码错误");
         }
         // 密码检验并更新
-        updatePassword(user,newPassword);
+        updatePassword(user, newPassword);
         // 生成新token
         String token = JWTUtil.createLoginToken(user.getUid(), user.getId());
         return token;
     }
 
 
-    public void updatePassword(User user, String newPassword){
+    public void updatePassword(User user, String newPassword) {
         // 密码检验
         if (StringUtils.isEmpty(newPassword.trim()) || newPassword.length() < 6 || newPassword.length() > 12) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "新密码长度应在6-12之间");

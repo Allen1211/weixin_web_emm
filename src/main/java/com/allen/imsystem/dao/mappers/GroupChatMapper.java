@@ -34,6 +34,9 @@ public interface GroupChatMapper {
     @MapKey("myId")
     Map<String, ChatSessionDTO> selectGroupAllChatData(String gid);
 
+    @MapKey("uid")
+    Map<String, UserChatGroup> selectUserChatGroupRelationByUidList(@Param("list") List<InviteDTO> list, @Param("gid")String gid);
+
     ChatSessionDTO selectOneGroupChatData(Long chatId);
 
     Integer softDeleteUsedGid(String gid);
@@ -54,6 +57,8 @@ public interface GroupChatMapper {
     Integer updateUserGroupChat(UserChatGroup userChatGroup);
 
     Integer updateGroupChat(GroupChat groupChat);
+
+    Integer reActivateRelation(@Param("list") List<InviteDTO> list, @Param("gid")String gid);
 
     Integer softDeleteGroupMember(@Param("uid")String uid, @Param("gid")String gid);
 

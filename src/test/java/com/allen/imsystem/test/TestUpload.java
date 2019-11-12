@@ -4,12 +4,15 @@ import com.allen.imsystem.dao.mappers.FileMapper;
 import com.allen.imsystem.model.dto.FileUploadInfo;
 import com.allen.imsystem.model.pojo.FileMd5;
 import com.allen.imsystem.service.IFileService;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath*:spring/springmvc.xml", "classpath*:spring/applicationContext*.xml"})
@@ -49,11 +52,17 @@ public class TestUpload {
     }
 
     @Test
-    public void test(){
-        FileMd5 fileMd5 = fileMapper.selectFileMd5("87aa2db9d44369ed2500c628421c967ffff");
-        System.out.println(fileMd5);
-//        String name = fileMapper.getName("87aa2db9d44369ed2500c628421c967ffff");
-//        System.out.println(name);
+    public void test() throws IOException {
+        File file = new File("C:/Users/83780/Desktop/login-bg.556c92d6.png");
+        BufferedImage bim = ImageIO.read(file);
+        int srcWidth = bim.getWidth();
+        int srcHeight = bim.getHeight();
+        byte[] src = FileUtils.readFileToByteArray(file);
+        System.out.println(src.length);
+        byte[] image = fileService.compressImage(src,srcWidth,srcHeight,250*1024L,0.1);
+        System.out.println(image.length);
+        FileUtils.writeByteArrayToFile(file,image);
     }
+
 
 }

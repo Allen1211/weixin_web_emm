@@ -33,4 +33,6 @@ public interface IFileService {
 
     String getMd5FromUrl(String url);
 
+    byte[] compressImage(byte[] bytes,int width,int height,long destSize,double quality) throws IOException;
+
 }

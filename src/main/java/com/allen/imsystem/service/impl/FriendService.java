@@ -318,9 +318,6 @@ public class FriendService implements IFriendService {
             if(groupChatService.checkIsGroupMember(friend.getFriendInfo().getUid(),gid)){
                 friend.setCanInvite(false);
                 friend.setReason("已是群成员");
-            }else if(checkIsDeletedByFriend(uid,friend.getFriendInfo().getUid())){
-                friend.setCanInvite(false);
-                friend.setReason("非好友");
             }else {
                 friend.setCanInvite(true);
             }
@@ -385,12 +382,11 @@ public class FriendService implements IFriendService {
         // 2 获取该用户的默认分组，若删除的是默认分组，报错。
         FriendGroupPojo defaultGroup = friendMapper.selectUserDefaultFriendGroup(uid);
         if (groupId.equals(defaultGroup.getGroupId())) {
-            throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL, "不能删除默认分组");
+            throw new BusinessException(ExceptionType.PERMISSION_DENIED, "不能删除默认分组");
         }
         boolean moveSuccess = true;
         if (size > 0) {// 若有好友，将该分组下所有好友转至默认分组
             Integer affect = friendMapper.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid);
-            System.out.println(affect);
             moveSuccess = friendMapper.moveGroupFriendToDefaultGroup(defaultGroup.getGroupId(), groupId, uid) > 0;
         }
         // 3 删除掉该分组

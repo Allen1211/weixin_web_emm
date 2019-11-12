@@ -3,8 +3,10 @@ package com.allen.imsystem.test;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.RedisUtil;
 import com.allen.imsystem.dao.mappers.ChatMapper;
+import com.allen.imsystem.dao.mappers.GroupChatMapper;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
+import com.allen.imsystem.model.dto.InviteDTO;
 import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.service.IChatService;
@@ -19,6 +21,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,9 @@ public class TestChat {
 
     @Autowired
     RedisUtil redisUtil;
+
+    @Autowired
+    GroupChatMapper groupChatMapper;
     @Test
     public void testChatList(){
         Long begin = System.currentTimeMillis();
@@ -131,5 +137,18 @@ public class TestChat {
         User user4 = new User();
         user4.setEmail("12345@qq.com");
         userService.updatePassword(user4,"20191111");
+    }
+
+    @Test
+    public void oo(){
+        List<InviteDTO> list = new ArrayList<>();
+        InviteDTO inviteDTO = new InviteDTO();
+        inviteDTO.setUid("66666666");
+        InviteDTO inviteDTO2 = new InviteDTO();
+        inviteDTO2.setUid("12345678");
+        list.add(inviteDTO);
+        list.add(inviteDTO2);
+        System.out.println(groupChatMapper.reActivateRelation(list,"138969482"));;
+
     }
 }

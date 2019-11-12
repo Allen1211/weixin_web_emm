@@ -17,7 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -41,9 +44,10 @@ public class FileService implements IFileService {
         String type = getFileType(multipartFile);
 
         StringBuilder nameDotType = new StringBuilder().append(id).append('.').append(type);
-        File file = new File(linuxPath + nameDotType.toString());
         try {
-            FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), file);
+            // 图片压缩
+            byte[] imageBytes = compressImage(multipartFile.getBytes(),200,200,75*1024L,0.25);
+            FileUtils.writeByteArrayToFile(new File(linuxPath + nameDotType.toString()),imageBytes);
         } catch (IOException e) {
             e.printStackTrace();
             throw new BusinessException(ExceptionType.SERVER_ERROR, "无法打开文件输入流");
@@ -61,21 +65,14 @@ public class FileService implements IFileService {
         StringBuilder nameDotType = new StringBuilder(md5).append('.').append(type);
         StringBuilder fullPath = new StringBuilder(GlobalConst.Path.MSG_IMG_URL).append(nameDotType);
         Long size = multipartFile.getSize();
-        // TODO 2、 到数据库查询该MD5是否已经存在
+        //  2、 到数据库查询该MD5是否已经存在
         boolean hasAlreadySave = fileMapper.checkMD5Exist(md5) > 0;
         if (!hasAlreadySave) {
             String linuxPath = GlobalConst.Path.MSG_IMG_PATH;
             File file = new File(linuxPath + nameDotType);
-            FileOutputStream fos = new FileOutputStream(file);
-            BufferedOutputStream bfo = new BufferedOutputStream(fos);
             // 图片压缩
-            compressImage(multipartFile.getInputStream(), bfo, multipartFile.getSize());
-            // IO写入服务器硬盘
-            bfo.write(multipartFile.getBytes());
-            bfo.flush();
-            fos.close();
-            bfo.close();
-            multipartFile = null;
+            byte[] imageBytes = compressMsgImage(multipartFile.getBytes(),0.25);
+            FileUtils.writeByteArrayToFile(file,imageBytes);
             // 将MD5信息写入数据库
             fileMapper.insertFileMd5(new FileMd5(md5,nameDotType.toString(),size, "msg_img/"+nameDotType));
         }
@@ -103,10 +100,6 @@ public class FileService implements IFileService {
 
         RandomAccessFile accessTmpFile = new RandomAccessFile(tmpFile, "rw");
         RandomAccessFile accessConfFile = new RandomAccessFile(confFile, "rw");
-
-
-
-
 
         // 该分片的起始写入位置
         long offset = blockSize * (param.getCurrBlock() - 1);
@@ -208,7 +201,6 @@ public class FileService implements IFileService {
     public String getMd5FromUrl(String url) {
         String md5 = null;
         if(url.startsWith(GlobalConst.Path.MSG_IMG_URL)){
-            // http://120.77.42.156:8088/imsystem/static/msg_img/99431b0322daf5c673dca126ce6b752c.jpeg
             int begin = url.lastIndexOf(GlobalConst.Path.MSG_IMG_URL) + GlobalConst.Path.MSG_IMG_URL.length();
             int end = url.lastIndexOf('.');
             md5 = url.substring(begin,end);
@@ -254,21 +246,35 @@ public class FileService implements IFileService {
 
     /**
      * 图片压缩
-     * @param is
-     * @param os
-     * @param size
      * @throws IOException
      */
-    private void compressImage(InputStream is, OutputStream os, Long size) throws IOException {
-        double quality = 0.25;
-//        if (size < 1024 * 1024) { // 1M以下
-//            quality = 0.5;
-//        } else if (size < 1024 * 1024 * 3) {   // 3M以下
-//            quality = 0.5;
-//        } else {  // 3M以上
-//            quality = 0.25;
-//        }
-        Thumbnails.of(is).scale(1).outputQuality(quality).toOutputStream(os);
-        is.close();
+    private byte[] compressMsgImage(byte[] bytes, double quality) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(); //字节输出流（写入到内存）
+        Thumbnails.of(new ByteArrayInputStream(bytes)).scale(1).outputQuality(quality).toOutputStream(baos);
+        return baos.toByteArray();
+    }
+
+    /**
+     * 图片压缩
+     * @throws IOException
+     */
+    public byte[] compressImage(byte[] bytes,int width,int height, long destSize,double quality) throws IOException {
+        // File srcFileJPG = new File(desPath);
+        long srcFileSize = bytes.length;
+        if(srcFileSize < destSize){
+            return bytes;
+        }
+        while (srcFileSize > destSize){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(); //字节输出流（写入到内存）
+            Thumbnails.of(new ByteArrayInputStream(bytes)).size(width,height).outputQuality(quality).toOutputStream(baos);
+//            Thumbnails.of(new ByteArrayInputStream(bytes)).scale(1).outputQuality(quality).toOutputStream(baos);
+            bytes = baos.toByteArray();
+            if(srcFileSize == bytes.length){    // 如果压缩后大小没有变化，结束
+                break;
+            }
+            srcFileSize = bytes.length;
+            baos.close();
+        }
+        return bytes;
     }
 }

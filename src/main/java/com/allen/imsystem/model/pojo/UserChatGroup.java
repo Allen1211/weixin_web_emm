@@ -29,4 +29,17 @@ public class UserChatGroup {
         this.inviterId = inviterId;
         this.shouldDisplay = shouldDisplay;
     }
+
+    public UserChatGroup(Long chatId, String uid, String gid, Long lastAckMsgId, String userAlias, String inviterId, Boolean status, Boolean shouldDisplay, Date createdTime, Date updateTime) {
+        this.chatId = chatId;
+        this.uid = uid;
+        this.gid = gid;
+        this.lastAckMsgId = lastAckMsgId;
+        this.userAlias = userAlias;
+        this.inviterId = inviterId;
+        this.status = status;
+        this.shouldDisplay = shouldDisplay;
+        this.createdTime = createdTime;
+        this.updateTime = updateTime;
+    }
 }

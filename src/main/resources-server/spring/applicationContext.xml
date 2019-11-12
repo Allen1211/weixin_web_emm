@@ -67,7 +67,7 @@
           class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
 
 
-    <bean id="mailConsumer" class="com.allen.imsystem.service.impl.MailService"></bean>
+    <bean id="mailConsumer" class="com.allen.imsystem.service.impl.MailService"/>
 
     <bean id="webSocketEventConsumer" class="com.allen.imsystem.netty.WsEventHandler"/>
 
