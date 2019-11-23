@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.FileMapper">
+
+    <resultMap id="fileMd5Map" type="com.allen.imsystem.model.pojo.FileMd5">
+        <result property="id" column="id"/>
+        <result property="md5" column="md5"/>
+        <result property="fileName" column="file_name" jdbcType="VARCHAR" javaType="java.lang.String"/>
+        <result property="size" column="size" />
+        <result property="url" column="url"/>
+        <result property="status" column="status" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="createdTime" column="created_time"/>
+    </resultMap>
+
+    <select id="checkMD5Exist" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM file_msg_md5 WHERE md5 = #{md5} AND status = 1
+    </select>
+
+    <select id="getName" resultType="java.lang.String">
+        SELECT file_name FROM file_msg_md5 WHERE md5 = #{md5} LIMIT 1
+    </select>
+
+    <select id="selectFileMd5" resultType="com.allen.imsystem.model.pojo.FileMd5">
+        SELECT id,md5,`size`,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',url) as url
+        ,status, created_time  FROM file_msg_md5 WHERE md5=#{md5} LIMIT 1
+    </select>
+
+    <insert id="insertFileMd5" parameterType="com.allen.imsystem.model.pojo.FileMd5" useGeneratedKeys="true">
+        INSERT INTO file_msg_md5 (md5,file_name,size,url,status)
+        values (#{md5},#{fileName},#{size},#{url},#{status})
+    </insert>
+</mapper>

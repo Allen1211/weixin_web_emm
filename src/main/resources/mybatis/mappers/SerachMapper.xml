@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.SearchMapper">
+    <resultMap id="searchResultMap" type="com.allen.imsystem.model.dto.UserSearchResult" >
+        <association property="userInfo" resultMap="userInfoDTOMapForSearch"></association>
+    </resultMap>
+    <resultMap id="userInfoDTOMapForSearch" type="com.allen.imsystem.model.dto.UserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+    </resultMap>
+
+    <select id="search" resultMap="searchResultMap"  >
+        SELECT uid,username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc` FROM user_info
+        WHERE username like CONCAT('%',#{keyword},'%') OR uid=#{keyword};
+    </select>
+
+</mapper>

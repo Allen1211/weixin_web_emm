@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.dao.mappers.UserMapper">
+
+
+    <resultMap type="com.allen.imsystem.model.pojo.User" id="UserMap">
+
+        <id property="id" column="id"/>
+        <result property="uid" column="uid"/>
+        <result property="password" column="password"/>
+        <result property="salt" column="salt"/>
+        <result property="email" column="email"/>
+        <result property="tel" column="tel"/>
+        <result property="roleId" column="role_id"/>
+        <result property="status" column="status"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap type="com.allen.imsystem.model.pojo.UserInfo" id="UserInfoMap">
+        <id property="id" column="id"/>
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="iconId" column="icon_id"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+        <result property="desc" column="desc"/>
+        <result property="regionId" column="regionId"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="selfInfoMap" type="com.allen.imsystem.model.dto.EditUserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+        <result property="email" column="email"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+    </resultMap>
+
+    <resultMap id="userInfoDTOMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+    </resultMap>
+
+    <select id="selectSenderInfo" resultMap="userInfoDTOMap">
+        SELECT user_info.uid,
+        username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id
+        from user_info
+        where user_info.uid=#{uid}
+    </select>
+
+    <!-- SQL语句 -->
+    <select id="selectUserWithUid" resultMap="UserMap">
+        SELECT * FROM `user` WHERE uid = #{uid}
+    </select>
+
+    <select id="selectUserWithEmail" resultMap="UserMap">
+        SELECT * FROM `user` WHERE email = #{email}
+    </select>
+
+    <select id="selectAllUid" resultType="java.lang.String">
+        SELECT uid FROM `user`
+    </select>
+
+    <select id="selectSelfInfo" resultMap="selfInfoMap">
+        SELECT u.uid,u.email,ui.username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        ui.`desc`,ui.age,ui.gender
+        FROM user as u
+        INNER JOIN user_info as ui
+        ON ui.uid = u.uid
+        WHERE u.id = #{userId}
+    </select>
+
+
+    <select id="selectCountUid" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM `user` WHERE uid = #{uid}
+    </select>
+
+    <select id="selectCountEmail" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM `user` WHERE email = #{email}
+    </select>
+
+    <select id="selectNextUnUsedUid" resultType="com.allen.imsystem.model.pojo.UidPool">
+        SELECT * FROM uid_pool WHERE has_used = 0 LIMIT 1
+    </select>
+
+    <insert id="insertUser" parameterType="com.allen.imsystem.model.pojo.User" useGeneratedKeys="true">
+        INSERT INTO `user` (
+            <trim suffixOverrides=",">
+                <if test="uid!=null">
+                    uid,
+                </if>
+                <if test="password!=null">
+                    password,
+                </if>
+                <if test="salt!=null">
+                    salt,
+                </if>
+                <if test="email!=null">
+                    email,
+                </if>
+                <if test="tel!=null">
+                    tel,
+                </if>
+                <if test="roleId!=null">
+                    role_id,
+                </if>
+                <if test="status!=null">
+                    status,
+                </if>
+            </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">
+                #{uid},
+            </if>
+            <if test="password!=null">
+                #{password},
+            </if>
+            <if test="salt!=null">
+                #{salt},
+            </if>
+            <if test="email!=null">
+                #{email},
+            </if>
+            <if test="tel!=null">
+                #{tel},
+            </if>
+            <if test="roleId!=null">
+                #{roleId},
+            </if>
+            <if test="status!=null">
+                #{status},
+            </if>
+        </trim>)
+    </insert>
+
+    <insert id="insertUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo" useGeneratedKeys="true">
+        INSERT INTO `user_info` (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">uid,</if>
+            <if test="username!=null">username,</if>
+            <if test="iconId!=null">icon_id,</if>
+            <if test="gender!=null">gender,</if>
+            <if test="age!=null">age,</if>
+            <if test="desc!=null">desc,</if>
+            <if test="regionId!=null">region_id,</if>
+        </trim>)
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="uid!=null">#{uid},</if>
+            <if test="username!=null">#{username},</if>
+            <if test="iconId!=null">#{iconId},</if>
+            <if test="gender!=null">#{gender},</if>
+            <if test="age!=null">#{age},</if>
+            <if test="desc!=null">#{desc},</if>
+            <if test="regionId!=null">#{regionId},</if>
+        </trim>)
+    </insert>
+
+    <update id="sortDeleteUsedUid" parameterType="java.lang.Integer">
+        UPDATE uid_pool SET has_used = 1 WHERE id=#{id}
+    </update>
+
+    <update id="updateUserInfo" parameterType="com.allen.imsystem.model.pojo.UserInfo">
+        UPDATE `user_info`
+        <set>
+            <if test="username!=null">username=#{username},</if>
+            <if test="iconId!=null">icon_id=#{iconId},</if>
+            <if test="gender!=null">gender=#{gender},</if>
+            <if test="age!=null">age=#{age},</if>
+            <if test="desc!=null">`desc`=#{desc},</if>
+            <if test="regionId!=null">region_id=#{regionId},</if>
+            <if test="updateTime!=null">update_time=#{updateTime},</if>
+        </set>
+        WHERE uid=#{uid}
+    </update>
+
+    <update id="updateUserByEmail" parameterType="com.allen.imsystem.model.pojo.User">
+        UPDATE `user`
+        <set>
+            <if test="password!=null">password=#{password},</if>
+            <if test="salt!=null">salt=#{salt},</if>
+            <if test="email!=null">email=#{email},</if>
+            <if test="tel!=null">tel=#{tel},</if>
+            <if test="status!=null">status=#{status},</if>
+            <if test="roleId!=null">role_id=#{roleId},</if>
+            <if test="updateTime!=null">update_time=#{updateTime},</if>
+        </set>
+        WHERE email=#{email}
+
+    </update>
+
+    <select id="getUserLastLoginTime" resultType="java.util.Date">
+        SELECT last_login_time FROM login_record WHERE uid=#{uid} LIMIT 1
+    </select>
+
+    <insert id="insertLoginRecord" useGeneratedKeys="true">
+        INSERT INTO `login_record` (uid,last_login_time) VALUES(#{uid},#{loginTime})
+    </insert>
+
+    <update id="updateLoginRecord" >
+        UPDATE `login_record` SET last_login_time = #{loginTime} WHERE uid=#{uid}
+    </update>
+
+    <insert id="insertBatchIntoUidPool" parameterType="java.util.List" useGeneratedKeys="false">
+        insert into uid_pool
+        (uid)
+        values
+        <foreach collection="list" item="str"  separator=",">
+            (#{str})
+        </foreach>
+    </insert>
+
+    <insert id="insertBatchIntoGidPool" parameterType="java.util.List" useGeneratedKeys="false">
+        insert into gid_pool
+        (gid)
+        values
+        <foreach collection="list" item="str"  separator=",">
+            (#{str})
+        </foreach>
+    </insert>
+
+</mapper>
+
+
