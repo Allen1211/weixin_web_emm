@@ -4,7 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.ByteUtil;
-import com.allen.imsystem.dao.mappers.FileMapper;
+import com.allen.imsystem.mappers.FileMapper;
 import com.allen.imsystem.model.dto.FileUploadInfo;
 import com.allen.imsystem.model.dto.MultiFileResponse;
 import com.allen.imsystem.model.dto.MultipartFileDTO;

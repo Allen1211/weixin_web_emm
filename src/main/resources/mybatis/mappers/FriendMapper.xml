@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.allen.imsystem.dao.mappers.FriendMapper">
+<mapper namespace="com.allen.imsystem.mappers.FriendMapper">
 
     <resultMap id="FriendApplicationMap" type="com.allen.imsystem.model.dto.FriendApplicationDTO">
         <!-- association和result同时存在时，一定要指定id列 ，不然结果集只会有一条结果 待探究      -->

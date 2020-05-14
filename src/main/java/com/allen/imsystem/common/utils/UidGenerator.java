@@ -1,6 +1,6 @@
 package com.allen.imsystem.common.utils;
 
-import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.mappers.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -2,13 +2,11 @@ package com.allen.imsystem.common.message;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.FormatUtil;
-import com.allen.imsystem.dao.mappers.ChatMapper;
-import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.mappers.ChatMapper;
 import com.allen.imsystem.model.dto.ChatSessionDTO;
 import com.allen.imsystem.model.dto.PushMessageDTO;
 import com.allen.imsystem.model.dto.SendMsgDTO;
 import com.allen.imsystem.model.pojo.PrivateChat;
-import com.allen.imsystem.netty.WsEventHandler;
 import com.allen.imsystem.service.*;
 import com.allen.imsystem.service.impl.MessageCounter;
 import com.allen.imsystem.service.impl.RedisService;

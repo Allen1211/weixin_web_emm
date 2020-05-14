@@ -1,7 +1,7 @@
 package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
-import com.allen.imsystem.dao.mappers.ChatMapper;
+import com.allen.imsystem.mappers.ChatMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

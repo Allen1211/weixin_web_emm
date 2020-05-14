@@ -76,10 +76,15 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof FullHttpRequest) {
-            handleHttpUpgradeRequest(ctx, (FullHttpRequest) msg);
-        } else if (msg instanceof WebSocketFrame) {
-            handlerWebSocketFrame(ctx, (WebSocketFrame) msg);
+        try {
+            if (msg instanceof FullHttpRequest) {
+                handleHttpUpgradeRequest(ctx, (FullHttpRequest) msg);
+            } else if (msg instanceof WebSocketFrame) {
+                handlerWebSocketFrame(ctx, (WebSocketFrame) msg);
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            ((ByteBuf)msg).release();
         }
     }
 
@@ -126,7 +131,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         }
 
         if (frame instanceof BinaryWebSocketFrame) {
-            return;
         }
 
     }

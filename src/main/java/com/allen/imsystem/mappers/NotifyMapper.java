@@ -1,4 +1,4 @@
-package com.allen.imsystem.dao.mappers;
+package com.allen.imsystem.mappers;
 
 import com.allen.imsystem.model.dto.FriendApplicationDTO;
 import com.allen.imsystem.model.dto.NewFriendNotify;

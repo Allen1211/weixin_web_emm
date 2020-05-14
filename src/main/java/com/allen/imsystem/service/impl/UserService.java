@@ -5,7 +5,7 @@ import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.utils.HashSaltUtil;
 import com.allen.imsystem.common.utils.JWTUtil;
-import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.mappers.UserMapper;
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;

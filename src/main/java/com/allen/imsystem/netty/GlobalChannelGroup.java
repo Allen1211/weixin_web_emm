@@ -26,11 +26,7 @@ public class GlobalChannelGroup {
         if(StringUtils.isEmpty(key) || channel == null){
             return false;
         }
-        Set<Channel> channelSet = channelGroup.get(key);
-        if(channelSet == null){
-            channelSet = new HashSet<>(2);
-            channelGroup.put(key,channelSet);
-        }
+        Set<Channel> channelSet = channelGroup.computeIfAbsent(key, k -> new HashSet<>(2));
         channelSet.add(channel);
         return channelGroup.put(key,channelSet)!=null;
     }

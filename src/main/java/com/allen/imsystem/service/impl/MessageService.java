@@ -4,11 +4,10 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.message.*;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
-import com.allen.imsystem.dao.mappers.ChatMapper;
-import com.allen.imsystem.dao.mappers.UserMapper;
+import com.allen.imsystem.mappers.ChatMapper;
+import com.allen.imsystem.mappers.UserMapper;
 import com.allen.imsystem.model.dto.*;
 import com.allen.imsystem.model.pojo.GroupMsgRecord;
-import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.netty.WsEventHandler;
 import com.allen.imsystem.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,15 +66,15 @@ public class MessageService implements IMessageService {
         MsgHandler priMsgSaveHandler = context.getBean(PriMsgSaveHandler.class); // 消息入库
         MsgHandler serverAckHandler = context.getBean(ServerAckHandler.class);   // 服务端确认回执
         MsgHandler priMsgTalkDataHandler = context.getBean(PriMsgTalkDataHandler.class); // 消息回话数据填充
-        MsgHandler msgRecordPackHandler = context.getBean(MsgRecordPackHandler.class);   // 消息内容填充
-
+        MsgHandler msgRecordPackHandler =
+                context.getBean(MsgRecordPackHandler.class, context.getBean(NormalMsgRecordFactory.class));   // 消息内容填充
         handlerEntry.nextHandler(priMsgSaveHandler)
                 .nextHandler(serverAckHandler)
                 .nextHandler(priMsgTalkDataHandler)
                 .nextHandler(msgRecordPackHandler);
 
         PushMessageDTO pushMessageDTO = new PushMessageDTO();
-        handlerEntry.handleMsg(sendMsgDTO,pushMessageDTO);
+        handlerEntry.handleMsg(sendMsgDTO, pushMessageDTO);
         // 4、查看接收者是否在线
         boolean isOnline = userService.isOnline(sendMsgDTO.getSrcId());
         if (isOnline) {   // 如果在线，转发消息，TODO 并把消息存入缓存，等待接收者已读回执。
@@ -137,38 +136,6 @@ public class MessageService implements IMessageService {
             wsEventHandler.handleResponse(sendMsgDTO.getSrcId(),
                     new SocketResponse(GlobalConst.WsEvent.SERVER_MSG_ACK_SUCCESS, 1, serverAckDTO));
         }).start();
-    }
-
-    /**
-     * 将发送过来的私聊消息组装成推送信息
-     *
-     * @param sendMsgDTO
-     * @return
-     */
-    private PushMessageDTO packPrivateMsg(Long chatLastMsgTime, SendMsgDTO sendMsgDTO) {
-        PushMessageDTO result = new PushMessageDTO();
-
-        // 1、会话Id
-        Long talkId = Long.valueOf(sendMsgDTO.getTalkId());
-        result.setChatId(talkId);
-
-        // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-        Boolean isNewTalk = checkIsNewPrivateChatAndActivate(sendMsgDTO.getDestId(), talkId);
-        result.setIsNewTalk(isNewTalk);
-
-        // 3、填充会话信息
-        ChatSessionDTO talkData = null;
-        talkData = chatMapper.selectNewMsgPrivateChatData(talkId, sendMsgDTO.getDestId(), sendMsgDTO.getSrcId());
-        talkData.setLastMessageTime(FormatUtil.formatChatSessionDate(talkData.getLastMessageDate()));
-        talkData.setNewMessageCount(messageCounter.getPrivateChatNewMsgCount(sendMsgDTO.getDestId(), talkId));
-        result.setTalkData(talkData);
-        result.setLastTimeStamp(talkData.getLastMessageDate().getTime());
-
-        // 4、填充消息体
-        MsgRecord msgRecord = packNormalMsgRecord(chatLastMsgTime, sendMsgDTO);
-        result.setMessageData(msgRecord);
-
-        return result;
     }
 
     public void sendGroupNotify(String destId, String gid, List<GroupMsgRecord> notifyList) {
@@ -303,24 +270,6 @@ public class MessageService implements IMessageService {
         msgRecord.setShowMessageTime(showTime);
 
         return msgRecord;
-    }
-
-    private boolean checkIsNewPrivateChatAndActivate(String uid, Long chatId) {
-        // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-        boolean isNewTalk = !chatService.isPrivateChatSessionOpenToUser(uid, chatId);
-
-        if (isNewTalk) { // 如果是新会话，更新
-            redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + chatId, false);
-            new Thread(() -> {
-                PrivateChat privateChat = new PrivateChat();
-                privateChat.setChatId(chatId);
-                privateChat.setUserAStatus(true);
-                privateChat.setUserBStatus(true);
-                privateChat.setUpdateTime(new Date());
-                chatMapper.updatePrivateChat(privateChat);
-            }).start();
-        }
-        return isNewTalk;
     }
 
     private boolean checkIsNewGroupChatAndActivate(String uid, String gid) {
