@@ -5,7 +5,7 @@
 <mapper namespace="com.allen.imsystem.mappers.ChatMapper">
 
     <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
-        <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="talkTitle" column="talkTitle" />
         <result property="avatar" column="avatar" />
         <result property="lastMessage" column="content"/>
@@ -18,7 +18,7 @@
     </resultMap>
 
     <resultMap id="privateChatInfoMap" type="com.allen.imsystem.model.pojo.PrivateChat">
-        <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="uidA" column="uid_a" />
         <result property="uidB" column="uid_b" />
         <result property="userAStatus" column="user_a_status" />
@@ -30,7 +30,7 @@
     </resultMap>
 
     <resultMap id="msgRecordMap" type="com.allen.imsystem.model.dto.MsgRecord">
-        <result property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
+        <id property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
         <result property="messageType" column="msg_type"/>
         <result property="messageText" column="content"/>
         <result property="msgTimeDate" column="created_time"/>
@@ -41,7 +41,7 @@
     </resultMap>
 
     <resultMap id="chatSessionInfoMap" type="com.allen.imsystem.model.dto.ChatSessionInfo">
-        <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="title" column="title"/>
         <result property="srcId" column="src_id"/>
         <result property="destId" column="dest_id"/>
@@ -51,7 +51,7 @@
     </resultMap>
 
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
-        <result property="uid" column="uid"/>
+        <id property="uid" column="uid"/>
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
     </resultMap>
@@ -126,6 +126,7 @@
         ORDER BY mr.msg_id DESC
         LIMIT #{pageBean.from},#{pageBean.offset}
     </select>
+
     <!--    获取群聊聊天记录-->
     <select id="selectGroupChatHistoryMsg" resultMap="msgRecordMap">
         SELECT gmr.msg_id,gmr.msg_type,gmr.content,gmr.created_time,

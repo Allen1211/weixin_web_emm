@@ -8,11 +8,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Set;
 
 @Component
-@Lazy
+//@Lazy
 public class NewApplyNotifyObserver implements Observer {
 
     @Autowired
@@ -25,8 +26,8 @@ public class NewApplyNotifyObserver implements Observer {
         Subject notifySubject = (Subject) context.getBean("notifySubject");
         this.type = 1;
         notifySubject.registerObserver(this);
+        System.out.println(notifySubject);
     }
-
 
     @Override
     public Integer getType() {

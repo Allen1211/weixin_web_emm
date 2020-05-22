@@ -1,10 +1,12 @@
 package com.allen.imsystem.model.pojo;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
+@NoArgsConstructor
 public class FriendApply {
     private Integer id;
     private String fromUid;

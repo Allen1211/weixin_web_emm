@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.allen</groupId>
-    <artifactId>springboot</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <artifactId>imsystem</artifactId>
+    <version>1.0</version>
+    <packaging>jar</packaging>
 
     <!-- Inherit defaults from Spring Boot -->
     <parent>
@@ -92,11 +92,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.0-alpha0</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
         </dependency>
-
 <!--        redis-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -252,15 +250,32 @@
 
     </dependencies>
 
-    <!-- Package as an executable jar -->
     <build>
-        <finalName>imsystem</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+
+                <!--                <executions>-->
+                <!--                    <execution>-->
+                <!--                        <goals>-->
+                <!--                            <goal>repackage</goal>-->
+                <!--                        </goals>-->
+                <!--                    </execution>-->
+                <!--                </executions>-->
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- 打包是否跳过测试,为false的话打包时会自动执行所有测试代码-->
+                    <skip>true</skip>
+                    <!--使用utf8编码-->
+                    <encoding>utf8</encoding>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
-
 </project>

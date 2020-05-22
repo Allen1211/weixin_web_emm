@@ -285,15 +285,11 @@ public class ChatService implements IChatService {
 
         List<ChatSessionDTO> chatList = new ArrayList<>();
 
-        if (privateChatList != null) {
-            if (privateChatList != null && !privateChatList.isEmpty()) {
-                for (int i = 0; i < privateChatList.size(); i++) {
-                    ChatSessionDTO privateChat = privateChatList.get(i);
-                    // 填充在线信息
-                    Integer onlineStatus = userService.getUserOnlineStatus(privateChat.getFriendId());
-                    privateChat.setOnline(onlineStatus.equals(1));
-
-                }
+        if (!CollectionUtils.isEmpty(privateChatList)) {
+            for (ChatSessionDTO privateChat : privateChatList) {
+                // 填充在线信息
+                Integer onlineStatus = userService.getUserOnlineStatus(privateChat.getFriendId());
+                privateChat.setOnline(onlineStatus.equals(1));
             }
             chatList.addAll(privateChatList);
         }
@@ -302,7 +298,7 @@ public class ChatService implements IChatService {
             chatList.addAll(groupChatList);
         }
 
-        Collections.sort(chatList, (o1, o2) -> {
+        chatList.sort((o1, o2) -> {
             if (o1.getUpdateTime() == null) {
                 return -1;
             } else if (o2.getUpdateTime() == null) {
@@ -312,8 +308,7 @@ public class ChatService implements IChatService {
             }
         });
 
-        for (int i = 0; i < chatList.size(); i++) {
-            ChatSessionDTO chat = chatList.get(i);
+        for (ChatSessionDTO chat : chatList) {
             Integer newMsgCount = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT,
                     uid + chat.getChatId().toString());
             chat.setNewMessageCount(newMsgCount == null ? 0 : newMsgCount);

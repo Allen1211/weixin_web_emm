@@ -14,7 +14,8 @@ public class NotifyPackage {
     private Set<Object> destIdSet;
     private List notifyContentList;
 
-    private NotifyPackage(Set<Object> destIdSet, List notifyContentList) {
+    private NotifyPackage(Integer notifyType, Set<Object> destIdSet, List notifyContentList) {
+        this.notifyType = notifyType;
         this.destIdSet = destIdSet;
         this.notifyContentList = notifyContentList;
     }
@@ -75,7 +76,7 @@ public class NotifyPackage {
         }
 
         public NotifyPackage build(){
-            return new NotifyPackage(destIdSet, notifyContentList);
+            return new NotifyPackage(notifyType,destIdSet, notifyContentList);
         }
 
     }
