@@ -14,6 +14,7 @@ import com.allen.imsystem.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -50,7 +51,7 @@ public class NotifyService implements INotifyService {
         if (userService.isOnline(receiverId)) {
             UserInfoDTO friendInfo = friendMapper.selectFriendInfo(receiverId);
             NewFriendNotify notifyContent = new NewFriendNotify(friendInfo, groupId);
-            pushNotify(2,receiverId, notifyContent);
+            pushNotify(2, receiverId, notifyContent);
         }
     }
 
@@ -63,7 +64,7 @@ public class NotifyService implements INotifyService {
         if (userService.isOnline(receiverId)) {
             UserInfoDTO applicantInfo = friendMapper.selectFriendInfo(senderId);
             FriendApplicationDTO notifyContent = new FriendApplicationDTO(reason, false, applicantInfo);
-            pushNotify(1,receiverId, notifyContent);
+            pushNotify(1, receiverId, notifyContent);
         }
     }
 
@@ -80,8 +81,12 @@ public class NotifyService implements INotifyService {
     public void getOfflineNotifyAndSend(String uid) {
         List<NewFriendNotify> newFriendNotifyList = getAllNewFriendNotify(uid);
         List<FriendApplicationDTO> newApplyNotifyList = getAllNewFriendApplyNotify(uid);
-        pushNotify(GlobalConst.NotifyType.NEW_FRIEND_NOTIFY, uid,newFriendNotifyList);
-        pushNotify(GlobalConst.NotifyType.NEW_APPLY_NOTIFY, uid,newApplyNotifyList);
+        if (!CollectionUtils.isEmpty(newFriendNotifyList)) {
+            pushNotify(GlobalConst.NotifyType.NEW_FRIEND_NOTIFY, uid, newFriendNotifyList);
+        }
+        if (!CollectionUtils.isEmpty(newApplyNotifyList)) {
+            pushNotify(GlobalConst.NotifyType.NEW_APPLY_NOTIFY, uid, newApplyNotifyList);
+        }
     }
 
     @Transactional

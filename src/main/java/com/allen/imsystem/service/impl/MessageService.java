@@ -32,7 +32,7 @@ public class MessageService implements IMessageService {
     private IFileService fileService;
 
     @Autowired
-    private IFriendService friendService;
+    private IFriendQueryService friendQueryService;
 
     @Autowired
     private RedisService redisService;
@@ -56,7 +56,7 @@ public class MessageService implements IMessageService {
     public void saveAndForwardPrivateMessage(SendMsgDTO sendMsgDTO) {
 
         // 0、检查是否被对方删除
-        boolean isDeleteByFriend = friendService.checkIsDeletedByFriend(sendMsgDTO.getSrcId(), sendMsgDTO.getDestId());
+        boolean isDeleteByFriend = friendQueryService.checkIsDeletedByFriend(sendMsgDTO.getSrcId(), sendMsgDTO.getDestId());
         if (isDeleteByFriend) {
             handleSendFail(sendMsgDTO, "对方还不是你的好友，无法发送消息");
             return;
@@ -257,7 +257,7 @@ public class MessageService implements IMessageService {
         }
 
         // 4.1发送者信息
-        UserInfoDTO userInfo = userMapper.selectSenderInfo(sendMsgDTO.getSrcId());
+        UserInfoDTO userInfo = userMapper.selectUserInfoDTO(sendMsgDTO.getSrcId());
         msgRecord.setUserInfo(userInfo);
         // 4.2消息时间
         Long msgSendTimestamp = Long.parseLong(sendMsgDTO.getTimeStamp());

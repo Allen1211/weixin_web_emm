@@ -68,7 +68,7 @@ public class NormalMsgRecordFactory extends MsgRecordFactory {
         }
 
         // 4.1发送者信息
-        UserInfoDTO userInfo = userMapper.selectSenderInfo(sendMsgDTO.getSrcId());
+        UserInfoDTO userInfo = userMapper.selectUserInfoDTO(sendMsgDTO.getSrcId());
         msgRecord.setUserInfo(userInfo);
         // 4.2消息时间
         Long msgSendTimestamp = Long.parseLong(sendMsgDTO.getTimeStamp());

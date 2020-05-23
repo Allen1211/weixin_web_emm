@@ -1,12 +1,14 @@
 package com.allen.imsystem.service;
 
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
+import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,6 +27,16 @@ public interface IUserService {
     User findUserAccountWithUid(String uid);
 
     UserInfo findUserInfo(String uid);
+
+    /**
+     * 根据uid查询用户信息
+     */
+    UserInfoDTO findUserInfoDTO(String uid);
+
+    /**
+     * 多个uid查询多个用户信息
+     */
+    List<UserInfoDTO> findUserInfoDTOs(List<String> uids);
 
     /**
      * 用户注册

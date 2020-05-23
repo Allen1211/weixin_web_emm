@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class FileService implements IFileService {
@@ -130,7 +131,7 @@ public class FileService implements IFileService {
             }
 
             // 缓存一下文件大小
-            redisService.set(md5,param.getTotalSize().toString(),60*10L);
+            redisService.set(md5,param.getTotalSize().toString(),10L, TimeUnit.MINUTES);
 
             //TODO MD5和url的对应关系保存到数据库
             new Thread(() -> {

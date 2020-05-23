@@ -22,4 +22,5 @@ public class MsgRecord {
     private Boolean showMessageTime;    // 是否显示时间(两条信息超过一定时间才显示)
     private Boolean showMessage;        // 是否显示该信息
     private String groupAlias;      // 发送者群昵称
+    private String fromUid;        // 发送者uid
 }

@@ -13,7 +13,7 @@ import com.allen.imsystem.model.pojo.GroupChat;
 import com.allen.imsystem.model.pojo.GroupMsgRecord;
 import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IFileService;
-import com.allen.imsystem.service.IFriendService;
+import com.allen.imsystem.service.IFriendQueryService;
 import com.allen.imsystem.service.IGroupChatService;
 import com.allen.imsystem.service.IMessageService;
 import org.apache.commons.lang.StringUtils;
@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class GroupChatService implements IGroupChatService {
@@ -36,7 +37,7 @@ public class GroupChatService implements IGroupChatService {
     private GroupChatMapper groupChatMapper;
 
     @Autowired
-    private IFriendService friendService;
+    private IFriendQueryService friendService;
 
     @Autowired
     private IFileService fileService;
@@ -64,7 +65,7 @@ public class GroupChatService implements IGroupChatService {
         GroupChat groupChat = new GroupChat(gid, groupName, ownerId);
         groupChatMapper.insertNewGroupChat(groupChat);
         // 插入用户-群关系
-        String alias = userMapper.selectSenderInfo(ownerId).getUsername();
+        String alias = userMapper.selectUserInfoDTO(ownerId).getUsername();
         Long chatId = SnowFlakeUtil.getNextSnowFlakeId();
         UserChatGroup userChatGroup = new UserChatGroup(chatId, ownerId, gid, alias, ownerId, false);
         groupChatMapper.insertUserChatGroup(userChatGroup);
@@ -392,7 +393,7 @@ public class GroupChatService implements IGroupChatService {
         if (!redisService.hasKey(key)) {
             String gid = groupChatMapper.selectGidFromChatId(chatId);
             if (gid != null) {
-                redisService.set(key, gid, 60 * 10);
+                redisService.set(key, gid, 10L, TimeUnit.MINUTES);
             } else {
                 throw new BusinessException(ExceptionType.SERVER_ERROR);
             }

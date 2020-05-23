@@ -43,17 +43,31 @@
     </resultMap>
 
     <resultMap id="userInfoDTOMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
-        <result property="uid" column="uid"/>
+        <id property="uid" column="uid"/>
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+        <result property="lastLoginAt" column="lastLoginAt"/>
     </resultMap>
 
-    <select id="selectSenderInfo" resultMap="userInfoDTOMap">
-        SELECT user_info.uid,
-        username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id
+    <select id="selectUserInfoDTO" resultMap="userInfoDTOMap">
+        SELECT uid, username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc`
         from user_info
         where user_info.uid=#{uid}
+    </select>
+
+    <select id="selectUserInfoDTOsByUids" resultMap="userInfoDTOMap">
+        SELECT uid, username,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
+        `desc`
+        from user_info
+        where user_info.uid in(
+            <foreach collection="uids" index="i" item="uid" separator=",">
+                #{uid}
+            </foreach>
+        )
     </select>
 
     <!-- SQL语句 -->
@@ -78,7 +92,6 @@
         ON ui.uid = u.uid
         WHERE u.id = #{userId}
     </select>
-
 
     <select id="selectCountUid" resultType="java.lang.Integer">
         SELECT COUNT(*) FROM `user` WHERE uid = #{uid}

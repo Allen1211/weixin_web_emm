@@ -4,28 +4,8 @@
 
 <mapper namespace="com.allen.imsystem.mappers.FriendMapper">
 
-    <resultMap id="FriendApplicationMap" type="com.allen.imsystem.model.dto.FriendApplicationDTO">
-        <!-- association和result同时存在时，一定要指定id列 ，不然结果集只会有一条结果 待探究      -->
-        <id column="uid" />
-        <result property="applicationReason" column="reason"/>
-        <result property="hasAccept" column="pass" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
-        <association property="applicantInfo" resultMap="userInfoMap"/>
-    </resultMap>
-
-    <resultMap id="FriendApplyMap" type="com.allen.imsystem.model.pojo.FriendApply">
-        <result property="id" column="id"/>
-        <result property="fromUid" column="from_uid"/>
-        <result property="toUid" column="to_uid"/>
-        <result property="groupId" column="group_id"/>
-        <result property="pass" column="pass" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-        <result property="hasRead" column="has_read" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-        <result property="reason" column="reason"/>
-        <result property="createdTime" column="create_time"/>
-        <result property="updateTime" column="update_time"/>
-    </resultMap>
-
     <resultMap id="friendRelationMap" type="com.allen.imsystem.model.pojo.FriendRelation">
-        <result property="id" column="id"/>
+        <id property="id" column="id"/>
         <result property="uidA" column="uid_a"/>
         <result property="uidB" column="uid_b"/>
         <result property="aInbGroupId" column="a_in_b_fgroup_id"/>
@@ -37,112 +17,32 @@
     </resultMap>
 
     <resultMap id="userInfoMap" type="com.allen.imsystem.model.dto.UserInfoDTO">
-        <result property="uid" column="uid"/>
+        <id property="uid" column="uid"/>
         <result property="username" column="username"/>
         <result property="avatar" column="icon_id"/>
         <result property="signWord" column="desc"/>
         <result property="lastLoginAt" column="last_login_time"/>
     </resultMap>
 
-    <resultMap id="friendGroupMap" type="com.allen.imsystem.model.dto.FriendGroup">
-        <result property="groupId" column="id"/>
-        <result property="groupName" column="fri_group_name"/>
-        <result property="isDefault" column="is_default" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-    </resultMap>
-
-    <resultMap id="friendGroupWithSizeMap" type="com.allen.imsystem.model.dto.FriendGroup">
-        <result property="groupId" column="id"/>
-        <result property="groupName" column="fri_group_name"/>
-        <result property="groupSize" column="fri_group_size"/>
-        <result property="isDefault" column="is_default" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
-    </resultMap>
-
-    <resultMap id="friendGroupPojoMap" type="com.allen.imsystem.model.pojo.FriendGroupPojo">
-        <result property="groupId" column="id"/>
-        <result property="friendGroupName" column="fri_group_name"/>
-        <result property="uid" column="uid"/>
-        <result property="status" column="status" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
-        <result property="isDefault" column="is_default" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
-    </resultMap>
-
     <resultMap id="FriendInfoForInviteMap" type="com.allen.imsystem.model.dto.FriendInfoForInvite">
         <association property="friendInfo" resultMap="userInfoMap"/>
     </resultMap>
 
-
+    <!--  查询某用户的所有好友的id  -->
     <select id="selectFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
-        INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid} and friend.a_delete_b = 0
         UNION ALL
         SELECT uid_a as friend_uid from friend
-        INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid} and friend.b_delete_a = 0
     </select>
-
+    <!--  查询某用户的所有双向好友的id  -->
     <select id="selectTwoWayFriendId" resultType="java.lang.String">
         SELECT uid_b as friend_uid from friend
-        INNER JOIN user_info as ui on ui.uid = uid_b
         WHERE friend.uid_a = #{uid} and friend.a_delete_b = 0 and friend.b_delete_a = 0
         UNION ALL
         SELECT uid_a as friend_uid from friend
-        INNER JOIN user_info as ui on ui.uid = uid_a
         WHERE friend.uid_b = #{uid} and friend.b_delete_a = 0 and friend.a_delete_b = 0
-    </select>
-    
-    <select id="selectAquiredId" resultType="java.lang.String">
-        SELECT to_uid FROM friend_apply WHERE from_uid = #{uid} AND pass = 0
-    </select>
-
-    <select id="selectApplyGroupId" resultType="java.lang.Integer">
-        SELECT group_id FROM friend_apply where from_uid=#{fromUid} and to_uid=#{toUid} and pass=0 LIMIT 1
-    </select>
-
-    <select id="selectFriendApply" resultMap="FriendApplyMap">
-        SELECT * FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid} AND pass=0 LIMIT 1
-    </select>
-
-    <select id="selectFriendGroupList" resultMap="friendGroupMap">
-        SELECT id,fri_group_name,is_default FROM friend_group status = 1 and friend_group where uid=#{uid}
-    </select>
-
-    <select id="selectGroupId" resultType="java.lang.Integer">
-        SELECT id FROM friend_group where status = 1 and uid=#{uid} and fri_group_name=#{groupName} and `status`=1
-    </select>
-
-    <select id="isGroupValid" resultType="java.lang.Boolean">
-        SELECT status FROM friend_group WHERE id = #{groupId}
-    </select>
-
-    <select id="selectFriendGroupListWithSize" resultMap="friendGroupWithSizeMap">
-        SELECT id,fri_group_name,is_default,
-        (SELECT count(*) from friend
-        INNER JOIN user_info as ui on ui.uid = uid_b
-        WHERE friend.uid_a = #{uid} AND b_in_a_fgroup_id = fg.id AND a_delete_b=0)
-        +
-        (SELECT count(*) from friend
-        INNER JOIN user_info as ui on ui.uid = uid_a
-        WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = fg.id AND b_delete_a=0)
-        as fri_group_size
-        FROM friend_group as fg where fg.status=1 and uid = #{uid}
-        order by id
-    </select>
-
-    <select id="selectLatestApply" resultMap="FriendApplicationMap">
-        (SELECT uid,username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
-        reason,pass,fa.created_time,fa.has_read FROM user_info as ui
-        INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
-        WHERE fa.to_uid = #{uid} and fa.has_read=0
-        ORDER BY fa.created_time DESC)
-        UNION
-        (SELECT uid,username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',icon_id) as icon_id,
-        reason,pass,fa.created_time,fa.has_read FROM user_info as ui
-        INNER JOIN friend_apply as fa ON fa.from_uid = ui.uid
-        WHERE fa.to_uid = #{uid} and fa.has_read=1 and (TO_DAYS(NOW()) - TO_DAYS(fa.created_time)) &lt;=30
-        ORDER BY fa.created_time DESC)
-        LIMIT #{limit}
     </select>
 
     <select id="selectFriendList" resultMap="userInfoMap">
@@ -205,53 +105,13 @@
         WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </select>
 
-    <select id="selectGroupSize" resultType="java.lang.Integer">
-        SELECT (SELECT count(*) from friend
-        INNER JOIN user_info as ui on ui.uid = uid_b
-        WHERE friend.uid_a = #{uid} AND b_in_a_fgroup_id = #{groupId} AND a_delete_b=0)
-        +
-        (SELECT count(*) from friend
-        INNER JOIN user_info as ui on ui.uid = uid_a
-        WHERE friend.uid_b = #{uid} AND a_in_b_fgroup_id = #{groupId} AND b_delete_a=0) as 'size'
-    </select>
-
     <select id="selectFriendRelation" resultMap="friendRelationMap">
         SELECT * FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid}) LIMIT 1
     </select>
 
-    <select id="selectUserDefaultFriendGroup" resultMap="friendGroupPojoMap">
-        SELECT * FROM friend_group WHERE is_default = 1 AND uid=#{uid} AND status = 1
+    <select id="selectAll" resultMap="friendRelationMap">
+        select * from friend f
     </select>
-
-    <insert id="addFriendApply" parameterType="com.allen.imsystem.model.pojo.FriendApply" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
-        values (#{fromUid},#{toUid},#{groupId},#{reason})
-    </insert>
-
-    <update id="updateFriendApplyPass" >
-        UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW()
-        WHERE from_uid=#{fromUid} and to_uid=#{toUid} and pass != 1
-    </update>
-
-    <update id="updateFriendGroupName" >
-        UPDATE friend_group set fri_group_name=#{groupName} WHERE id=#{groupId} and uid=#{uid} and status=1
-    </update>
-
-    <update id="deleteFriendGroup">
-        UPDATE friend_group SET status=0 WHERE id=#{groupId} and uid=#{uid}
-    </update>
-
-
-    <update id="moveGroupFriendToDefaultGroup">
-        update friend as f set f.a_in_b_fgroup_id= #{defaultGroupId} WHERE f.a_in_b_fgroup_id= #{groupId} and f.uid_b = #{uid};
-        update friend as f set f.b_in_a_fgroup_id= #{defaultGroupId} WHERE f.b_in_a_fgroup_id= #{groupId} AND f.uid_a = #{uid}
-    </update>
-
-    <update id="moveFriendToAnotherGroup">
-        update friend as f set f.b_in_a_fgroup_id = #{newGroupId} WHERE f.uid_a = #{uid} and f.uid_b = #{friendId} and f.b_in_a_fgroup_id = #{oldGroupId};
-        update friend as f set f.a_in_b_fgroup_id = #{newGroupId} WHERE f.uid_b = #{uid} and f.uid_a = #{friendId} and f.a_in_b_fgroup_id = #{oldGroupId}
-    </update>
-
 
     <update id="sortDeleteFriendA2B">
         UPDATE friend SET a_delete_b=1 WHERE uid_a=#{uid} AND uid_b=#{friendId}
@@ -261,22 +121,98 @@
         UPDATE friend SET b_delete_a=1 WHERE uid_a=#{friendId} AND uid_b=#{uid}
     </update>
 
-    <insert id="insertNewFriend" >
+    <insert id="insertNewFriend">
         INSERT INTO friend (uid_a, uid_b, a_in_b_fgroup_id, b_in_a_fgroup_id)
         VALUES (#{uidA},#{uidB},#{abGroupId},#{baGroupId});
-    </insert>
-
-    <insert id="insertNewFriendGroup" useGeneratedKeys="true">
-        INSERT INTO friend_group (uid,fri_group_name,is_default)
-        VALUES (#{uid},#{groupName},#{isDefault})
     </insert>
 
     <delete id="deleteFriend">
         DELETE FROM friend WHERE (uid_a=#{uid} and uid_b=#{friendId}) or (uid_a=#{friendId} and uid_b=#{uid})
     </delete>
 
-    <delete id="deleteFriendApply">
-        DELETE FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid}
-    </delete>
-
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.allen.imsystem.model.pojo.FriendRelation" useGeneratedKeys="true">
+        insert into friend
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uidA != null">
+                uid_a,
+            </if>
+            <if test="uidB != null">
+                uid_b,
+            </if>
+            <if test="aInbGroupId != null">
+                a_in_b_fgroup_id,
+            </if>
+            <if test="bInaGroupId != null">
+                b_in_a_fgroup_id,
+            </if>
+            <if test="aDeleteB != null">
+                a_delete_b,
+            </if>
+            <if test="bDeleteA != null">
+                b_delete_a,
+            </if>
+            <if test="createdTime != null">
+                created_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uidA != null">
+                #{uidA,jdbcType=VARCHAR},
+            </if>
+            <if test="uidB != null">
+                #{uidB,jdbcType=VARCHAR},
+            </if>
+            <if test="aInbGroupId != null">
+                #{aInBFgroupId,jdbcType=INTEGER},
+            </if>
+            <if test="bInaGroupId != null">
+                #{bInAFgroupId,jdbcType=INTEGER},
+            </if>
+            <if test="aDeleteB != null">
+                #{aDeleteB,jdbcType=BOOLEAN},
+            </if>
+            <if test="bDeleteA != null">
+                #{bDeleteA,jdbcType=BOOLEAN},
+            </if>
+            <if test="createdTime != null">
+                #{createdTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.allen.imsystem.model.pojo.FriendRelation">
+        update friend
+        <set>
+            <if test="uidA != null">
+                uid_a = #{uidA,jdbcType=VARCHAR},
+            </if>
+            <if test="uidB != null">
+                uid_b = #{uidB,jdbcType=VARCHAR},
+            </if>
+            <if test="aInbGroupId != null">
+                a_in_b_fgroup_id = #{aInbGroupId,jdbcType=INTEGER},
+            </if>
+            <if test="bInaGroupId != null">
+                b_in_a_fgroup_id = #{bInaGroupId,jdbcType=INTEGER},
+            </if>
+            <if test="aDeleteB != null">
+                a_delete_b = #{aDeleteB,jdbcType=BOOLEAN},
+            </if>
+            <if test="bDeleteA != null">
+                b_delete_a = #{bDeleteA,jdbcType=BOOLEAN},
+            </if>
+            <if test="createdTime != null">
+                created_time = #{createdTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
 </mapper>

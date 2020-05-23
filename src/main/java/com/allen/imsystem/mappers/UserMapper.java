@@ -20,7 +20,15 @@ public interface UserMapper {
 
     User selectUserWithEmail(String email);
 
-    UserInfoDTO selectSenderInfo(String uid);
+    /**
+     * 根据uid查询用户信息
+     */
+    UserInfoDTO selectUserInfoDTO(String uid);
+
+    /**
+     * 根据uid列表查询多个用户信息
+     */
+    List<UserInfoDTO> selectUserInfoDTOsByUids(@Param("uids") List<String> uids);
 
     UserInfo selectUserInfo(String uid);
 

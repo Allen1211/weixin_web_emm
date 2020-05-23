@@ -38,7 +38,7 @@ public class ChatService implements IChatService {
     private IUserService userService;
 
     @Autowired
-    private IFriendService friendService;
+    private IFriendQueryService friendService;
 
     @Autowired
     private IGroupChatService groupChatService;
@@ -173,10 +173,10 @@ public class ChatService implements IChatService {
     @Override
     public Map<String, Object> openGroupChat(String uid, String gid) {
         UserChatGroup relation = groupChatMapper.selectUserChatGroupRelation(uid, gid);
-        Boolean isNewTalk = !relation.getShouldDisplay();
         if (relation == null) {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID);
         }
+        Boolean isNewTalk = !relation.getShouldDisplay();
         if (isNewTalk) {
             relation.setShouldDisplay(true);
             relation.setUpdateTime(new Date());
@@ -330,7 +330,7 @@ public class ChatService implements IChatService {
         if (chatType == null) {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID, "获取会话类型失败,会话不存在");
         }
-        String avatar = userMapper.selectSenderInfo(uid).getAvatar();
+        String avatar = userMapper.selectUserInfoDTO(uid).getAvatar();
         ChatSessionInfo chatSessionInfo = null;
         if (GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)) {// 是私聊
             chatSessionInfo = chatMapper.selectPrivateChatData(chatId, uid);
@@ -422,7 +422,7 @@ public class ChatService implements IChatService {
     private List<MsgRecord> doGetMessageList(boolean isGroup, String uid, Long chatId, Long beginMsgId, Integer index, Integer pageSize) {
 
         PageBean pageBean = new PageBean(index, pageSize);
-        List<MsgRecord> msgRecordList = null;
+        List<MsgRecord> msgRecordList;
 
         if (isGroup) {
             String gid = groupChatService.getGidFromChatId(chatId);
@@ -440,6 +440,10 @@ public class ChatService implements IChatService {
             MsgRecord msgRecord = msgRecordList.get(i);
             // 是否显示
             msgRecord.setShowMessage(true);
+
+            // 获取发送者的用户信息
+            UserInfoDTO userInfo = userService.findUserInfoDTO(msgRecord.getFromUid());
+            msgRecord.setUserInfo(userInfo);
 
             if (msgRecord.getMessageType() != 4) {
                 // 是否是自己发的

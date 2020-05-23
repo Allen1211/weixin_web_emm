@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.TimeUnit;
 
 @Component("defaultCacheHolder")
 public class CacheHolder implements ICacheHolder {
@@ -51,7 +52,7 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public boolean setImageCode(String imageCode, String key) {
         if(imageCode != null && key != null){
-            return redisService.set(GlobalConst.Redis.KEY_IMAGE_CODE+key, imageCode, 5*60L);
+            return redisService.set(GlobalConst.Redis.KEY_IMAGE_CODE+key, imageCode, 5L, TimeUnit.MINUTES);
         }
         return false;
     }
@@ -66,7 +67,7 @@ public class CacheHolder implements ICacheHolder {
     @Override
     public boolean setEmailCode(String emailCode, String key) {
         if(emailCode != null && key != null){
-            return redisService.set(GlobalConst.Redis.KEY_EMAIL_CODE+key, emailCode, 20*60);
+            return redisService.set(GlobalConst.Redis.KEY_EMAIL_CODE+key, emailCode, 20L, TimeUnit.MINUTES);
         }
         return false;
     }

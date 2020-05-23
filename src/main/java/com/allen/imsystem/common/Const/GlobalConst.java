@@ -95,7 +95,10 @@ public class GlobalConst {
         public static final String KEY_IMAGE_CODE = "image_code_";
         public static final String KEY_CHAT_GID_MAP = "chat_gid_map_";
         public static final String KEY_TOKEN_BLACKLIST = "token_black_list";
-
+        /**
+         * 用户信息缓存的key
+         */
+        public static final String KEY_USER_INFO = "user_info#";
     }
 
     public static class ChatType{

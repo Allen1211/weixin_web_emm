@@ -7,11 +7,12 @@ import com.allen.imsystem.common.utils.HashSaltUtil;
 import com.allen.imsystem.common.utils.JWTUtil;
 import com.allen.imsystem.mappers.UserMapper;
 import com.allen.imsystem.model.dto.EditUserInfoDTO;
+import com.allen.imsystem.model.dto.UserInfoDTO;
 import com.allen.imsystem.model.pojo.UidPool;
 import com.allen.imsystem.model.pojo.User;
 import com.allen.imsystem.model.pojo.UserInfo;
 import com.allen.imsystem.service.IFileService;
-import com.allen.imsystem.service.IFriendService;
+import com.allen.imsystem.service.IFriendGroupService;
 import com.allen.imsystem.service.IUserService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserService implements IUserService {
@@ -29,7 +31,7 @@ public class UserService implements IUserService {
     private UserMapper userMapper;
 
     @Autowired
-    private IFriendService friendService;
+    private IFriendGroupService friendGroupService;
 
     @Autowired
     private RedisService redisService;
@@ -45,6 +47,23 @@ public class UserService implements IUserService {
     @Override
     public UserInfo findUserInfo(String uid) {
         return userMapper.selectUserInfo(uid);
+    }
+
+    public UserInfoDTO findUserInfoDTO(String uid){
+        UserInfoDTO userInfoDTO = (UserInfoDTO) redisService.get(GlobalConst.Redis.KEY_USER_INFO + uid);
+        if(userInfoDTO == null){
+            userInfoDTO = userMapper.selectUserInfoDTO(uid);
+            redisService.set(GlobalConst.Redis.KEY_USER_INFO + uid, userInfoDTO, 15L, TimeUnit.MINUTES);
+        }
+        return userInfoDTO;
+    }
+
+    public List<UserInfoDTO> findUserInfoDTOs(List<String> uids){
+        List<UserInfoDTO> userInfoDTOs = new ArrayList<>(uids.size());
+        for(String uid : uids){
+            userInfoDTOs.add(this.findUserInfoDTO(uid));
+        }
+        return userInfoDTOs;
     }
 
     @Override
@@ -79,7 +98,7 @@ public class UserService implements IUserService {
         userMapper.sortDeleteUsedUid(uidPool.getId());
         userMapper.insertLoginRecord(uid, new Date());
         // 为新用户创建一个默认分组
-        friendService.addFriendGroup(uid, "我的好友", true);
+        friendGroupService.addFriendGroup(uid, "我的好友", true);
         return;
     }
 

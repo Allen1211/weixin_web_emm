@@ -16,6 +16,8 @@ public class FriendGroup {
 
     private Boolean isDefault;
 
+    private Boolean status;
+
     List list = new ArrayList<>();
 
 }

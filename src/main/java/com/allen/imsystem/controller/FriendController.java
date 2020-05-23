@@ -4,7 +4,9 @@ import com.allen.imsystem.common.ICacheHolder;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.model.dto.*;
-import com.allen.imsystem.service.IFriendService;
+import com.allen.imsystem.service.IFriendUpdateService;
+import com.allen.imsystem.service.IFriendGroupService;
+import com.allen.imsystem.service.IFriendQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.validation.annotation.Validated;
@@ -23,7 +25,13 @@ import java.util.Set;
 public class FriendController {
 
     @Autowired
-    private IFriendService friendService;
+    private IFriendQueryService friendQueryService;
+
+    @Autowired
+    private IFriendUpdateService friendUpdateService;
+
+    @Autowired
+    private IFriendGroupService friendGroupService;
 
     @Qualifier("AttrCacheHolder")
     @Autowired
@@ -36,7 +44,7 @@ public class FriendController {
     public JSONResponse searchStranger(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String keyword = params.get("keyWord");
-        List<UserSearchResult> resultList = friendService.searchStranger(uid, keyword);
+        List<UserSearchResult> resultList = friendQueryService.searchStranger(uid, keyword);
         return new JSONResponse().success().putData("selectList", resultList);
     }
 
@@ -52,7 +60,7 @@ public class FriendController {
         if(params.get("groupId") != null){
             groupId = Integer.valueOf(params.get("groupId"));
         }
-        boolean updateSuccess = friendService.passFriendApply(uid, friendId, groupId);
+        boolean updateSuccess = friendUpdateService.passFriendApply(uid, friendId, groupId);
 
         // TODO 2、通知申请的用户，申请已通过
 
@@ -71,7 +79,7 @@ public class FriendController {
     public JSONResponse addFriendApply(@RequestBody @Validated ApplyAddFriendDTO params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
-        boolean isSuccess = friendService.addFriendApply(params, uid);
+        boolean isSuccess = friendUpdateService.addFriendApply(params, uid);
 
         if (isSuccess) {
             return new JSONResponse().success();
@@ -89,7 +97,7 @@ public class FriendController {
     public JSONResponse getFriendApplication(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         // 更新数据库
-        List<FriendApplicationDTO> applicationList = friendService.getFriendApplicationList(uid);
+        List<FriendApplicationDTO> applicationList = friendUpdateService.getFriendApplicationList(uid);
 
         return new JSONResponse().success().putData("applicationList", applicationList);
     }
@@ -100,7 +108,7 @@ public class FriendController {
     @RequestMapping(value = "/getFriendGroup", method = RequestMethod.GET)
     public JSONResponse getFriendGroup(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<FriendGroup> friendGroupList = friendService.getFriendGroupList(uid);
+        List<FriendGroup> friendGroupList = friendGroupService.getFriendGroupList(uid);
         return new JSONResponse().success().putData("groupList", friendGroupList);
     }
 
@@ -112,7 +120,7 @@ public class FriendController {
     public JSONResponse addFriendGroup(@RequestBody Map<String, Object> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String groupName = (String) params.get("groupName");
-        Integer groupId = friendService.addFriendGroup(uid, groupName,false);
+        Integer groupId = friendGroupService.addFriendGroup(uid, groupName,false);
         if (groupId != 0) {
             return new JSONResponse().success().putData("groupId",groupId);
         } else {
@@ -126,7 +134,7 @@ public class FriendController {
     @RequestMapping(value = "/getFriendList",method = RequestMethod.GET)
     public JSONResponse getFriendList(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        Set<UserInfoDTO> friendList = friendService.getFriendList(uid);
+        Set<UserInfoDTO> friendList = friendQueryService.getFriendList(uid);
         return new JSONResponse().success().putData("friendList",friendList);
     }
 
@@ -137,7 +145,7 @@ public class FriendController {
     @ResponseBody
     public JSONResponse getFriendListForInvite(@RequestParam("gid")String gid, HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        List<FriendInfoForInvite> friendList = friendService.getFriendListForInvite(uid,gid);
+        List<FriendInfoForInvite> friendList = friendQueryService.getFriendListForInvite(uid,gid);
         return new JSONResponse().success().putData("friendList",friendList);
     }
 
@@ -147,7 +155,7 @@ public class FriendController {
     @RequestMapping(value = "/getFriendListByGroup",method = RequestMethod.GET)
     public JSONResponse getFriendListByGroup(HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        Map<String,Object> result = friendService.getFriendListByGroup(uid);
+        Map<String,Object> result = friendQueryService.getFriendListByGroup(uid);
         return new JSONResponse(1).putAllData(result);
     }
 
@@ -157,7 +165,7 @@ public class FriendController {
     @RequestMapping(value = "/getFriendInfo",method = RequestMethod.GET)
     public JSONResponse getFriendInfo(@RequestParam("friendId")String friendId, HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        UserInfoDTO friendInfo = friendService.getFriendInfo(uid,friendId);
+        UserInfoDTO friendInfo = friendQueryService.getFriendInfo(uid,friendId);
         return new JSONResponse(1).success().putData("friendInfo",friendInfo);
     }
 
@@ -168,7 +176,7 @@ public class FriendController {
     public JSONResponse deleteFriendInfo(@RequestBody Map<String,String> params, HttpServletRequest request){
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
-        boolean success = friendService.deleteFriend(uid,friendId);
+        boolean success = friendUpdateService.deleteFriend(uid,friendId);
         return new JSONResponse(1).success();
     }
 
@@ -181,7 +189,7 @@ public class FriendController {
         Integer groupId = Integer.valueOf(params.get("groupId"));
         String newGroupName = params.get("newGroupName");
         String uid = cacheHolder.getUid(request);
-        boolean success = friendService.updateFriendGroupName(groupId,newGroupName,uid);
+        boolean success = friendGroupService.updateFriendGroupName(groupId,newGroupName,uid);
         if (success) {
             return new JSONResponse(1);
         } else {
@@ -196,7 +204,7 @@ public class FriendController {
     public JSONResponse deleteFriendGroup(@RequestBody Map<String,String> params, HttpServletRequest request){
         Integer groupId = Integer.valueOf(params.get("groupId"));
         String uid = cacheHolder.getUid(request);
-        boolean success = friendService.deleteFriendGroup(groupId,uid);
+        boolean success = friendGroupService.deleteFriendGroup(groupId,uid);
         return new JSONResponse(1);
     }
 
@@ -209,7 +217,7 @@ public class FriendController {
         Integer newGroupId = Integer.valueOf(params.get("newGroupId"));
         String friendId = params.get("friendId");
         String uid = cacheHolder.getUid(request);
-        boolean isSuccess = friendService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
+        boolean isSuccess = friendGroupService.moveFriendToOtherGroup(uid,friendId,oldGroupId,newGroupId);
         return new JSONResponse(1);
     }
 
@@ -219,7 +227,7 @@ public class FriendController {
     @RequestMapping(value = "/validateFriendId",method = RequestMethod.GET)
     public JSONResponse moveFriendToOtherGroup(@RequestParam("friendId")String friendId, HttpServletRequest request){
         String uid = cacheHolder.getUid(request);
-        boolean hasThisFriend = friendService.checkIsMyFriend(uid,friendId);
+        boolean hasThisFriend = friendQueryService.checkIsMyFriend(uid,friendId);
         return new JSONResponse(1).putData("hasThisFriend",hasThisFriend);
     }
 

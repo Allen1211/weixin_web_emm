@@ -36,7 +36,7 @@
         <result property="msgTimeDate" column="created_time"/>
         <result property="messageImgUrl" column="resource_url"/>
         <result property="groupAlias" column="user_alias"/>
-        <association property="userInfo" resultMap="userInfoMap"/>
+        <result property="fromUid" column="from_uid"/>
         <association property="fileInfo" resultMap="fileInfoMap"/>
     </resultMap>
 
@@ -108,12 +108,10 @@
 
     <!--获取私聊聊天记录-->
     <select id="selectPrivateChatHistoryMsg" resultMap="msgRecordMap">
-        SELECT msg_id , msg_type, content,
+        SELECT msg_id , msg_type, content, from_uid,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
-        fm.file_name , fm.size, mr.created_time ,ui.uid, ui.username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
+        fm.file_name , fm.size, mr.created_time
         FROM pri_msg_record as mr
-        INNER JOIN user_info as ui ON ui.uid = mr.from_uid
         LEFT JOIN file_msg_md5 as fm ON mr.file_md5 = fm.md5
         <where>
             <if test="chatId != null">
@@ -129,15 +127,12 @@
 
     <!--    获取群聊聊天记录-->
     <select id="selectGroupChatHistoryMsg" resultMap="msgRecordMap">
-        SELECT gmr.msg_id,gmr.msg_type,gmr.content,gmr.created_time,
+        SELECT gmr.msg_id,gmr.msg_type,gmr.content,gmr.created_time,gmr.sender_id as from_uid,
         fm.file_name,fm.size,
         CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
-        ucg.user_alias,
-        ui.uid,ui.username,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as icon_id
+        ucg.user_alias
         FROM group_msg_record as gmr
         LEFT JOIN user_chat_group as ucg ON ucg.uid = gmr.sender_id
-        LEFT JOIN user_info as ui ON ui.uid = gmr.sender_id
         LEFT JOIN file_msg_md5 as fm ON fm.md5 = gmr.file_md5
         WHERE (gmr.gid= #{gid} AND ucg.gid=#{gid}) OR (gmr.sender_id=#{gid})
         <if test="beginMsgId != null">
