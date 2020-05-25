@@ -71,7 +71,7 @@ public class NormalMsgRecordFactory extends MsgRecordFactory {
         UserInfoDTO userInfo = userMapper.selectUserInfoDTO(sendMsgDTO.getSrcId());
         msgRecord.setUserInfo(userInfo);
         // 4.2消息时间
-        Long msgSendTimestamp = Long.parseLong(sendMsgDTO.getTimeStamp());
+        long msgSendTimestamp = Long.parseLong(sendMsgDTO.getTimeStamp());
         Date msgTimeDate = new Date(msgSendTimestamp);
         String msgTimeStr = FormatUtil.formatMessageDate(msgTimeDate);
         msgRecord.setMsgTimeDate(msgTimeDate);

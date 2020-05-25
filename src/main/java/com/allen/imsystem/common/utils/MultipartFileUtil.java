@@ -8,6 +8,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.lang.math.NumberUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class MultipartFileUtil {
@@ -33,7 +34,7 @@ public class MultipartFileUtil {
                     param.setMd5(fileItem.getString());
                 } else if (fileItem.getFieldName().equals("fileName")) {
                     param.setFileName(new String(fileItem.getString().getBytes(
-                            "ISO-8859-1"), "UTF-8"));
+                            StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
                 } else if (fileItem.getFieldName().equals("blockNum")) {
                     param.setBlockNum(NumberUtils.toInt(fileItem.getString()));
                 } else if (fileItem.getFieldName().equals("currBlock")) {

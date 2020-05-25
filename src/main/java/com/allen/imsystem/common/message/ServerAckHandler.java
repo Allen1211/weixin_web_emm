@@ -17,5 +17,6 @@ public class ServerAckHandler extends MsgHandler {
     @Override
     public void handleMsg(SendMsgDTO sendMsgDTO, PushMessageDTO pushMessageDTO) {
         messageService.sendServerAck(sendMsgDTO,sendMsgDTO.getMsgId(),sendMsgDTO.getMsgId());
+        nextHandler.handleMsg(sendMsgDTO,pushMessageDTO);
     }
 }
