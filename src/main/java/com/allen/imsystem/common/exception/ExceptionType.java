@@ -23,9 +23,9 @@ public enum ExceptionType {
     CANNOT_OPEN_PRIVATE_CHAT(2001,"对方还不是你的好友或你已被对方删除，无法开启新聊天")
     ;
 
-    private Integer code;
+    private final Integer code;
 
-    private String errMsgText;
+    private final String errMsgText;
 
     ExceptionType(Integer code, String errMsgText) {
         this.code = code;
@@ -36,15 +36,8 @@ public enum ExceptionType {
         return code;
     }
 
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
     public String getErrMsgText() {
         return errMsgText;
     }
 
-    public void setErrMsgText(String errMsgText) {
-        this.errMsgText = errMsgText;
-    }
 }

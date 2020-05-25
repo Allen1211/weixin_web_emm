@@ -2,10 +2,12 @@ package com.allen.imsystem.model.dto;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.alibaba.fastjson.serializer.ToStringSerializer;
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import java.util.Date;
 
+@ApiModel(description = "聊天记录数据对象")
 @Data
 public class MsgRecord {
     @JSONField(serializeUsing= ToStringSerializer.class)

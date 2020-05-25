@@ -1,5 +1,6 @@
 package com.allen.imsystem.model.dto;
 
+import io.swagger.annotations.ApiModel;
 import lombok.Data;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.Length;
@@ -7,6 +8,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.constraints.NotNull;
 
+@ApiModel("注册参数类")
 @Data
 public class RegistFormDTO {
 

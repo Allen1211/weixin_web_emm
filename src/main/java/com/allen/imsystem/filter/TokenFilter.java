@@ -31,7 +31,7 @@ public class TokenFilter implements Filter {
             "/imsystem/api/security/getCodeImage",
             "/imsystem/talk",
             "/imsystem/swagger-ui.html",
-            "/imsystem/webjars"};
+            "/imsystem/doc.html"};
 
     private static String[] excludePattern = {"/imsystem/webjars.*", "/imsystem/v2.*", "/imsystem/swagger-resources.*"};
 
