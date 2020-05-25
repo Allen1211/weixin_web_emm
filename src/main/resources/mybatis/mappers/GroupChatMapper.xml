@@ -314,7 +314,11 @@
         )
     </update>
 
-    <select id="fix" resultMap="userChatGroupRelationMap">
+    <update id="updateUserGroupChatId">
+        update user_chat_group set chat_id = #{newChatId} where chat_id = #{oldChatId}
+    </update>
+
+    <select id="selectAll" resultMap="userChatGroupRelationMap">
         SELECT * FROM user_chat_group
     </select>
 </mapper>

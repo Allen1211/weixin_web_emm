@@ -12,51 +12,6 @@ public class SnowFlakeUtil {
         return snowflakeIdWorker.nextId();
     }
 
-    public static List<Long> getSnowFlakeIdList(int size){
-        List<Long> list = new ArrayList<>(size);
-        for(int i=0;i<size;i++){
-            list.add(getNextSnowFlakeId());
-        }
-        return list;
-    }
-
-    /**
-     * 把long 64位数转化为长度为64的字节数组，数组每一项代表一个位,0或1
-     * @return
-     */
-    private static Byte[] longToBitArray(Long num){
-
-        String s = "";
-        while(num > 0)
-        {
-            s += String.valueOf(num % 2);
-            num = num /2;
-        }
-        for(int i=0;i<64-s.length();i++){
-            System.out.print("0");
-        }
-        for(int i = s.length()-1; i >= 0 ; i--)
-        {
-
-            System.out.print(s.charAt(i));
-        }
-
-        System.out.println(num);
-        long src = num;
-        for(int i=0;i<12;i++){
-            int n = (int) (src & 31);
-            src = src>>5;
-        }
-        int lastFourBit = (int) (src & 16);
-        System.out.println(lastFourBit);
-        Random random = new Random();
-        int lowBits = random.nextInt(65535) << 4;    // 最大16位,左移四位空出低4位
-        System.out.println(lowBits);
-        int twentyBit = lowBits | lastFourBit;  // 拼接成20位
-        System.out.println(twentyBit);
-        return null;
-    }
-
 }
 
 /**

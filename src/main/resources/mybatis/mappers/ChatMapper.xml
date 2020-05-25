@@ -236,6 +236,10 @@
         WHERE chat_id=#{chatId}
     </update>
 
+    <update id="updatePrivateChatId" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
+        UPDATE private_chat pc set pc.chat_id = #{newChatId} where pc.chat_id = #{oldChatId}
+    </update>
+
     <update id="updatePrivateChatLastMsg" >
         UPDATE private_chat SET last_msg_id = #{msgId} ,last_sender_id = #{lastSenderId}, update_time=NOW()
         WHERE chat_id = #{chatId}
@@ -257,11 +261,15 @@
         UPDATE pri_msg_record SET has_read = 1 WHERE chat_id=#{chatId} AND to_uid=#{uid}
     </update>
 
+    <update id="updatePriMsgRecordChatId">
+        update pri_msg_record pmr set pmr.chat_id = #{newChatId} where pmr.chat_id = #{oldChatId}
+    </update>
+
     <delete id="hardDeletePrivateChat">
         DELETE FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB}
     </delete>
 
-    <select id="fix1" resultMap="privateChatInfoMap">
+    <select id="selectAllPrivateChat" resultMap="privateChatInfoMap">
         SELECT * FROM private_chat
     </select>
 

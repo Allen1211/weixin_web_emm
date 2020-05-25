@@ -73,5 +73,8 @@ public interface GroupChatMapper {
     Integer softDeleteGroupChat(String gid);
 
 
-    List<UserChatGroup> fix();
+    List<UserChatGroup> selectAll();
+
+    int updateUserGroupChatId(@Param("oldChatId")Long oldChatId, @Param("newChatId")Long newChatId);
+
 }

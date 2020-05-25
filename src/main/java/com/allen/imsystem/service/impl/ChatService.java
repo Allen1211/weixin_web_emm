@@ -4,6 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.PageBean;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.common.utils.ChatIdUtil;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.SnowFlakeUtil;
 import com.allen.imsystem.mappers.ChatMapper;
@@ -60,22 +61,13 @@ public class ChatService implements IChatService {
 
     @Override
     public Integer getChatType(Long chatId) {
-        if (!redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString())) {
-            if (chatMapper.selectPrivateChatInfoByChatId(chatId) != null) {
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString(), GlobalConst.ChatType.PRIVATE_CHAT);
-            } else if (groupChatMapper.selectUserChatGroupRelationByChatId(chatId) != null) {
-                redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString(), GlobalConst.ChatType.GROUP_CHAT);
-            } else {
-                return GlobalConst.ChatType.UN_KNOW;
-            }
-        }
-        return (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString());
+        return chatId == null ? GlobalConst.ChatType.UN_KNOW : ChatIdUtil.getChatType(chatId);
     }
 
     @Override
     public Integer getChatType(String chatId) {
         if (StringUtils.isNotEmpty(chatId) && StringUtils.isNumeric(chatId)) {
-            return getChatType(Long.parseLong(chatId));
+            return this.getChatType(Long.parseLong(chatId));
         } else {
             return GlobalConst.ChatType.UN_KNOW;
         }
@@ -134,7 +126,6 @@ public class ChatService implements IChatService {
         chatMapper.insertNewPrivateChat(privateChat);
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, uid + chatId, !status);
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, friendId + chatId, true);
-        redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString(), GlobalConst.ChatType.PRIVATE_CHAT);
         messageCounter.setUserChatNewMsgCount(uid, chatId, 0);   // 初始化该用户对此会话未读消息数
         messageCounter.setUserChatNewMsgCount(friendId, chatId, 0);   // 初始化该用户对此会话未读消息数
         return privateChat;
@@ -206,8 +197,6 @@ public class ChatService implements IChatService {
         // 设置该用户对该会话的移除为否
         String userChatRemoveKey = uid + privateChat.getChatId();
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, userChatRemoveKey, false);
-        // 会话类型
-        redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, privateChat.getChatId().toString(), GlobalConst.ChatType.PRIVATE_CHAT);
         // 初始化该用户对此会话未读消息数
         messageCounter.setUserChatNewMsgCount(uid, privateChat.getChatId(), 0);
         Map<String, Object> result = new HashMap<>(2);

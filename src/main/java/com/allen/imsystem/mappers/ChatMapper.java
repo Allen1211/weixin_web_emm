@@ -53,5 +53,9 @@ public interface ChatMapper {
 
     Integer insertPrivateMsgToRecord(PrivateMsgRecord privateMsgRecord);
 
-    List<PrivateChat> fix1();
+    List<PrivateChat> selectAllPrivateChat();
+
+    int updatePriMsgRecordChatId(@Param("oldChatId")Long oldChatId, @Param("newChatId")Long newChatId);
+
+    int updatePrivateChatId(@Param("oldChatId")Long oldChatId, @Param("newChatId")Long newChatId);
 }

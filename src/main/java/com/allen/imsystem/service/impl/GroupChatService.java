@@ -71,7 +71,6 @@ public class GroupChatService implements IGroupChatService {
         groupChatMapper.insertUserChatGroup(userChatGroup);
         // 缓存更新，默认会话不开启
         redisService.hset(GlobalConst.Redis.KEY_CHAT_REMOVE, ownerId + gid, true);
-        redisService.hset(GlobalConst.Redis.KEY_CHAT_TYPE, chatId.toString(), GlobalConst.ChatType.GROUP_CHAT);
         return new CreateGroupDTO(gid, groupChat.getAvatar(), groupName, chatId);
 
     }

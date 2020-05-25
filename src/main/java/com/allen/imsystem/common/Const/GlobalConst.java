@@ -84,7 +84,7 @@ public class GlobalConst {
      */
     public static class Redis{
         public static final String KEY_USER_STATUS = "user_status";
-        public static final String KEY_CHAT_TYPE = "chat_type";
+//        public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
         public static final String KEY_RECORD_BEGIN_ID = "msg_record_begin_msg_id";
         public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
