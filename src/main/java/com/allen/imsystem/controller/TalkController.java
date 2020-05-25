@@ -10,6 +10,8 @@ import com.allen.imsystem.model.pojo.PrivateChat;
 import com.allen.imsystem.model.pojo.UserChatGroup;
 import com.allen.imsystem.service.IChatService;
 import com.allen.imsystem.service.IGroupChatService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
+@Api("聊天与会话相关接口")
 @RequestMapping("/api/talk")
 @RestController
 public class TalkController {
@@ -38,6 +41,7 @@ public class TalkController {
     /**
      * 获取会话的一些信息，只在用户点击一个会话的时候，调用此接口，故可认为对于该用户该会话所有消息已读。
      */
+    @ApiOperation("获取会话的一些信息")
     @RequestMapping(value = "/getTalkData", method = RequestMethod.GET)
     public JSONResponse getTalkData(@RequestParam("talkId") String chatIdStr, HttpServletRequest request) {
         Long chatId = Long.valueOf(chatIdStr);
@@ -57,6 +61,7 @@ public class TalkController {
     /**
      * 获取用户的会话列表（相当于一打开微信看到的那个列表）
      */
+    @ApiOperation("获取用户的会话列表")
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
     public JSONResponse getTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);

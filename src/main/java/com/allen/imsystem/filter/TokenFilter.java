@@ -29,7 +29,11 @@ public class TokenFilter implements Filter {
             "/imsystem/api/user/logout",
             "/imsystem/api/security/sendEmailCode",
             "/imsystem/api/security/getCodeImage",
-            "/imsystem/talk"};
+            "/imsystem/talk",
+            "/imsystem/swagger-ui.html",
+            "/imsystem/webjars"};
+
+    private static String[] excludePattern = {"/imsystem/webjars.*", "/imsystem/v2.*", "/imsystem/swagger-resources.*"};
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -52,6 +56,13 @@ public class TokenFilter implements Filter {
             filterChain.doFilter(servletRequest,servletResponse);
             return;
         }
+        for(String pattern : excludePattern){
+            if(URI.matches(pattern)){
+                filterChain.doFilter(servletRequest,servletResponse);
+                return;
+            }
+        }
+
         String token = request.getHeader("token");
         if(token == null){
             System.out.println(method);

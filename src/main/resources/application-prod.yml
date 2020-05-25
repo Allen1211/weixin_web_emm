@@ -54,3 +54,7 @@ mail:
     port: 465
     socketFactory:
       class: javax.net.ssl.SSLSocketFactory
+
+# swagger
+swagger:
+  enable: false
