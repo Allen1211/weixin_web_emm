@@ -65,8 +65,8 @@ public class TalkController {
     @RequestMapping(value = "/getTalkList", method = RequestMethod.GET)
     public JSONResponse getTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<ChatSessionDTO> chatSessionDTOList = chatService.getChatList(uid);
-        return new JSONResponse(1).putData("talkList", chatSessionDTOList);
+        List<ChatSession> chatSessionList = chatService.getChatList(uid);
+        return new JSONResponse(1).putData("talkList", chatSessionList);
     }
 
     /**

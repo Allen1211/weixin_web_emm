@@ -4,7 +4,7 @@
 
 <mapper namespace="com.allen.imsystem.mappers.GroupChatMapper">
 
-    <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSessionDTO">
+    <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.model.dto.ChatSession">
         <result property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
         <result property="talkTitle" column="talkTitle" />
         <result property="avatar" column="avatar" />

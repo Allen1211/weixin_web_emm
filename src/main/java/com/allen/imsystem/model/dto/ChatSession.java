@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-public class ChatSessionDTO implements Serializable {
+public class ChatSession implements Serializable {
     // 会话id
     @JsonProperty(value = "talkId")
     private Long chatId;

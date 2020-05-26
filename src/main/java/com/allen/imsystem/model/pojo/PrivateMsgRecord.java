@@ -1,8 +1,10 @@
 package com.allen.imsystem.model.pojo;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class PrivateMsgRecord extends BaseMsgRecord {
     private Long chatId;
     private String fromUid;

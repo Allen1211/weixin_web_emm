@@ -36,12 +36,12 @@ public interface GroupChatMapper {
     List<GroupMemberDTO> selectGroupMemberList(String gid);
 
     @MapKey("myId")
-    Map<String, ChatSessionDTO> selectGroupAllChatData(String gid);
+    Map<String, ChatSession> selectGroupAllChatData(String gid);
 
     @MapKey("uid")
     Map<String, UserChatGroup> selectUserChatGroupRelationByUidList(@Param("list") List<InviteDTO> list, @Param("gid") String gid);
 
-    ChatSessionDTO selectOneGroupChatData(Long chatId);
+    ChatSession selectOneGroupChatData(Long chatId);
 
     Integer softDeleteUsedGid(String gid);
 

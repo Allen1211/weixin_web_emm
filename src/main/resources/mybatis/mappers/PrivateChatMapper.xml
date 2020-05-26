@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.mappers.PrivateChatMapper">
+
+    <resultMap id="PrivateChatMap" type="com.allen.imsystem.model.pojo.PrivateChat">
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="uidA" column="uid_a"/>
+        <result property="uidB" column="uid_b"/>
+        <result property="userAStatus" column="user_a_status"/>
+        <result property="userBStatus" column="user_b_status"/>
+        <result property="lastMsgId" column="last_msg_id"/>
+        <result property="lastMsgContent" column="last_msg_content"/>
+        <result property="lastMsgCreateTime" column="last_msg_create_time"/>
+        <result property="lastSenderId" column="last_sender_id"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="chatSessionInfoMap" type="com.allen.imsystem.model.dto.ChatSessionInfo">
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="title" column="title"/>
+        <result property="srcId" column="src_id"/>
+        <result property="destId" column="dest_id"/>
+        <result property="isGroup" column="isGroup" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result property="gid" column="dest_id"/>
+        <result property="groupAlias" column="user_alias"/>
+    </resultMap>
+
+    <!-- 获取某用户所有有效的私聊会话列表 -->
+    <select id="findChatSessionListByUid" resultMap="com.allen.imsystem.mappers.ChatMapper.chatSessionDTOMap">
+        (SELECT pc.chat_id, pc.last_msg_content, pc.last_msg_create_time, pc.update_time,
+         pc.uid_b as friend_id,
+         0 as is_group
+        FROM private_chat as pc
+        WHERE (pc.uid_a = #{uid} AND pc.user_a_status=1) )
+        UNION ALL
+        (SELECT pc.chat_id, pc.last_msg_content, pc.last_msg_create_time, pc.update_time,
+         pc.uid_a as friend_id,
+         0 as is_group
+        FROM private_chat as pc
+        WHERE (pc.uid_b = #{uid} AND pc.user_b_status=1) )
+        ORDER BY update_time DESC
+    </select>
+
+    <!--新收到消息时，对应的会话信息（用于插入会话列表） -->
+    <select id="selectNewMsgPrivateChatData" resultMap="com.allen.imsystem.mappers.ChatMapper.chatSessionDTOMap">
+        SELECT pc.chat_id, ui.username as talkTitle,ui.uid as friend_id,pc.last_msg_create_time,pc.last_msg_content,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',ui.icon_id) as avatar,
+        0 as isGroup
+        FROM private_chat as pc
+        LEFT JOIN user_info as ui ON ui.uid = #{friendId}
+        WHERE pc.chat_id = #{chatId} AND (pc.uid_a = #{uid} OR pc.uid_b = #{uid})
+    </select>
+
+    <select id="findByUidAB" resultMap="PrivateChatMap">
+        SELECT * FROM private_chat WHERE uid_a=#{uidA} AND uid_b=#{uidB} ORDER BY created_time DESC LIMIT 1
+    </select>
+
+    <select id="findByChatId" resultMap="PrivateChatMap">
+        SELECT * FROM private_chat WHERE chat_id = #{chatId} ORDER BY created_time DESC LIMIT 1
+    </select>
+
+    <!--    获取一个私聊会话的一些信息-->
+    <select id="selectPrivateChatData" resultMap="com.allen.imsystem.mappers.ChatMapper.chatSessionInfoMap">
+        SELECT pc.chat_id,pc.uid_a as dest_id,pc.uid_b as src_id ,ui.username as title,0 as isGroup FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_a
+        WHERE chat_id=#{chatId} AND pc.uid_b = #{uid}
+        UNION ALL
+        SELECT pc.chat_id,pc.uid_b as dest_id,pc.uid_a as src_id,ui.username as title,0 as isGroup FROM private_chat as pc
+        INNER JOIN user_info as ui ON ui.uid = pc.uid_b
+        WHERE chat_id=#{chatId} AND pc.uid_a = #{uid}
+        LIMIT 1
+    </select>
+
+    <!--插入私聊会话-->
+    <insert id="insert" keyColumn="chat_id" keyProperty="chatId"
+            parameterType="com.allen.imsystem.model.pojo.PrivateChat" useGeneratedKeys="true">
+        insert into private_chat
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uidA != null">
+                uid_a,
+            </if>
+            <if test="uidB != null">
+                uid_b,
+            </if>
+            <if test="userAStatus != null">
+                user_a_status,
+            </if>
+            <if test="userBStatus != null">
+                user_b_status,
+            </if>
+            <if test="lastSenderId != null">
+                last_sender_id,
+            </if>
+            <if test="lastMsgId != null">
+                last_msg_id,
+            </if>
+            <if test="lastMsgContent != null">
+                last_msg_content,
+            </if>
+            <if test="lastMsgCreateTime != null">
+                last_msg_create_time,
+            </if>
+            <if test="createdTime != null">
+                created_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uidA != null">
+                #{uidA,jdbcType=VARCHAR},
+            </if>
+            <if test="uidB != null">
+                #{uidB,jdbcType=VARCHAR},
+            </if>
+            <if test="userAStatus != null">
+                #{userAStatus,jdbcType=BOOLEAN},
+            </if>
+            <if test="userBStatus != null">
+                #{userBStatus,jdbcType=BOOLEAN},
+            </if>
+            <if test="lastSenderId != null">
+                #{lastSenderId,jdbcType=VARCHAR},
+            </if>
+            <if test="lastMsgId != null">
+                #{lastMsgId,jdbcType=BIGINT},
+            </if>
+            <if test="lastMsgContent != null">
+                #{lastMsgContent,jdbcType=VARCHAR},
+            </if>
+            <if test="lastMsgCreateTime != null">
+                #{lastMsgCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createdTime != null">
+                #{createdTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+
+    <!--更新私聊会话    -->
+    <update id="update" parameterType="com.allen.imsystem.model.pojo.PrivateChat">
+        update private_chat
+        <set>
+            <if test="uidA != null">
+                uid_a = #{uidA,jdbcType=VARCHAR},
+            </if>
+            <if test="uidB != null">
+                uid_b = #{uidB,jdbcType=VARCHAR},
+            </if>
+            <if test="userAStatus != null">
+                user_a_status = #{userAStatus,jdbcType=BOOLEAN},
+            </if>
+            <if test="userBStatus != null">
+                user_b_status = #{userBStatus,jdbcType=BOOLEAN},
+            </if>
+            <if test="lastSenderId != null">
+                last_sender_id = #{lastSenderId,jdbcType=VARCHAR},
+            </if>
+            <if test="lastMsgId != null">
+                last_msg_id = #{lastMsgId,jdbcType=BIGINT},
+            </if>
+            <if test="lastMsgContent != null">
+                last_msg_content = #{lastMsgContent,jdbcType=VARCHAR},
+            </if>
+            <if test="lastMsgCreateTime != null">
+                last_msg_create_time = #{lastMsgCreateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createdTime != null">
+                created_time = #{createdTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where chat_id = #{chatId,jdbcType=BIGINT}
+    </update>
+
+    <!-- 更新会话最后一条消息-->
+    <update id="updatePrivateChatLastMsg">
+        UPDATE private_chat SET last_msg_id = #{msgId},last_msg_content = #{lastMsgContent},
+         last_msg_create_time = #{lastMsgCreateTime} ,last_sender_id = #{lastSenderId}, update_time=NOW()
+        WHERE chat_id = #{chatId}
+    </update>
+
+
+</mapper>

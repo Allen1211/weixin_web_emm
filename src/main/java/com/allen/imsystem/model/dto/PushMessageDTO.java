@@ -9,7 +9,7 @@ public class PushMessageDTO {
     private Long chatId;
     private MsgRecord messageData;
     private Boolean isNewTalk;
-    private ChatSessionDTO talkData;
+    private ChatSession talkData;
     private Long lastTimeStamp;
 
     @JSONField(name = "talkId")

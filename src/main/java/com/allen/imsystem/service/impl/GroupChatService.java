@@ -150,7 +150,7 @@ public class GroupChatService implements IGroupChatService {
     }
 
     @Override
-    public Map<String, ChatSessionDTO> getAllGroupChatSession(String gid) {
+    public Map<String, ChatSession> getAllGroupChatSession(String gid) {
         return groupChatMapper.selectGroupAllChatData(gid);
     }
 

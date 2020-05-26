@@ -1,16 +1,7 @@
 package com.allen.imsystem.common.message;
 
-import com.allen.imsystem.common.Const.GlobalConst;
-import com.allen.imsystem.model.dto.ChatSessionDTO;
-import com.allen.imsystem.model.dto.MsgRecord;
 import com.allen.imsystem.model.dto.PushMessageDTO;
 import com.allen.imsystem.model.dto.SendMsgDTO;
-import org.springframework.util.CollectionUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class GroupMsgTalkDataHandler extends MsgHandler {
 

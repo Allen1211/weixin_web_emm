@@ -42,6 +42,9 @@ public class FriendUpdateService implements IFriendUpdateService {
     private ChatMapper chatMapper;
 
     @Autowired
+    private PrivateChatMapper privateChatMapper;
+
+    @Autowired
     private IChatService chatService;
 
     @Autowired
@@ -126,7 +129,7 @@ public class FriendUpdateService implements IFriendUpdateService {
             friendMapper.deleteFriend(uid, friendId);
         }else{// 新的好友，如果他们之间还不存在会话，则新建一个新的会话
             UidABHelper uidAB = UidABHelper.sortAndCreate(uid,friendId);
-            PrivateChat privateChat = chatMapper.selectPrivateChatInfoByUid(uidAB.getUidA(),uidAB.getUidB());
+            PrivateChat privateChat = privateChatMapper.findByUidAB(uidAB.getUidA(),uidAB.getUidB());
             if(privateChat == null){
                 new Thread(() -> {
                     chatService.initNewPrivateChat(uid, friendId, false);

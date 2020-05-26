@@ -172,22 +172,22 @@ public class MessageService implements IMessageService {
             }
         }
         if (!onlineList.isEmpty()) {
-            Map<String, ChatSessionDTO> allChatData = groupChatService.getAllGroupChatSession(gid);
+            Map<String, ChatSession> allChatData = groupChatService.getAllGroupChatSession(gid);
             PushMessageDTO pushMessageDTO = new PushMessageDTO();
             for (MsgRecord msgRecord : msgRecordList) {
                 pushMessageDTO.setMessageData(msgRecord);
                 for (String destId : onlineList) {
                     // 组装会话信息
-                    ChatSessionDTO chatSessionDTO = allChatData.get(destId);
-                    if (chatSessionDTO != null) {
+                    ChatSession chatSession = allChatData.get(destId);
+                    if (chatSession != null) {
                         boolean isNewTalk = checkIsNewGroupChatAndActivate(destId, gid); //判断是否是新会话，是的话激活为显示状态
                         pushMessageDTO.setIsNewTalk(isNewTalk);
-                        pushMessageDTO.setLastTimeStamp(chatSessionDTO.getLastMessageDate().getTime());
-                        pushMessageDTO.setChatId(chatSessionDTO.getChatId());
+                        pushMessageDTO.setLastTimeStamp(chatSession.getLastMessageDate().getTime());
+                        pushMessageDTO.setChatId(chatSession.getChatId());
                         // 未读信息数
-                        chatSessionDTO.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(destId, gid));
+                        chatSession.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(destId, gid));
                     }
-                    pushMessageDTO.setTalkData(chatSessionDTO);
+                    pushMessageDTO.setTalkData(chatSession);
                     // 组装完成，发送
                     wsEventHandler.handleResponse(eventCode, destId, pushMessageDTO);
                 }

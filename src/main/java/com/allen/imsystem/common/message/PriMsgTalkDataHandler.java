@@ -3,7 +3,8 @@ package com.allen.imsystem.common.message;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.mappers.ChatMapper;
-import com.allen.imsystem.model.dto.ChatSessionDTO;
+import com.allen.imsystem.mappers.PrivateChatMapper;
+import com.allen.imsystem.model.dto.ChatSession;
 import com.allen.imsystem.model.dto.PushMessageDTO;
 import com.allen.imsystem.model.dto.SendMsgDTO;
 import com.allen.imsystem.model.pojo.PrivateChat;
@@ -29,6 +30,9 @@ public class PriMsgTalkDataHandler extends MsgHandler {
     private ChatMapper chatMapper;
 
     @Autowired
+    private PrivateChatMapper privateChatMapper;
+
+    @Autowired
     private MessageCounter messageCounter;
 
     @Override
@@ -39,8 +43,8 @@ public class PriMsgTalkDataHandler extends MsgHandler {
         pushMessageDTO.setIsNewTalk(isNewTalk);
 
         // 3、填充会话信息
-        ChatSessionDTO talkData = null;
-        talkData = chatMapper.selectNewMsgPrivateChatData(chatId, sendMsgDTO.getDestId(), sendMsgDTO.getSrcId());
+        ChatSession talkData = null;
+        talkData = privateChatMapper.selectNewMsgPrivateChatData(chatId, sendMsgDTO.getDestId(), sendMsgDTO.getSrcId());
         talkData.setLastMessageTime(FormatUtil.formatChatSessionDate(talkData.getLastMessageDate()));
         talkData.setNewMessageCount(messageCounter.getPrivateChatNewMsgCount(sendMsgDTO.getDestId(), chatId));
         pushMessageDTO.setTalkData(talkData);
@@ -62,7 +66,7 @@ public class PriMsgTalkDataHandler extends MsgHandler {
                 privateChat.setUserAStatus(true);
                 privateChat.setUserBStatus(true);
                 privateChat.setUpdateTime(new Date());
-                chatMapper.updatePrivateChat(privateChat);
+                privateChatMapper.update(privateChat);
             }).start();
         }
         return isNewTalk;

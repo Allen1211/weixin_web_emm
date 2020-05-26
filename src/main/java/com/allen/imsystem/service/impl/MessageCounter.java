@@ -2,6 +2,7 @@ package com.allen.imsystem.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.mappers.ChatMapper;
+import com.allen.imsystem.mappers.PrivateMsgRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,8 @@ public class MessageCounter {
     @Autowired
     private ChatMapper chatMapper;
 
+    @Autowired
+    private PrivateMsgRecordMapper privateMsgRecordMapper;
 
     /**
      * 设置某用户会话的未读消息数，常用于初始化和清零。
@@ -41,7 +44,7 @@ public class MessageCounter {
     public Integer getPrivateChatNewMsgCount(String uid, Long chatId) {
         Integer count = (Integer) redisService.hget(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid + chatId);
         if (count == null) {  // 如果缓存中不存在，到数据库里查询，并更新缓存
-            Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId, uid);
+            Integer newMsgCount = privateMsgRecordMapper.countPrivateChatUnReadMsgForUser(chatId, uid);
             setUserChatNewMsgCount(uid, chatId, newMsgCount);
             return newMsgCount;
         }
@@ -69,7 +72,7 @@ public class MessageCounter {
         hasKey = redisService.hHasKey(GlobalConst.Redis.KEY_CHAT_UNREAD_COUNT, uid + chatId);
         if (!hasKey) {
             // 去数据库里同步。
-            Integer newMsgCount = chatMapper.countPrivateChatUnReadMsgForUser(chatId, uid);
+            Integer newMsgCount = privateMsgRecordMapper.countPrivateChatUnReadMsgForUser(chatId, uid);
             setUserChatNewMsgCount(uid, chatId, newMsgCount != null ? newMsgCount + 1 : 1);
             return;
         }

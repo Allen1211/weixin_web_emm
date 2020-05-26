@@ -46,7 +46,7 @@ public interface IGroupChatService {
     List<GroupChatInfoDTO> getGroupChatList(String uid);
 
 
-    Map<String, ChatSessionDTO> getAllGroupChatSession(String gid);
+    Map<String, ChatSession> getAllGroupChatSession(String gid);
 
     /**
      * 批量拉取好友入群

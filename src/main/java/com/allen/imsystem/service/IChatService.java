@@ -1,9 +1,10 @@
 package com.allen.imsystem.service;
 
-import com.allen.imsystem.model.dto.ChatSessionDTO;
+import com.allen.imsystem.model.dto.ChatSession;
 import com.allen.imsystem.model.dto.ChatSessionInfo;
 import com.allen.imsystem.model.dto.SendMsgDTO;
 import com.allen.imsystem.model.pojo.PrivateChat;
+import com.allen.imsystem.model.pojo.PrivateMsgRecord;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -96,7 +97,7 @@ public interface IChatService {
      * 获取会话列表
      * @param uid
      */
-    List<ChatSessionDTO> getChatList(String uid);
+    List<ChatSession> getChatList(String uid);
 
     /**
      * 获取会话的一些信息
@@ -138,21 +139,25 @@ public interface IChatService {
      */
     Integer getAllHistoryMessageSize(boolean isgGroup, Long chatId, String uid, Date beginTime);
 
+
     /**
      * 私聊消息入库
      * @param sendMsgDTO
      * @return
      */
-    Boolean savePrivateMsgRecord(SendMsgDTO sendMsgDTO);
+    PrivateMsgRecord savePrivateMsgRecord(SendMsgDTO sendMsgDTO);
 
     /**
      * 更新会话的最后一条信息
-     * @param chatId
-     * @param msgId
-     * @param senderId
+     * @param chatId 会话id
+     * @param msgId 消息id
+     * @param senderId 发送者id
+     * @param lastMsgContent 消息内容
+     * @param lastMsgCreateTime 消息创建时间
      * @return
      */
-    Boolean updateChatLastMsg(Long chatId, Long msgId, String senderId);
+    boolean updateChatLastMsg(Long chatId, Long msgId, String lastMsgContent,
+                              Date lastMsgCreateTime, String senderId);
 
     Map<String,Object> validateChatId(Long chatId, String uid);
 
