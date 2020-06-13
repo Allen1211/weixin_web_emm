@@ -1,8 +1,8 @@
 package com.allen.imsystem.common.exception;
 
 import com.alibaba.fastjson.JSONObject;
-import com.allen.imsystem.model.dto.ErrMsg;
-import com.allen.imsystem.model.dto.JSONResponse;
+import com.allen.imsystem.common.bean.ErrMsg;
+import com.allen.imsystem.common.bean.JSONResponse;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;

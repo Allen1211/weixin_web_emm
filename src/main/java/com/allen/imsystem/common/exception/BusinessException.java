@@ -1,6 +1,6 @@
 package com.allen.imsystem.common.exception;
 
-import com.allen.imsystem.model.dto.ErrMsg;
+import com.allen.imsystem.common.bean.ErrMsg;
 
 import java.util.Map;
 

@@ -82,7 +82,7 @@ public class GlobalConst {
     /**
      * redis相关的常量
      */
-    public static class Redis{
+    public static class RedisKey {
         public static final String KEY_USER_STATUS = "user_status";
 //        public static final String KEY_CHAT_TYPE = "chat_type";
         public static final String KEY_CHAT_REMOVE = "chat_remove";
@@ -118,6 +118,16 @@ public class GlobalConst {
         public static final int IMAGE = 2;
         public static final int FILE = 3;
         public static final int GROUP_NOTIFY = 4;
+    }
+
+    /**
+     * id类型
+     */
+    public static class IdType{
+        public static final int UID = 1;
+        public static final int GID = 2;
+        public static final int CHAT_ID = 3;
+        public static final int MSG_ID = 4;
     }
 
 }

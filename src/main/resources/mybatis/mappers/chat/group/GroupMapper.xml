@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.chat.mappers.group.GroupMapper">
+
+    <resultMap id="GroupMap" type="com.allen.imsystem.chat.model.pojo.Group">
+        <id property="gid" column="gid"/>
+        <result property="groupName" column="group_name"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="lastMsgId" column="last_msg_id"/>
+        <result property="lastMsgContent" column="last_msg_content"/>
+        <result property="lastMsgCreateTime" column="last_msg_create_time" javaType="java.util.Date"/>
+        <result property="avatar" column="avatar"/>
+        <result property="status" column="status"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="baseField">
+        g.gid, g.group_name,g.owner_id,g.last_msg_id,g.last_msg_content,g.last_msg_create_time,
+        g.avatar,g.status,g.created_time, g.update_time
+    </sql>
+
+    <select id="findByGId" resultMap="GroupMap">
+        select <include refid="baseField"/>
+        from `group` g where g.gid=#{gid}
+    </select>
+
+    <!--  查询群聊的状态-->
+    <select id="selectGroupChatStatus" resultType="java.lang.Boolean" >
+        SELECT `status` FROM `group` WHERE gid=#{gid}
+    </select>
+
+    <!--  查询群的群主uid-->
+    <select id="selectGroupOwnerId" resultType="java.lang.String">
+        SELECT owner_id FROM `group` WHERE gid=#{gid} AND `status` = 1 LIMIT 1
+    </select>
+
+
+
+    <!--  插入一个新群-->
+    <insert id="insert" parameterType="com.allen.imsystem.chat.model.pojo.Group">
+        INSERT INTO ``group`` (
+        <trim suffixOverrides=",">
+            <if test="gid!=null">gid,</if>
+            <if test="groupName!=null">group_name,</if>
+            <if test="ownerId!=null">owner_id,</if>
+            <if test="avatar!=null">avatar,</if>
+            <if test="lastMsgId!=null">last_msg_id,</if>
+            <if test="lastSenderId!=null">last_sender_id,</if>
+            <if test="status!=null">status,</if>
+            <if test="createdTime!=null">created_time,</if>
+            <if test="updateTime!=null">update_time,</if>
+        </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="gid!=null">#{gid},</if>
+            <if test="groupName!=null">#{groupName},</if>
+            <if test="ownerId!=null">#{ownerId},</if>
+            <if test="avatar!=null">#{avatar},</if>
+            <if test="lastMsgId!=null">#{lastMsgId},</if>
+            <if test="lastSenderId!=null">#{lastSenderId},</if>
+            <if test="status!=null">#{status},</if>
+            <if test="createdTime!=null">#{createdTime},</if>
+            <if test="updateTime!=null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+
+    <!--  插入群聊-->
+    <update id="update" parameterType="com.allen.imsystem.chat.model.pojo.Group">
+        UPDATE `group`
+        <set>
+            <if test="gid!=null">gid = #{gid},</if>
+            <if test="groupName!=null">group_name = #{groupName},</if>
+            <if test="ownerId!=null">owner_id = #{ownerId},</if>
+            <if test="lastMsgId!=null">last_msg_id = #{lastMsgId},</if>
+            <if test="lastSenderId!=null">last_sender_id = #{lastSenderId},</if>
+            <if test="avatar!=null">avatar = #{avatar},</if>
+            <if test="status!=null">status = #{status},</if>
+            <if test="createdTime!=null">created_time = #{createdTime},</if>
+            <if test="updateTime!=null">update_time = NOW(6),</if>
+        </set>
+        WHERE gid=#{gid}
+    </update>
+
+    <!--  删除群聊-->
+    <update id="delete" >
+        UPDATE `group` SET `status` = 0,update_time=NOW(6) WHERE gid=#{gid}
+    </update>
+
+    <!--  更新群聊最后一条消息-->
+    <update id="updateGroupLastMsg" >
+        UPDATE `group` SET last_msg_id=#{lastMsgId} ,last_sender_id=#{lastSenderId}, update_time=NOW(6),
+        last_msg_content = #{lastMsgContent} , last_msg_create_time = #{lastMsgCreateTime}
+         WHERE gid=#{gid}
+    </update>
+
+
+</mapper>

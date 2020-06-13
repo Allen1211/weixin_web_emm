@@ -33,7 +33,7 @@ spring:
 
 
 mybatis:
-  mapper-locations: classpath:mybatis/mappers/*.xml
+  mapper-locations: classpath:mybatis/mappers/*/*.xml,classpath:mybatis/mappers/*/*/*.xml
 
 
 #日志
@@ -41,7 +41,7 @@ logging:
   file:
     path: E:/logs/imsystem
   level:
-    root: debug
+    root: info
 
 mail:
   smtp:

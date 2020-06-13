@@ -33,7 +33,7 @@ spring:
 
 
 mybatis:
-  mapper-locations: classpath:mybatis/mappers/*.xml
+  mapper-locations: classpath:mybatis/mappers/*/*.xml
 
 
 #showSql

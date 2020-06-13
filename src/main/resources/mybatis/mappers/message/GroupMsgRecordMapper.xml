@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.message.mappers.GroupMsgRecordMapper">
+
+    <resultMap id="chatSessionDTOMap" type="com.allen.imsystem.chat.model.vo.ChatSession">
+        <id property="chatId" column="chat_id" jdbcType="BIGINT" javaType="java.lang.Long"/>
+        <result property="talkTitle" column="talkTitle"/>
+        <result property="avatar" column="avatar"/>
+        <result property="lastMessage" column="last_msg_content"/>
+        <result property="isGroupChat" column="isGroup" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="lastMessageDate" column="last_msg_create_time"/>
+        <result property="friendId" column="friend_id"/>
+        <result property="gid" column="gid"/>
+        <result property="lastSenderName" column="lastSenderName"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="msgRecordMap" type="com.allen.imsystem.message.model.vo.MsgRecord">
+        <id property="messageId" column="msg_id" javaType="java.lang.Long" jdbcType="BIGINT"/>
+        <result property="messageType" column="msg_type"/>
+        <result property="messageText" column="content"/>
+        <result property="msgTimeDate" column="created_time"/>
+        <result property="messageImgUrl" column="resource_url"/>
+        <result property="groupAlias" column="user_alias"/>
+        <result property="fromUid" column="from_uid"/>
+        <association property="fileInfo" resultMap="fileInfoMap"/>
+    </resultMap>
+
+    <resultMap id="fileInfoMap" type="com.allen.imsystem.file.model.MsgFileInfo">
+        <result property="fileName" column="file_name"/>
+        <result property="downloadUrl" column="resource_url"/>
+        <result property="size" column="size" javaType="java.lang.Long" jdbcType="BIGINT"/>
+    </resultMap>
+
+
+    <!--    获取群聊聊天记录-->
+    <select id="selectGroupChatHistoryMsg" resultMap="msgRecordMap">
+        SELECT gmr.msg_id,gmr.msg_type,gmr.content,gmr.created_time,gmr.sender_id as from_uid,
+        fm.file_name,fm.size,
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@RESOURCES_URL}',fm.url) as resource_url,
+        gc.user_alias
+        FROM group_msg_record as gmr
+        LEFT JOIN group_chat as gc ON gc.uid = gmr.sender_id
+        LEFT JOIN file_msg_md5 as fm ON fm.md5 = gmr.file_md5
+        WHERE (gmr.gid= #{gid} AND gc.gid=#{gid}) OR (gmr.sender_id=#{gid})
+        <if test="beginMsgId != null">
+            AND gmr.msg_id &lt;= #{beginMsgId}
+        </if>
+        ORDER BY gmr.msg_id DESC
+        LIMIT #{pageBean.from},#{pageBean.offset}
+    </select>
+
+
+    <!--    某群聊会话聊天记录总条数-->
+    <select id="countAllGroupHistoryMsg" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM group_msg_record as gmr
+        WHERE gmr.gid=#{gid} AND gmr.`status` = 1 AND created_time &lt; #{beginTime}
+    </select>
+
+    <!--  插入一条新的群聊消息  -->
+    <insert id="insertNewGroupMsgRecord" parameterType="com.allen.imsystem.message.model.pojo.GroupMsgRecord">
+        INSERT INTO group_msg_record (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">msg_id,</if>
+            <if test="senderId!=null">sender_id,</if>
+            <if test="gid!=null">gid,</if>
+            <if test="msgType!=null">msg_type,</if>
+            <if test="content!=null">content,</if>
+            <if test="fileMd5!=null">file_md5,</if>
+            <if test="status!=null">status,</if>
+            <if test="createdTime!=null">created_time,</if>
+            <if test="updateTime!=null">update_time,</if>
+        </trim>
+        )
+        VALUES (
+        <trim suffixOverrides=",">
+            <if test="msgId!=null">#{msgId},</if>
+            <if test="senderId!=null">#{senderId},</if>
+            <if test="gid!=null">#{gid},</if>
+            <if test="msgType!=null">#{msgType},</if>
+            <if test="content!=null">#{content},</if>
+            <if test="fileMd5!=null">#{fileMd5},</if>
+            <if test="status!=null">#{status},</if>
+            <if test="createdTime!=null">#{createdTime},</if>
+            <if test="updateTime!=null">#{updateTime},</if>
+        </trim>
+        )
+    </insert>
+
+    <!--  插入多条群聊消息  -->
+    <insert id="insertNewGroupMsgRecordBatch" parameterType="com.allen.imsystem.message.model.pojo.GroupMsgRecord">
+        INSERT INTO group_msg_record (msg_id, sender_id, gid, msg_type, content, file_md5, status, created_time, update_time)
+        VALUES
+        <foreach collection="msgList" item="item" separator=",">
+            (#{item.msgId},#{item.senderId},#{item.gid},#{item.msgType},#{item.content},#{item.fileMd5},#{item.status},NOW(),NOW())
+        </foreach>
+    </insert>
+
+
+</mapper>

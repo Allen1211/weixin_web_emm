@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allen.imsystem.friend.mappers.FriendApplyMapper">
+
+    <resultMap id="FriendApplicationMap" type="com.allen.imsystem.friend.model.vo.FriendApplicationView">
+        <!-- association和result同时存在时，一定要指定id列 ，不然结果集只会有一条结果 待探究      -->
+        <id column="uid" />
+        <result property="fromUid" column="from_uid"/>
+        <result property="applicationReason" column="reason"/>
+        <result property="hasAccept" column="pass" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <association property="applicantInfo" resultMap="userInfoMap"/>
+    </resultMap>
+
+    <resultMap id="FriendApplyMap" type="com.allen.imsystem.friend.model.pojo.FriendApply">
+        <result property="id" column="id"/>
+        <result property="fromUid" column="from_uid"/>
+        <result property="toUid" column="to_uid"/>
+        <result property="groupId" column="group_id"/>
+        <result property="pass" column="pass" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="hasRead" column="has_read" jdbcType="TINYINT" javaType="java.lang.Boolean"/>
+        <result property="reason" column="reason"/>
+        <result property="createdTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="userInfoMap" type="com.allen.imsystem.user.model.vo.UserInfoView">
+        <result property="uid" column="uid"/>
+        <result property="username" column="username"/>
+        <result property="avatar" column="icon_id"/>
+        <result property="signWord" column="desc"/>
+        <result property="lastLoginAt" column="last_login_time"/>
+    </resultMap>
+
+    <!--    查询某用户已发出申请了但未被通过的好友id   -->
+    <select id="selectAquiredId" resultType="java.lang.String">
+        SELECT to_uid FROM friend_apply WHERE from_uid = #{uid} AND pass = 0
+    </select>
+    <!--    查询某个申请的好友分组id   -->
+    <select id="selectApplyGroupId" resultType="java.lang.Integer">
+        SELECT group_id FROM friend_apply where from_uid=#{fromUid} and to_uid=#{toUid} and pass=0 LIMIT 1
+    </select>
+    <!--    查询两个用户之间的未被通过的申请  -->
+    <select id="selectFriendApply" resultMap="FriendApplyMap">
+        SELECT * FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid} AND pass=0 LIMIT 1
+    </select>
+
+    <!--    查询最新的好友申请列表   -->
+    <select id="selectLatestApply" resultMap="FriendApplicationMap">
+        (SELECT
+        fa.from_uid, fa.reason,fa.pass,fa.created_time,fa.has_read FROM friend_apply fa
+        WHERE fa.to_uid = #{uid} and fa.has_read=0
+        ORDER BY fa.created_time DESC)
+        UNION
+        (SELECT
+        fa.from_uid, fa.reason,pass,fa.created_time,fa.has_read FROM friend_apply fa
+        WHERE fa.to_uid = #{uid} and fa.has_read=1 and (TO_DAYS(NOW()) - TO_DAYS(fa.created_time)) &lt;=30
+        ORDER BY fa.created_time DESC)
+        LIMIT #{limit}
+    </select>
+
+    <!--    插入一条新的好友申请-->
+    <insert id="addFriendApply" parameterType="com.allen.imsystem.friend.model.pojo.FriendApply" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO friend_apply (from_uid, to_uid,group_id,reason)
+        values (#{fromUid},#{toUid},#{groupId},#{reason})
+    </insert>
+    <!-- 通过好友申请   -->
+    <update id="updateFriendApplyPass" >
+        UPDATE friend_apply set pass=#{pass}, has_read=1,update_time=NOW()
+        WHERE from_uid=#{fromUid} and to_uid=#{toUid} and pass != 1
+    </update>
+    <!-- 删除好友申请   -->
+    <delete id="deleteFriendApply">
+        DELETE FROM friend_apply WHERE from_uid=#{fromUid} AND to_uid=#{toUid}
+    </delete>
+
+</mapper>

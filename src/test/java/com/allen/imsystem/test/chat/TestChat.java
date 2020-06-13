@@ -1,19 +1,10 @@
 package com.allen.imsystem.test.chat;
 
-import com.allen.imsystem.common.utils.ChatIdUtil;
-import com.allen.imsystem.mappers.ChatMapper;
-import com.allen.imsystem.mappers.GroupChatMapper;
-import com.allen.imsystem.mappers.PrivateChatMapper;
-import com.allen.imsystem.mappers.PrivateMsgRecordMapper;
-import com.allen.imsystem.model.pojo.PrivateChat;
-import com.allen.imsystem.model.pojo.PrivateMsgRecord;
-import com.allen.imsystem.model.pojo.UserChatGroup;
+import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.PrivateChatMapper;
+import com.allen.imsystem.message.mappers.PrivateMsgRecordMapper;
 import com.allen.imsystem.test.BaseTest;
-import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * @ClassName TestChat
@@ -23,9 +14,6 @@ import java.util.List;
  * @Version 1.0
  */
 public class TestChat extends BaseTest {
-
-    @Autowired
-    ChatMapper chatMapper;
 
     @Autowired
     PrivateChatMapper privateChatMapper;
