@@ -2,6 +2,7 @@ package com.allen.imsystem.chat.controller;
 
 import com.alibaba.fastjson.JSONArray;
 import com.allen.imsystem.chat.model.param.CreateGroupParam;
+import com.allen.imsystem.chat.model.param.KickMemberParam;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.model.vo.GroupMemberView;
@@ -130,7 +131,7 @@ public class TalkController {
     public JSONResponse openGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        Map<String, Object> result = chatService.openGroupChat(uid, gid);
+        Map<String, Object> result = groupChatService.openGroupChat(uid, gid);
         GroupChat relation = (GroupChat) result.get("relation");
         return new JSONResponse(1)
                 .putData("talkId", relation.getChatId().toString())
@@ -160,9 +161,8 @@ public class TalkController {
     public JSONResponse createGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String groupName = params.get("groupName");
-        CreateGroupParam groupChat = groupChatService.createNewGroupChat(uid, groupName);
-        groupChat.setGroupAvatar(GlobalConst.Path.AVATAR_URL + groupChat.getGroupAvatar());
-        return new JSONResponse(1).putAllData(new BeanMap(groupChat));
+        GroupView groupView = groupChatService.createGroup(uid, groupName);
+        return new JSONResponse(1).putAllData(new BeanMap(groupView));
     }
 
     /**
@@ -171,7 +171,7 @@ public class TalkController {
     @RequestMapping(value = "/getGroupTalkList", method = RequestMethod.GET)
     public JSONResponse getGroupTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<GroupView> resultList = groupChatService.getGroupChatList(uid);
+        List<GroupView> resultList = groupChatService.findGroupList(uid);
         return new JSONResponse(1).putData("groupTalkList", resultList);
     }
 
@@ -223,11 +223,10 @@ public class TalkController {
      * 群主踢人（批量）
      */
     @RequestMapping(value = "/removeMemberFromGroupTalk", method = RequestMethod.POST)
-    public JSONResponse removeMemberFromGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
+    public JSONResponse removeMemberFromGroupTalk(@RequestBody KickMemberParam param, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
-        String gid = params.get("gid");
-        String list = params.get("memberList");
-        List<GroupMemberView> memberList = JSONArray.parseArray(list, GroupMemberView.class);
+        String gid = param.getGid();
+        List<GroupMemberView> memberList = param.getMemberList();
         groupChatService.kickOutGroupMember(memberList, gid, uid);
         return new JSONResponse(1);
     }

@@ -42,4 +42,6 @@ public class GroupChat {
         this.createdTime = createdTime;
         this.updateTime = updateTime;
     }
+
+
 }

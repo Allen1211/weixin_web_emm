@@ -64,7 +64,6 @@ public class NormalMsgRecordFactory extends MsgRecordFactory {
                 msgRecord.setMessageText(fileInfo.getFileName());
                 break;
             }
-
         }
 
         // 4.1发送者信息
@@ -83,4 +82,6 @@ public class NormalMsgRecordFactory extends MsgRecordFactory {
 
         return msgRecord;
     }
+
+
 }

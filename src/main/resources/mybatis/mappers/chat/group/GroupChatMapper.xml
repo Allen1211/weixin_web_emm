@@ -112,8 +112,8 @@
 
     <select id="findGroupViewListByUid" resultMap="GroupViewMap">
         SELECT g.gid,g.group_name,g.owner_id,
-        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',avatar) as avatar
-        FROM `group` g INNER JOIN group_chat as gc.ON g.gid = gc.gid
+        CONCAT('${@com.allen.imsystem.common.Const.GlobalConst$Path@AVATAR_URL}',g.avatar) as avatar
+        FROM `group` g INNER JOIN group_chat as gc ON g.gid = gc.gid
         WHERE gc.uid=#{uid} AND gc.`status` = 1 AND g.`status`=1
     </select>
 
@@ -152,9 +152,9 @@
         INSERT INTO group_chat
         (chat_id,uid,gid, status,`should_display`, last_ack_msg_id, user_alias, inviter_id, created_time, update_time)
         VALUES
-        <foreach collection="friendList" item="item" separator=",">
-            (#{item.chatId},#{item.uid},#{relation.gid},#{relation.status},#{relation.shouldDisplay},#{relation.lastAckMsgId},
-            #{item.username},#{relation.inviterId},NOW(6),NOW(6))
+        <foreach collection="list" item="item" separator=",">
+            (#{item.chatId},#{item.uid},#{item.gid},#{item.status},#{item.shouldDisplay},#{item.lastAckMsgId},
+            #{item.userAlias},#{item.inviterId},NOW(6),NOW(6))
         </foreach>
     </insert>
 

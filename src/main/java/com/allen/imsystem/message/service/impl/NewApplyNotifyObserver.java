@@ -42,7 +42,7 @@ public class NewApplyNotifyObserver implements Observer {
             return;
         }
         for (Object destId : destIdSet) {
-            wsEventHandler.handleResponse(GlobalConst.WsEvent.SERVER_PUSH_NEW_APPLY_NOTIFY,
+            wsEventHandler.handleServerPush(GlobalConst.WsEvent.SERVER_PUSH_NEW_APPLY_NOTIFY,
                     (String) destId, notifyList);
         }
     }

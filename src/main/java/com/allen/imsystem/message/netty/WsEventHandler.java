@@ -60,7 +60,7 @@ public class WsEventHandler implements MessageListener {
         }
     }
 
-    public void handleResponse(Integer eventCode, String destId, Integer code, Object errMsg, Object data) {
+    public void handleServerPush(Integer eventCode, String destId, Integer code, Object errMsg, Object data) {
         switch (eventCode) {
             case GlobalConst.WsEvent.SERVER_PUSH_MSG:
             case GlobalConst.WsEvent.SERVER_MSG_ACK_SUCCESS:
@@ -78,24 +78,24 @@ public class WsEventHandler implements MessageListener {
         }
     }
 
-    public void handleResponse(Integer eventCode, String destId, Object data) {
-        handleResponse(eventCode, destId, null, null, data);
+    public void handleServerPush(Integer eventCode, String destId, Object data) {
+        handleServerPush(eventCode, destId, null, null, data);
     }
 
-    public void handleResponse(Integer eventCode, List<Object> destIdList, Object data) {
-        if (CollectionUtils.isEmpty(destIdList) || data == null) {
+    public <K,V> void handleServerPush(Integer eventCode, List<K> destIdList, List<V> dataList) {
+        if (CollectionUtils.isEmpty(destIdList) || dataList == null) {
             return;
         }
-        for (Object destId : destIdList) {
-            handleResponse(eventCode, (String) destId, null, null, data);
+        for (int i = 0; i < destIdList.size(); i++) {
+            handleServerPush(eventCode, (String) destIdList.get(i), null, null, dataList.get(i));
         }
     }
 
-    public void handleResponse(String destId, SocketResponse socketResponse) {
+    public void handleServerPush(String destId, SocketResponse socketResponse) {
         channelGroup.send(destId, socketResponse);
     }
 
-    public void handleResponse(String destId, MultiDataSocketResponse socketResponse) {
+    public void handleServerPush(String destId, MultiDataSocketResponse socketResponse) {
         channelGroup.send(destId, socketResponse);
     }
 

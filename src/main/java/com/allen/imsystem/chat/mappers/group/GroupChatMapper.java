@@ -41,8 +41,7 @@ public interface GroupChatMapper {
     /**
      * 插入用多个户群聊会话关系
      */
-    int insertBatch(@Param("friendList") List<InviteParam> friendList,
-                    @Param("relation") GroupChat relation);
+    int insertBatch(@Param("list") List<GroupChat> groupChatList);
 
     /**
      * 更新用户群聊会话关系

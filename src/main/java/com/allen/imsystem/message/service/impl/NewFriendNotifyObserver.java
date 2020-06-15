@@ -40,7 +40,7 @@ public class NewFriendNotifyObserver implements Observer {
             return;
         }
         for(Object destId:destIdSet){
-            wsEventHandler.handleResponse(GlobalConst.WsEvent.SERVER_PUSH_NEW_FRIEND_NOTIFY,(String)destId,notifyList);
+            wsEventHandler.handleServerPush(GlobalConst.WsEvent.SERVER_PUSH_NEW_FRIEND_NOTIFY,(String)destId,notifyList);
         }
     }
 }

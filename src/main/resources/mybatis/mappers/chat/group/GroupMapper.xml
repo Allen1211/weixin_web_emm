@@ -41,7 +41,7 @@
 
     <!--  插入一个新群-->
     <insert id="insert" parameterType="com.allen.imsystem.chat.model.pojo.Group">
-        INSERT INTO ``group`` (
+        INSERT INTO `group` (
         <trim suffixOverrides=",">
             <if test="gid!=null">gid,</if>
             <if test="groupName!=null">group_name,</if>
@@ -51,7 +51,7 @@
             <if test="lastSenderId!=null">last_sender_id,</if>
             <if test="status!=null">status,</if>
             <if test="createdTime!=null">created_time,</if>
-            <if test="updateTime!=null">update_time,</if>
+            <if test="updateTime!=null">update_time</if>
         </trim>
         )
         VALUES (
@@ -64,7 +64,7 @@
             <if test="lastSenderId!=null">#{lastSenderId},</if>
             <if test="status!=null">#{status},</if>
             <if test="createdTime!=null">#{createdTime},</if>
-            <if test="updateTime!=null">#{updateTime},</if>
+            <if test="updateTime!=null">#{updateTime}</if>
         </trim>
         )
     </insert>

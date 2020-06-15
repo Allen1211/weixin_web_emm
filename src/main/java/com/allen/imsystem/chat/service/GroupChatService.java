@@ -23,15 +23,14 @@ import java.util.Set;
 public interface GroupChatService {
     /**
      * 新建群聊
-     * @param ownerId
-     * @param groupName
-     * @return
+     * @param ownerId 群主id
+     * @param groupName 群名
      */
-    CreateGroupParam createNewGroupChat(String ownerId, String groupName);
+    GroupView createGroup(String ownerId, String groupName);
 
     /**
      * 保存群聊天记录
-     * @param msg
+     * @param msg 消息
      */
     GroupMsgRecord saveGroupChatMsgRecord(SendMsgDTO msg);
     void saveGroupChatMsgRecord(List<GroupMsgRecord> msgRecordList);
@@ -51,7 +50,7 @@ public interface GroupChatService {
      * @param uid
      * @return
      */
-    List<GroupView> getGroupChatList(String uid);
+    List<GroupView> findGroupList(String uid);
 
     /**
      * 获取该群的所有群会话，以Map的形式返回，Key: 群会话所属的用户id
@@ -62,8 +61,8 @@ public interface GroupChatService {
 
     /**
      * 批量拉取好友入群
-     * @param inviterId
-     * @param gid
+     * @param inviterId 邀请者uid
+     * @param gid 群id
      * @param inviteParamList
      * @return
      */
@@ -126,4 +125,13 @@ public interface GroupChatService {
     Map<String,String> updateGroupInfo(MultipartFile multipartFile, String groupName, String gid, String uid);
 
     String getGidFromChatId(Long chatId);
+
+    /**
+     * 开启一个群聊会话
+     * @param uid
+     * @param gid
+     * @return
+     */
+    Map<String, Object> openGroupChat(String uid, String gid);
+
 }

@@ -70,7 +70,7 @@ public class GroupChatServiceImpl implements GroupChatService {
 
     @Override
     @Transactional
-    public CreateGroupParam createNewGroupChat(String ownerId, String groupName) {
+    public GroupView createGroup(String ownerId, String groupName) {
         // 如果没有输入群名，则使用默认群名
         if (StringUtils.isEmpty(groupName)) {
             groupName = GlobalConst.DEFAULT_GROUP_NAME;
@@ -89,7 +89,7 @@ public class GroupChatServiceImpl implements GroupChatService {
         groupChatMapper.insert(groupChat);
         // 缓存更新，默认会话不开启
         redisService.hset(RedisKey.KEY_CHAT_REMOVE, ownerId + gid, true);
-        return new CreateGroupParam(gid, group.getAvatar(), groupName, chatId);
+        return new GroupView(group);
 
     }
 
@@ -107,6 +107,7 @@ public class GroupChatServiceImpl implements GroupChatService {
         groupMsgRecord.setMsgType(msg.getMessageType());
 
         switch (msg.getMessageType()) {
+            case MsgType.GROUP_NOTIFY:
             case GlobalConst.MsgType.TEXT: {    // 文字消息
                 groupMsgRecord.setContent(msg.getMessageText());
                 break;
@@ -156,7 +157,7 @@ public class GroupChatServiceImpl implements GroupChatService {
 
 
     @Override
-    public List<GroupView> getGroupChatList(String uid) {
+    public List<GroupView> findGroupList(String uid) {
         return groupChatMapper.findGroupViewListByUid(uid);
     }
 
@@ -188,7 +189,6 @@ public class GroupChatServiceImpl implements GroupChatService {
             } else if (checkIsGroupMember(dto.getUid(), gid)) { // 如果已经是成员
                 failFactory.appendNotify(dto.getUsername() + "已经是群成员");
             } else {// 可以拉取
-                dto.setChatId(idPoolService.nextChatId(ChatType.GROUP_CHAT));
                 newMemberList.add(dto);
                 successFactory.appendNotify(dto.getUsername() + " 加入了群聊");
             }
@@ -199,38 +199,41 @@ public class GroupChatServiceImpl implements GroupChatService {
             Map<String, GroupChat> oldMembers = groupChatMapper.selectUserChatGroupRelationByUidList(newMemberList, gid);
             if (!CollectionUtils.isEmpty(oldMembers)) {
                 List<InviteParam> oldMemberList = new ArrayList<>(newMemberList.size() - oldMembers.size());
-                for (InviteParam dto : newMemberList) {
-                    GroupChat oldRelation = oldMembers.get(dto.getUid());
+                for (InviteParam newMember : newMemberList) {
+                    GroupChat oldRelation = oldMembers.get(newMember.getUid());
                     // 如果被邀请者曾经是该群成员，那么将其添加到oldMemberList
                     if (oldRelation != null) {
-                        oldMemberList.add(dto);
+                        oldMemberList.add(newMember);
                         // 如果被邀请者曾经是该群成员， 开启关闭状态与原来一致
-                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, dto.getUid() + gid,
+                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, newMember.getUid() + gid,
                                 !oldRelation.getShouldDisplay());
                     } else {// 被邀请者是新成员，会话默认是关闭状态
-                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, dto.getUid() + gid, true);
+                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, newMember.getUid() + gid, true);
                     }
-                    redisService.sSet(RedisKey.KET_GROUP_CHAT_MEMBERS + gid, dto.getUid());
+                    redisService.sSet(RedisKey.KET_GROUP_CHAT_MEMBERS + gid, newMember.getUid());
                 }
                 groupChatMapper.reActivateRelation(oldMemberList, gid);  // 激活曾经进过群的会话
                 newMemberList.removeAll(oldMemberList); // 去除掉所有曾经进过群的旧成员，只剩下未曾进过群的新成员
             }
+            // 批量插入所选好友的用户-群关系，新建他们的群会话
             if (!CollectionUtils.isEmpty(newMemberList)) {
-                GroupChat baseRelation = new GroupChat();
-                baseRelation.setLastAckMsgId(null);
-                baseRelation.setStatus(true);
-                baseRelation.setInviterId(inviterId);
-                baseRelation.setGid(gid);
-                baseRelation.setShouldDisplay(false);
-                groupChatMapper.insertBatch(newMemberList, baseRelation);
+                List<GroupChat> groupChatList = new ArrayList<>(newMemberList.size());
+                for (InviteParam inviteParam : newMemberList) {
+                    GroupChat groupChat = new GroupChat(
+                            idPoolService.nextChatId(ChatType.GROUP_CHAT),
+                            inviteParam.getUid(), gid, null,
+                            inviteParam.getUsername(), inviterId,
+                            true, false,
+                            new Date(), new Date());
+                    groupChatList.add(groupChat);
+                }
+                groupChatMapper.insertBatch(groupChatList);
             }
         }
         // 新启动一个线程处理通知
         new Thread(() -> {
             List<GroupMsgRecord> successNotifyList = successFactory.done();
             if (!CollectionUtils.isEmpty(successNotifyList)) {
-                // 保存成功的群通知到数据库
-                saveGroupChatMsgRecord(successNotifyList);
                 // 推送成功的通知给所有人
                 Set<Object> destIdSet = getGroupMemberFromCache(gid);
                 if (destIdSet != null) {
@@ -338,13 +341,11 @@ public class GroupChatServiceImpl implements GroupChatService {
             redisService.setRemove(key, member.getUid());
             factory.appendNotify(member.getGroupAlias() + " 被群主踢出了群聊");
         }
-        // 保存群通知
-        List<GroupMsgRecord> notifyList = factory.done();
-        saveGroupChatMsgRecord(notifyList);
-        // 发送
-        messageService.sendGroupNotify(allMember, gid, notifyList);
         // 更新数据库
         groupChatMapper.softDeleteGroupMemberBatch(memberList, gid);
+        // 发送群通知
+        List<GroupMsgRecord> notifyList = factory.done();
+        messageService.sendGroupNotify(allMember, gid, notifyList);
     }
 
     @Override
@@ -358,10 +359,6 @@ public class GroupChatServiceImpl implements GroupChatService {
         // 群通知
         GroupNotifyFactory factory = GroupNotifyFactory.getInstance(gid);
         factory.appendNotify("该群已被群主解散");
-        List<GroupMsgRecord> notify = factory.done();
-        saveGroupChatMsgRecord(factory.done());
-        // 发送群通知
-        messageService.sendGroupNotify(allMember, gid, notify);
 
         // 数据库
         groupChatMapper.softDeleteAllMember(gid);
@@ -369,6 +366,10 @@ public class GroupChatServiceImpl implements GroupChatService {
 
         // 缓存删除
         redisService.del(RedisKey.KET_GROUP_CHAT_MEMBERS + gid);
+
+        // 发送群通知
+        List<GroupMsgRecord> notify = factory.done();
+        messageService.sendGroupNotify(allMember, gid, notify);
     }
 
     @Override
@@ -416,6 +417,25 @@ public class GroupChatServiceImpl implements GroupChatService {
             }
         }
         return (String) redisService.get(key);
+    }
+
+    @Override
+    public Map<String, Object> openGroupChat(String uid, String gid) {
+        GroupChat relation = groupChatMapper.findByUidGid(uid, gid);
+        if (relation == null) {
+            throw new BusinessException(ExceptionType.TALK_NOT_VALID);
+        }
+        Boolean isNewTalk = !relation.getShouldDisplay();
+        if (isNewTalk) {
+            relation.setShouldDisplay(true);
+            relation.setUpdateTime(new Date());
+            groupChatMapper.update(relation);
+        }
+        redisService.hset(RedisKey.KEY_CHAT_REMOVE, uid + gid, false);
+        Map<String, Object> result = new HashMap<>(2);
+        result.put("isNewTalk", isNewTalk);
+        result.put("relation", relation);
+        return result;
     }
 
     private void loadGroupMemberListIntoRedis(String gid) {

@@ -1,6 +1,7 @@
 package com.allen.imsystem.message.model.vo;
 
 import com.allen.imsystem.file.model.MsgFileInfo;
+import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
 import lombok.Data;
 
 @Data
@@ -16,6 +17,8 @@ public class SendMsgDTO {
     private String timeStamp;
     private Boolean isGroup;
     private String gid;
+
+
 }
 
 

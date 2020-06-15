@@ -6,6 +6,7 @@ import com.allen.imsystem.common.redis.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -84,6 +85,22 @@ public class MessageCounter {
      */
     public void incrGroupChatNewMsgCount(Set<Object> memberIdSet, String gid) {
         for (Object id : memberIdSet) {
+            String key = id + gid;
+            if (!redisService.hHasKey(GlobalConst.RedisKey.KEY_CHAT_UNREAD_COUNT, key)) {
+                redisService.hset(GlobalConst.RedisKey.KEY_CHAT_UNREAD_COUNT, key, 1L);
+            } else {
+                redisService.hincr(GlobalConst.RedisKey.KEY_CHAT_UNREAD_COUNT, key, 1L);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param memberIdList
+     * @param gid
+     */
+    public void incrGroupChatNewMsgCount(List<String> memberIdList, String gid) {
+        for (String id : memberIdList) {
             String key = id + gid;
             if (!redisService.hHasKey(GlobalConst.RedisKey.KEY_CHAT_UNREAD_COUNT, key)) {
                 redisService.hset(GlobalConst.RedisKey.KEY_CHAT_UNREAD_COUNT, key, 1L);

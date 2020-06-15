@@ -39,7 +39,7 @@ public interface FriendGroupMapper {
      * @param groupId 分组id
      * @return 是否有效
      */
-    Boolean isGroupValid(Integer groupId);
+    boolean isGroupValid(Integer groupId);
 
     /**
      * 查询好友分组列表，并且统计每一个分组的好友数
@@ -54,7 +54,7 @@ public interface FriendGroupMapper {
      * @param uid 用户uid
      * @return 该分组的好友数
      */
-    Integer selectGroupSize(@Param("groupId") Integer groupId, @Param("uid") String uid);
+    int selectGroupSize(@Param("groupId") Integer groupId, @Param("uid") String uid);
 
     /**
      * 查询某用户的默认好友分组
@@ -69,7 +69,7 @@ public interface FriendGroupMapper {
      * @param groupName 分组名
      * @param uid 用户uid
      */
-    Integer updateFriendGroupName(@Param("groupId") Integer groupId, @Param("groupName") String groupName,
+    int updateFriendGroupName(@Param("groupId") Integer groupId, @Param("groupName") String groupName,
                                   @Param("uid") String uid);
 
     /**
@@ -77,7 +77,7 @@ public interface FriendGroupMapper {
      * @param groupId 好友分组id
      * @param uid 用户uid
      */
-    Integer deleteFriendGroup(@Param("groupId") Integer groupId, @Param("uid") String uid);
+    int deleteFriendGroup(@Param("groupId") Integer groupId, @Param("uid") String uid);
 
     /**
      * 把某个分组的所有好友移到默认分组
@@ -85,7 +85,7 @@ public interface FriendGroupMapper {
      * @param groupId 源分组
      * @param uid 用户uid
      */
-    Integer moveGroupFriendToDefaultGroup(@Param("defaultGroupId") Integer defaultGroupId, @Param("groupId") Integer groupId, @Param("uid") String uid);
+    int moveGroupFriendToDefaultGroup(@Param("defaultGroupId") Integer defaultGroupId, @Param("groupId") Integer groupId, @Param("uid") String uid);
 
     /**
      * 把某个好友移到另一个分组
@@ -94,23 +94,27 @@ public interface FriendGroupMapper {
      * @param oldGroupId 旧分组id
      * @param newGroupId 新分组id
      */
-    Integer moveFriendToAnotherGroup(@Param("uid") String uid, @Param("friendId") String friendId,
+    int moveFriendToAnotherGroup(@Param("uid") String uid, @Param("friendId") String friendId,
                                      @Param("oldGroupId") Integer oldGroupId, @Param("newGroupId") Integer newGroupId);
 
     /**
-     * 插入新的好友分组
-     * @param uid 用户id
-     * @param groupName 分组名
-     * @param isDefault 是否默认分组
+     * 插入一条记录
      */
-    Integer insertNewFriendGroup(@Param("uid") String uid,
-                                 @Param("groupName") String groupName, @Param("isDefault") Boolean isDefault);
-
     int insert(FriendGroupPojo friendGroupPojo);
 
+    /**
+     * 更新一条记录
+     */
     int updateById(FriendGroupPojo friendGroupPojo);
 
+    /**
+     * 查询一条记录
+     */
     FriendGroupPojo selectById(@Param("id") Integer friendGroupId);
 
+    /**
+     * 查询所有
+     * @return
+     */
     List<FriendGroupPojo> selectAll();
 }
