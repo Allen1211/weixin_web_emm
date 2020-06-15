@@ -59,6 +59,7 @@ public interface PrivateChatMapper {
      */
     List<ChatSession> findChatSessionListByUid(String uid);
 
+
     /**
      *
      * @param chatId

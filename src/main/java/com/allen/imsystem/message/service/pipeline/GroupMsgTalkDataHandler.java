@@ -11,12 +11,14 @@ import com.allen.imsystem.message.model.vo.PushMessageDTO;
 import com.allen.imsystem.message.model.vo.SendMsgDTO;
 import com.allen.imsystem.message.service.impl.MessageCounter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Scope("prototype")
 public class GroupMsgTalkDataHandler extends GroupMsgHandler {
 
     @Autowired

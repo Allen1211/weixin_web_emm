@@ -7,10 +7,12 @@ import com.allen.imsystem.message.model.vo.SendMsgDTO;
 import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
 import com.allen.imsystem.chat.service.GroupChatService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Scope("prototype")
 public class GroupMsgSaveHandler extends GroupMsgHandler {
 
     @Autowired

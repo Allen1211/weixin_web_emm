@@ -100,18 +100,17 @@ public class MsgHandlerFactory {
      * @return 处理链入口
      */
     private static MsgHandler createGroupNotifyMsgHandlerLink() {
-        MsgHandler priMsgSaveHandler = BeanUtil.getBean(GroupMsgSaveHandler.class); // 消息入库
+        MsgHandler groupMsgSaveHandler = BeanUtil.getBean(GroupMsgSaveHandler.class); // 消息入库
         MsgHandler msgOnlineFilterHandler = BeanUtil.getBean(MsgOnlineFilterHandler.class);   //在线用户推送过滤
         MsgHandler msgRecordPackHandler =
                 BeanUtil.getBean(MsgRecordPackHandler.class, BeanUtil.getBean(GroupNotifyMsgRecordFactory.class));   // 消息内容填充
         MsgHandler groupMsgTalkDataHandler = BeanUtil.getBean(GroupMsgTalkDataHandler.class); // 消息会话数据填充
 
-        priMsgSaveHandler.nextHandler(priMsgSaveHandler)
-                .nextHandler(msgOnlineFilterHandler)
+        groupMsgSaveHandler.nextHandler(msgOnlineFilterHandler)
                 .nextHandler(msgRecordPackHandler)
                 .nextHandler(groupMsgTalkDataHandler);
 
-        return priMsgSaveHandler;
+        return groupMsgSaveHandler;
     }
 
 
