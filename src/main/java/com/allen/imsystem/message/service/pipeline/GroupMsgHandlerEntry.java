@@ -1,7 +1,7 @@
 package com.allen.imsystem.message.service.pipeline;
 
 
-import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.utils.BeanUtil;
 import com.allen.imsystem.id.IdPoolService;
 import com.allen.imsystem.message.model.vo.OneToManyDiffMsgPushPacket;
@@ -26,7 +26,7 @@ import java.util.Set;
 public class GroupMsgHandlerEntry extends GroupMsgHandler {
 
     @Autowired
-    private GroupChatService groupChatService;
+    private GroupService groupService;
 
     private final IdPoolService idPoolService;
 
@@ -45,7 +45,7 @@ public class GroupMsgHandlerEntry extends GroupMsgHandler {
         if(msgPushPacket.getPushMessageList() == null){
             String gid = sendMsgDTO.getGid();
             // 初始化destIdList，转发给其他群员
-            Set<Object> memberIdSet = groupChatService.getGroupMemberFromCache(gid);
+            Set<Object> memberIdSet = groupService.getGroupMemberFromCache(gid);
             memberIdSet.remove(sendMsgDTO.getSrcId());  //去掉发送者
             List<String> destIdList = new ArrayList<>();
             for(Object memberId : memberIdSet){

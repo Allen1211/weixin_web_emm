@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-@WebFilter(filterName = "LogFilter",urlPatterns = "/*")
+//@WebFilter(filterName = "LogFilter",urlPatterns = "/*")
 public class LogFilter implements Filter {
 
     @Override

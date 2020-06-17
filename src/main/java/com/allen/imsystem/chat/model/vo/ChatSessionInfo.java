@@ -1,6 +1,7 @@
 package com.allen.imsystem.chat.model.vo;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,7 +20,8 @@ public class ChatSessionInfo implements Serializable {
     private String gid;
     private String groupAlias;
 
-
+    @JsonIgnore
+    private boolean isOpen;
 
     public ChatSessionInfo() {
     }

@@ -16,7 +16,6 @@ public class App {
             ConfigurableApplicationContext context = SpringApplication.run(App.class, args);
 //            BeanUtil.setApplicationContext(context);
         }catch(Exception e){
-            e.printStackTrace();
         }
     }
 }

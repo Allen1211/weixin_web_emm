@@ -2,6 +2,7 @@ package com.allen.imsystem.friend.service.impl;
 
 import com.allen.imsystem.chat.service.ChatService;
 import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
@@ -48,6 +49,9 @@ public class FriendQueryServiceImpl implements FriendQueryService {
 
     @Autowired
     private GroupChatService groupChatService;
+
+    @Autowired
+    private GroupService groupService;
 
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
@@ -166,7 +170,7 @@ public class FriendQueryServiceImpl implements FriendQueryService {
     public List<FriendInfoForInvite> getFriendListForInvite(String uid, String gid) {
         List<FriendInfoForInvite> resultList = friendMapper.selectFriendListForInvite(uid);
         for(FriendInfoForInvite friend : resultList){
-            if(groupChatService.checkIsGroupMember(friend.getFriendInfo().getUid(),gid)){
+            if(groupService.checkIsGroupMember(friend.getFriendInfo().getUid(),gid)){
                 friend.setCanInvite(false);
                 friend.setReason("已是群成员");
             }else {

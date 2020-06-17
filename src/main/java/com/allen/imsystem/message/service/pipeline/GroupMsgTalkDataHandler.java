@@ -68,9 +68,9 @@ public class GroupMsgTalkDataHandler extends GroupMsgHandler {
 
     private boolean checkIsNewGroupChatAndActivate(String uid, String gid) {
         // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-        boolean isNewTalk = !chatService.isGroupChatSessionOpenToUser(uid, gid);
+        boolean isNewTalk = !groupChatService.isOpen(uid, gid);
         if (isNewTalk) {  // 如果是这个用户是新会话，那么更新为显示状态
-            chatService.openGroupChat(uid, gid);
+            groupChatService.open(uid, gid);
         }
         return isNewTalk;
     }

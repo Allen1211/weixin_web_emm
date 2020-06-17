@@ -2,9 +2,7 @@ package com.allen.imsystem.chat.service;
 
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
-import com.allen.imsystem.message.model.vo.SendMsgDTO;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
-import com.allen.imsystem.message.model.pojo.PrivateMsgRecord;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -14,84 +12,11 @@ import java.util.Map;
 @Service
 public interface ChatService {
 
-    boolean isGroupChat(Long chatId);
-
     /**
      * 获得会话类型
      * @return
      */
-    Integer getChatType(String chatIdStr);
-    Integer getChatType(Long chatId);
-
-    /**
-     * 判断某个会话是否被用户移除
-     * @param uid
-     * @param chatId
-     * @return
-     */
-    Boolean isPrivateChatSessionOpenToUser(String uid, Long chatId);
-    Boolean isGroupChatSessionOpenToUser(String uid, String gid);
-
-    /**
-     * 获取某个会话最后一条消息的时间
-     * @param chatId
-     * @return
-     */
-    Long getChatLastMsgTimestamp(Long chatId);
-
-    /**
-     * 设置某个会话最后一条消息的时间
-     * @param chatId
-     * @param timestamp
-     * @return
-     */
-    boolean setChatLastMsgTimestamp(Long chatId, Long timestamp);
-
-
-    /**
-     * 初始化一个私聊会话
-     * @param uid
-     * @param friendId
-     * @param status
-     * @return
-     */
-    PrivateChat initNewPrivateChat(String uid, String friendId, Boolean status);
-
-    /**
-     * 开启一个对好友的私聊会话
-     * @param uid
-     * @param friendId
-     */
-    Map<String, Object> openNewPrivateChat(String uid, String friendId);
-
-    /**
-     * 开启一个群聊会话
-     * @param uid
-     * @param gid
-     * @return
-     */
-    Map<String, Object> openGroupChat(String uid, String gid);
-
-    /**
-     * 移除一个对好友的私聊会话
-     * @param uid
-     * @param chatId
-     */
-    void removePrivateChat(String uid, Long chatId);
-
-    /**
-     * 移除一个对好友的私聊会话
-     * @param uid
-     * @param friendId
-     */
-    void removePrivateChat(String uid, String friendId);
-
-    /**
-     * 移除一个群聊会话
-     * @param uid
-     * @param chatId
-     */
-    void removeGroupChat(String uid, Long chatId);
+    int getChatType(Long chatId);
 
     /**
      * 获取会话列表
@@ -104,60 +29,41 @@ public interface ChatService {
      * @param chatId
      * @return
      */
-    ChatSessionInfo getChatInfo(Long chatId, String uid);
+    Map<String,Object> getChatInfo(Long chatId, String uid);
 
     /**
-     * 标识一个私聊会话的所有消息已读
-     * @param uid
+     * 获取某个会话最后一条消息的时间
      * @param chatId
      * @return
      */
-    Boolean setPrivateChatAllMsgHasRead(String uid, Long chatId);
-    /**
-     * 标识一个群聊会话的所有消息已读
-     * @param uid
-     * @return
-     */
-    Boolean setGroupChatAllMsgHasRead(String uid, String gid);
+    Long getChatLastMsgTimestamp(Long chatId);
 
     /**
-     * 获取一个会话的聊天记录
-     * @param uid
+     * 设置某个会话最后一条消息的时间
      * @param chatId
-     * @param index
-     * @param pageSize
-     * @return
+     * @param timestamp
      */
-    Map<String,Object> getMessageRecord(boolean isGroup, String uid, Long chatId, Integer index, Integer pageSize);
+    void setChatLastMsgTimestamp(Long chatId, Long timestamp);
 
     /**
-     * 获取某个会话所有聊天记录的条数
-     * @param chatId
-     * @param uid
-     * @param beginTime
-     * @return
+     * 标识一个会话的所有消息已读
+     * @param chatType 会话类型
+     * @param uid 用户id
+     * @param id 会话或是群的id，若为私聊会话，则为chatId, 若为群聊，则为gid
      */
-    Integer getAllHistoryMessageSize(boolean isgGroup, Long chatId, String uid, Date beginTime);
-
-
-    /**
-     * 私聊消息入库
-     * @param sendMsgDTO
-     * @return
-     */
-    PrivateMsgRecord savePrivateMsgRecord(SendMsgDTO sendMsgDTO);
+    void setChatAllMsgHasRead(int chatType, String uid, String id);
 
     /**
      * 更新会话的最后一条信息
-     * @param chatId 会话id
+     * @param chatType 会话类型
+     * @param id 会话或是群的id，若为私聊会话，则为chatId, 若为群聊，则为gid
      * @param msgId 消息id
-     * @param senderId 发送者id
      * @param lastMsgContent 消息内容
      * @param lastMsgCreateTime 消息创建时间
-     * @return
+     * @param senderId 发送者id
      */
-    boolean updateChatLastMsg(Long chatId, Long msgId, String lastMsgContent,
-                              Date lastMsgCreateTime, String senderId);
+    void updateChatLastMsg(int chatType ,String id, Long msgId, String lastMsgContent,
+                           Date lastMsgCreateTime, String senderId);
 
     Map<String,Object> validateChatId(Long chatId, String uid);
 

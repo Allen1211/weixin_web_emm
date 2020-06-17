@@ -1,11 +1,11 @@
 package com.allen.imsystem.chat.controller;
 
-import com.alibaba.fastjson.JSONArray;
-import com.allen.imsystem.chat.model.param.CreateGroupParam;
 import com.allen.imsystem.chat.model.param.KickMemberParam;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.model.vo.GroupMemberView;
+import com.allen.imsystem.chat.service.GroupService;
+import com.allen.imsystem.chat.service.PrivateChatService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.bean.JSONResponse;
 import com.allen.imsystem.common.cache.ICacheHolder;
@@ -18,6 +18,7 @@ import com.allen.imsystem.chat.model.pojo.GroupChat;
 import com.allen.imsystem.chat.model.vo.GroupView;
 import com.allen.imsystem.chat.service.ChatService;
 import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.message.service.MsgRecordService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.beanutils.BeanMap;
@@ -44,7 +45,16 @@ public class TalkController {
     private ChatService chatService;
 
     @Autowired
+    private PrivateChatService privateChatService;
+
+    @Autowired
     private GroupChatService groupChatService;
+
+    @Autowired
+    private GroupService groupService;
+
+    @Autowired
+    private MsgRecordService msgRecordService;
 
     /**
      * 获取会话的一些信息，只在用户点击一个会话的时候，调用此接口，故可认为对于该用户该会话所有消息已读。
@@ -53,17 +63,10 @@ public class TalkController {
     @RequestMapping(value = "/getTalkData", method = RequestMethod.GET)
     public JSONResponse getTalkData(@RequestParam("talkId") String chatIdStr, HttpServletRequest request) {
         Long chatId = Long.valueOf(chatIdStr);
+        int chatType = chatService.getChatType(chatId);
         String uid = cacheHolder.getUid(request);
-        ChatSessionInfo chatSessionInfo = chatService.getChatInfo(chatId, uid);
-        if(chatSessionInfo == null){
-            throw new BusinessException(ExceptionType.TALK_NOT_VALID);
-        }
-        if(chatSessionInfo.getIsGroup()){
-            chatService.setGroupChatAllMsgHasRead(uid,chatSessionInfo.getGid());
-        }else{
-            chatService.setPrivateChatAllMsgHasRead(uid, chatId);
-        }
-        return new JSONResponse(1).putAllData(new BeanMap(chatSessionInfo));
+        Map<String,Object> resultMap = chatService.getChatInfo(chatId, uid);
+        return new JSONResponse(1).putAllData(resultMap);
     }
 
     /**
@@ -84,11 +87,11 @@ public class TalkController {
     public JSONResponse setHasRead(@RequestBody Map<String, String> params, HttpServletRequest request) {
         Long chatId = Long.parseLong(params.get("talkId"));
         String uid = cacheHolder.getUid(request);
-        if(GlobalConst.ChatType.PRIVATE_CHAT.equals(chatService.getChatType(chatId))){
-            chatService.setPrivateChatAllMsgHasRead(uid, chatId);
-        }else{
+        if (GlobalConst.ChatType.PRIVATE_CHAT == chatService.getChatType(chatId)) {
+            privateChatService.setAllMsgHasRead(uid, chatId);
+        } else {
             String gid = params.get("gid");
-            chatService.setGroupChatAllMsgHasRead(uid,gid);
+            groupChatService.setAllMsgHasRead(uid, gid);
         }
         return new JSONResponse(1);
     }
@@ -101,12 +104,12 @@ public class TalkController {
         String uid = cacheHolder.getUid(request);
         Long chatId = Long.valueOf(params.get("talkId"));
         Integer index = Integer.valueOf(params.get("index"));
-        Integer pageSize = 10;
+        int pageSize = 10;
         if (params.get("pageSize") != null) {
-            pageSize = Integer.valueOf(params.get("pageSize"));
+            pageSize = Integer.parseInt(params.get("pageSize"));
         }
-        boolean isGroup = GlobalConst.ChatType.GROUP_CHAT.equals(chatService.getChatType(chatId));
-        Map<String, Object> resultMap = chatService.getMessageRecord(isGroup, uid, chatId, index, pageSize);
+        boolean isGroup = GlobalConst.ChatType.GROUP_CHAT == chatService.getChatType(chatId);
+        Map<String, Object> resultMap = msgRecordService.getMessageRecord(isGroup, uid, chatId, index, pageSize);
         return new JSONResponse(1).putAllData(resultMap);
     }
 
@@ -117,7 +120,7 @@ public class TalkController {
     public JSONResponse openPrivateTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String friendId = params.get("friendId");
-        Map<String, Object> result = chatService.openNewPrivateChat(uid, friendId);
+        Map<String, Object> result = privateChatService.open(uid, friendId);
         PrivateChat privateChat = (PrivateChat) result.get("privateChat");
         return new JSONResponse(1)
                 .putData("talkId", privateChat.getChatId().toString())
@@ -131,7 +134,7 @@ public class TalkController {
     public JSONResponse openGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        Map<String, Object> result = groupChatService.openGroupChat(uid, gid);
+        Map<String, Object> result = groupChatService.open(uid, gid);
         GroupChat relation = (GroupChat) result.get("relation");
         return new JSONResponse(1)
                 .putData("talkId", relation.getChatId().toString())
@@ -145,11 +148,11 @@ public class TalkController {
     public JSONResponse removeTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         Long chatId = Long.valueOf(params.get("talkId"));
-        Integer chatType = chatService.getChatType(chatId);
-        if (GlobalConst.ChatType.PRIVATE_CHAT.equals(chatType)) {
-            chatService.removePrivateChat(uid, chatId);
-        } else if(GlobalConst.ChatType.GROUP_CHAT.equals(chatType)){
-            chatService.removeGroupChat(uid, chatId);
+        int chatType = chatService.getChatType(chatId);
+        if (GlobalConst.ChatType.PRIVATE_CHAT == chatType) {
+            privateChatService.remove(uid, chatId);
+        } else if (GlobalConst.ChatType.GROUP_CHAT == chatType) {
+            groupChatService.remove(uid, chatId);
         }
         return new JSONResponse(1);
     }
@@ -161,7 +164,7 @@ public class TalkController {
     public JSONResponse createGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
         String groupName = params.get("groupName");
-        GroupView groupView = groupChatService.createGroup(uid, groupName);
+        GroupView groupView = groupService.createGroup(uid, groupName);
         return new JSONResponse(1).putAllData(new BeanMap(groupView));
     }
 
@@ -171,7 +174,7 @@ public class TalkController {
     @RequestMapping(value = "/getGroupTalkList", method = RequestMethod.GET)
     public JSONResponse getGroupTalkList(HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<GroupView> resultList = groupChatService.findGroupList(uid);
+        List<GroupView> resultList = groupService.findGroupList(uid);
         return new JSONResponse(1).putData("groupTalkList", resultList);
     }
 
@@ -181,7 +184,7 @@ public class TalkController {
     @RequestMapping(value = "/getGroupTalkMember", method = RequestMethod.GET)
     public JSONResponse getGroupTalkMember(@RequestParam("gid") String gid, HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        List<GroupMemberView> groupMemberList = groupChatService.getGroupMemberList(uid, gid);
+        List<GroupMemberView> groupMemberList = groupService.getGroupMemberList(uid, gid);
         return new JSONResponse(1).putData("memberList", groupMemberList);
     }
 
@@ -193,7 +196,7 @@ public class TalkController {
         String gid = param.getGid();
         List<InviteParam> invitedFriendList = param.getInviteFriendList();
         String inviterId = cacheHolder.getUid(request);
-        boolean success = groupChatService.inviteFriendToChatGroup(inviterId, gid, invitedFriendList);
+        boolean success = groupService.inviteFriendToGroup(inviterId, gid, invitedFriendList);
         return new JSONResponse(1);
     }
 
@@ -204,7 +207,7 @@ public class TalkController {
     public JSONResponse leaveGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        groupChatService.leaveGroupChat(uid, gid);
+        groupService.leaveGroupChat(uid, gid);
         return new JSONResponse(1);
     }
 
@@ -215,7 +218,7 @@ public class TalkController {
     public JSONResponse dismissGroupTalk(@RequestBody Map<String, String> params, HttpServletRequest request) throws Exception {
         String uid = cacheHolder.getUid(request);
         String gid = params.get("gid");
-        groupChatService.dismissGroupChat(uid, gid);
+        groupService.dismissGroupChat(uid, gid);
         return new JSONResponse(1);
     }
 
@@ -227,7 +230,7 @@ public class TalkController {
         String uid = cacheHolder.getUid(request);
         String gid = param.getGid();
         List<GroupMemberView> memberList = param.getMemberList();
-        groupChatService.kickOutGroupMember(memberList, gid, uid);
+        groupService.kickOutGroupMember(memberList, gid, uid);
         return new JSONResponse(1);
     }
 
@@ -239,7 +242,7 @@ public class TalkController {
         String gid = params.get("gid");
         String groupAlias = params.get("groupAlias");
         String uid = cacheHolder.getUid(request);
-        groupChatService.changeUserGroupAlias(uid, gid, groupAlias);
+        groupService.changeUserGroupAlias(uid, gid, groupAlias);
         return new JSONResponse(1);
     }
 
@@ -248,25 +251,25 @@ public class TalkController {
      */
     @RequestMapping(value = "/updateGroupTalkInfo", method = RequestMethod.POST)
     public JSONResponse updateGroupTalkInfo(@RequestParam("gid") String gid,
-                                          @RequestParam(value = "groupName", required = false) String groupName,
-                                          @RequestParam(value = "groupAvatar", required = false) MultipartFile multipartFile,
-                                          HttpServletRequest request){
+                                            @RequestParam(value = "groupName", required = false) String groupName,
+                                            @RequestParam(value = "groupAvatar", required = false) MultipartFile multipartFile,
+                                            HttpServletRequest request) {
         String uid = cacheHolder.getUid(request);
-        Map<String, String> result = groupChatService.updateGroupInfo(multipartFile, groupName, gid, uid);
+        Map<String, String> result = groupService.updateGroupInfo(multipartFile, groupName, gid, uid);
         return new JSONResponse(1).putAllData(result);
     }
 
     /**
      * 检验某个chatId是否有效
      */
-    @RequestMapping(value = "/validateTalkId",method = RequestMethod.GET)
-    public JSONResponse validateTalkId(@RequestParam("talkId")String talkId, HttpServletRequest request){
-        if(StringUtils.isEmpty(talkId) || !StringUtils.isNumeric(talkId)){
-            return new JSONResponse().success().putData("hasThisTalk",false);
+    @RequestMapping(value = "/validateTalkId", method = RequestMethod.GET)
+    public JSONResponse validateTalkId(@RequestParam("talkId") String talkId, HttpServletRequest request) {
+        if (StringUtils.isEmpty(talkId) || !StringUtils.isNumeric(talkId)) {
+            return new JSONResponse().success().putData("hasThisTalk", false);
         }
         String uid = cacheHolder.getUid(request);
         Long chatId = Long.parseLong(talkId);
-        Map<String,Object> result = chatService.validateChatId(chatId,uid);
+        Map<String, Object> result = chatService.validateChatId(chatId, uid);
         return new JSONResponse().success().putAllData(result);
     }
 

@@ -51,7 +51,7 @@
 
     <!--    获取一个群聊会话的一些信息-->
     <select id="selectGroupChatData" resultMap="com.allen.imsystem.chat.mappers.ChatSessionMapper.chatSessionInfoMap">
-        SELECT gc.chat_id,gc.gid as dest_id,g.owner_id as src_id,1 as isGroup, group_name as title,gc.user_alias
+        SELECT gc.chat_id,gc.gid as dest_id,g.owner_id as src_id,1 as isGroup, g.group_name as title, gc.user_alias
         FROM group_chat as gc
         INNER JOIN `group` as g ON gc.gid = g.gid
         WHERE gc.chat_id = #{chatId}

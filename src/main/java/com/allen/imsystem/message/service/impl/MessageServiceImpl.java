@@ -1,35 +1,36 @@
 package com.allen.imsystem.message.service.impl;
 
-import com.allen.imsystem.chat.model.vo.ChatSession;
+import com.allen.imsystem.chat.mappers.group.GroupMapper;
 import com.allen.imsystem.chat.service.ChatService;
 import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.bean.ErrMsg;
-import com.allen.imsystem.common.utils.BeanUtil;
+import com.allen.imsystem.common.redis.RedisService;
+import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.MutableSingletonList;
+import com.allen.imsystem.friend.service.FriendQueryService;
+import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
 import com.allen.imsystem.message.model.vo.*;
+import com.allen.imsystem.message.netty.WsEventHandler;
 import com.allen.imsystem.message.netty.bean.MultiDataSocketResponse;
 import com.allen.imsystem.message.netty.bean.ServerAckDTO;
 import com.allen.imsystem.message.netty.bean.SocketResponse;
+import com.allen.imsystem.message.service.MessageService;
 import com.allen.imsystem.message.service.pipeline.MsgHandler;
 import com.allen.imsystem.message.service.pipeline.MsgHandlerFactory;
-import com.allen.imsystem.common.utils.FormatUtil;
-import com.allen.imsystem.chat.mappers.group.GroupMapper;
-import com.allen.imsystem.friend.service.FriendQueryService;
-import com.allen.imsystem.message.service.MessageService;
-import com.allen.imsystem.chat.model.pojo.Group;
-import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
-import com.allen.imsystem.message.netty.WsEventHandler;
-import com.allen.imsystem.common.redis.RedisService;
 import com.allen.imsystem.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
-import static com.allen.imsystem.message.service.pipeline.MsgHandlerFactory.*;
+import static com.allen.imsystem.message.service.pipeline.MsgHandlerFactory.MsgHandlerType;
 
 @Lazy
 @DependsOn("beanUtil")
@@ -40,29 +41,13 @@ public class MessageServiceImpl implements MessageService {
     private WsEventHandler wsEventHandler;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
-    private ChatService chatService;
-
-    @Autowired
     private FriendQueryService friendQueryService;
-
-    @Autowired
-    private RedisService redisService;
 
     @Autowired
     private GroupChatService groupChatService;
 
     @Autowired
-    private GroupMapper groupMapper;
-
-    @Autowired
-    private MessageCounter messageCounter;
-
-    private MsgHandler privateMsgHandler;
-
-    private MsgHandler groupMsgHandler;
+    private GroupService groupService;
 
     public MessageServiceImpl() {
     }
@@ -94,7 +79,7 @@ public class MessageServiceImpl implements MessageService {
         String gid = sendMsgDTO.getGid();
 
         // 0、检查是否是该群成员
-        boolean isMember = groupChatService.checkIsGroupMember(sendMsgDTO.getSrcId(), gid);
+        boolean isMember = groupService.checkIsGroupMember(sendMsgDTO.getSrcId(), gid);
         if (!isMember) {
             handleSendFail(sendMsgDTO, "您还不是该群成员，或群已解散，无法发送消息");
             return;

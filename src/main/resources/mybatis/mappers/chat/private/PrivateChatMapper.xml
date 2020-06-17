@@ -56,11 +56,11 @@
     <select id="selectPrivateChatData" resultMap="com.allen.imsystem.chat.mappers.ChatSessionMapper.chatSessionInfoMap">
         SELECT pc.chat_id,pc.uid_a as dest_id,pc.uid_b as src_id ,ui.username as title,0 as isGroup FROM private_chat as pc
         INNER JOIN user_info as ui ON ui.uid = pc.uid_a
-        WHERE chat_id=#{chatId} AND pc.uid_b = #{uid}
+        WHERE chat_id=#{chatId}
         UNION ALL
         SELECT pc.chat_id,pc.uid_b as dest_id,pc.uid_a as src_id,ui.username as title,0 as isGroup FROM private_chat as pc
         INNER JOIN user_info as ui ON ui.uid = pc.uid_b
-        WHERE chat_id=#{chatId} AND pc.uid_a = #{uid}
+        WHERE chat_id=#{chatId}
         LIMIT 1
     </select>
 

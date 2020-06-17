@@ -1,6 +1,7 @@
 package com.allen.imsystem.message.service.pipeline;
 
 import com.allen.imsystem.chat.service.ChatService;
+import com.allen.imsystem.chat.service.PrivateChatService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.chat.mappers.PrivateChatMapper;
@@ -20,6 +21,9 @@ import java.util.Date;
 @Component
 @Scope("prototype")
 public class PriMsgTalkDataHandler extends PrivateMsgHandler {
+
+    @Autowired
+    private PrivateChatService privateChatService;
 
     @Autowired
     private ChatService chatService;
@@ -52,7 +56,7 @@ public class PriMsgTalkDataHandler extends PrivateMsgHandler {
 
     private boolean checkIsNewPrivateChatAndActivate(String uid, Long chatId) {
         // 2、判断是否是新会话（收到信息的用户，该用户的会话是否处于有效状态)
-        boolean isNewTalk = !chatService.isPrivateChatSessionOpenToUser(uid, chatId);
+        boolean isNewTalk = !privateChatService.isOpen(uid, chatId);
 
         if (isNewTalk) { // 如果是新会话，更新
             redisService.hset(GlobalConst.RedisKey.KEY_CHAT_REMOVE, uid + chatId, false);

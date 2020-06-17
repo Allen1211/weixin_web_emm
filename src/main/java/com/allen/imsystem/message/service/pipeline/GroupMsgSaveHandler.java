@@ -6,6 +6,7 @@ import com.allen.imsystem.message.model.vo.PushMessageDTO;
 import com.allen.imsystem.message.model.vo.SendMsgDTO;
 import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
 import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.message.service.MsgRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -18,12 +19,15 @@ public class GroupMsgSaveHandler extends GroupMsgHandler {
     @Autowired
     private GroupChatService groupChatService;
 
+    @Autowired
+    private MsgRecordService msgRecordService;
+
     @Override
     @Transactional
     public void handleMsg(OneToOneMsgSendPacket<String, SendMsgDTO> msgSendPacket, OneToManyDiffMsgPushPacket<String, PushMessageDTO> msgPacket) {
         // 2、消息入库
         // 2.1 插入聊天记录 , 并更新该群的最后一条消息
-        GroupMsgRecord groupMsgRecord = groupChatService.saveGroupChatMsgRecord(msgSendPacket.getSendMessage());
+        GroupMsgRecord groupMsgRecord = msgRecordService.saveGroupChatMsgRecord(msgSendPacket.getSendMessage());
         groupChatService.updateGroupLastMsg(groupMsgRecord.getGid(), groupMsgRecord.getMsgId(),
                 groupMsgRecord.getContent(),groupMsgRecord.getCreatedTime(),
                 groupMsgRecord.getSenderId());

@@ -1,6 +1,7 @@
 package com.allen.imsystem.friend.service.impl;
 
 import com.allen.imsystem.chat.service.ChatService;
+import com.allen.imsystem.chat.service.PrivateChatService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
@@ -48,6 +49,9 @@ public class FriendUpdateServiceImpl implements FriendUpdateService {
 
     @Autowired
     private PrivateChatMapper privateChatMapper;
+
+    @Autowired
+    private PrivateChatService privateChatService;
 
     @Autowired
     private ChatService chatService;
@@ -137,7 +141,7 @@ public class FriendUpdateServiceImpl implements FriendUpdateService {
             PrivateChat privateChat = privateChatMapper.findByUidAB(uidAB.getUidA(),uidAB.getUidB());
             if(privateChat == null){
                 new Thread(() -> {
-                    chatService.initNewPrivateChat(uid, friendId, false);
+                    privateChatService.init(uid, friendId, false);
                 }).start();
             }
         }
@@ -205,7 +209,7 @@ public class FriendUpdateServiceImpl implements FriendUpdateService {
             sortDeleteFriend(uid, friendId);
         }
         // 移除掉与好友的会话
-        chatService.removePrivateChat(uid, friendId);
+        privateChatService.remove(uid, friendId);
 
         // 2、更新缓存
         removeFriendFromRedis(uid, friendId);

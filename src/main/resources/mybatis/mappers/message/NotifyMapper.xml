@@ -60,7 +60,7 @@
     </insert>
 
     <update id="deleteAllNotify">
-        UPDATE apply_notify SET `status` = 0, update_time=NOW(6) WHERE uid=#{uid} and type=#{type}
+        UPDATE apply_notify SET `status` = 0, update_time=NOW(6) WHERE uid=#{uid} and `type`=#{type}
     </update>
 
 </mapper>

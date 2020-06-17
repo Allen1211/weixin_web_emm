@@ -7,6 +7,7 @@ import com.allen.imsystem.message.netty.bean.MultiDataSocketResponse;
 import com.allen.imsystem.message.netty.bean.SocketResponse;
 import com.allen.imsystem.message.service.MessageService;
 import com.allen.imsystem.message.service.NotifyService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -15,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
+@Slf4j
 @Component
 public class WsEventHandler implements MessageListener {
 
@@ -34,6 +36,7 @@ public class WsEventHandler implements MessageListener {
 
 
     public void handleClientSend(int eventCode, JSONObject data) {
+        log.info("收到客户端报文：" + data);
         switch (eventCode) {
             case GlobalConst.WsEvent.CLIENT_SEND_MSG: {
                 SendMsgDTO sendMsgDTO = data.getObject("data", SendMsgDTO.class);

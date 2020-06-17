@@ -2,7 +2,6 @@ package com.allen.imsystem.common.Const;
 
 public class GlobalConst {
 
-
     public static final String ENCODING = "UTF-8";
 
     public static final Long MAX_NOT_SHOW_TIME_SPACE = 1000*60*5L;
@@ -21,8 +20,8 @@ public class GlobalConst {
     public static class WsEvent{
         public static final int CLIENT_SEND_MSG = 101;              // 客户端发送信息
         public static final int CLIENT_MSG_ACK = 102;               // 客户端收到信息确认回执
-        public static final int CLIENT_NEW_APPLY_NOTIFY_ACK = 104;  // 客户端收到新好友申请通知确认回执
-        public static final int CLIENT_NEW_FRIEND_NOTIFY_ACK = 105; // 客户端收到申请被通过获得新好友的通知确认回执
+        public static final int CLIENT_NEW_FRIEND_NOTIFY_ACK = 104; // 客户端收到申请被通过获得新好友的通知确认回执
+        public static final int CLIENT_NEW_APPLY_NOTIFY_ACK = 105;  // 客户端收到新好友申请通知确认回执
 
         public static final int SERVER_PUSH_MSG = 201;
         public static final int SERVER_MSG_ACK_SUCCESS = 202;
