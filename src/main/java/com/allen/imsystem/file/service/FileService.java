@@ -1,5 +1,6 @@
 package com.allen.imsystem.file.service;
 
+import com.allen.imsystem.file.model.FileMd5;
 import com.allen.imsystem.file.model.FileUploadView;
 import com.allen.imsystem.file.model.MultiFileResponse;
 import com.allen.imsystem.file.model.MultipartFileDTO;
@@ -13,6 +14,13 @@ import java.io.IOException;
  */
 @Service
 public interface FileService {
+
+    /**
+     * 根据md5到数据库查询文件信息
+     * @param md5
+     * @return
+     */
+    FileMd5 findFileByMd5(String md5);
 
     /**
      * 上传用户头像

@@ -34,6 +34,16 @@ public class PrivateChat implements Serializable {
     private Boolean userBStatus = false;
 
     /**
+     * 用户A未读信息数
+     */
+    private Integer userAUnreadMsgCount;
+
+    /**
+     * 用户B未读消息数
+     */
+    private Integer userBUnreadMsgCount;
+
+    /**
      * 最后一条消息的发送者uid
      */
     private String lastSenderId;

@@ -45,12 +45,9 @@ public class GroupMsgHandlerEntry extends GroupMsgHandler {
         if(msgPushPacket.getPushMessageList() == null){
             String gid = sendMsgDTO.getGid();
             // 初始化destIdList，转发给其他群员
-            Set<Object> memberIdSet = groupService.getGroupMemberFromCache(gid);
+            Set<String> memberIdSet = groupService.getGroupMemberFromCache(gid);
             memberIdSet.remove(sendMsgDTO.getSrcId());  //去掉发送者
-            List<String> destIdList = new ArrayList<>();
-            for(Object memberId : memberIdSet){
-                destIdList.add((String)memberId);
-            }
+            List<String> destIdList = new ArrayList<>(memberIdSet);
             msgPushPacket.setDestIdList(destIdList);
         }
 

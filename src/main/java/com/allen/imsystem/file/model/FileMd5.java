@@ -14,6 +14,9 @@ public class FileMd5 {
     private Boolean status = true;
     private Date createdTime;
 
+    public FileMd5() {
+    }
+
     public FileMd5(String md5, String fileName, Long size, String url) {
         this.md5 = md5;
         this.fileName = fileName;

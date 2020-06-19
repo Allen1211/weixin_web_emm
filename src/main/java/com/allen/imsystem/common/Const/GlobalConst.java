@@ -83,16 +83,12 @@ public class GlobalConst {
      */
     public static class RedisKey {
         public static final String KEY_USER_STATUS = "user_status";
-//        public static final String KEY_CHAT_TYPE = "chat_type";
-        public static final String KEY_CHAT_REMOVE = "chat_remove";
+        public static final String KEY_CHAT_INFO = "chat_info";
         public static final String KEY_RECORD_BEGIN_ID = "msg_record_begin_msg_id";
-        public static final String KEY_CHAT_UNREAD_COUNT = "user_chat_unread_msg_count";
-        public static final String KEY_CHAT_LAST_MSG_TIME = "chat_last_msg_time";
         public static final String KEY_FRIEND_SET = "user_friend_set_";
         public static final String KET_GROUP_CHAT_MEMBERS = "group_chat_members_";
         public static final String KEY_EMAIL_CODE = "email_code_";
         public static final String KEY_IMAGE_CODE = "image_code_";
-        public static final String KEY_CHAT_GID_MAP = "chat_gid_map_";
         public static final String KEY_TOKEN_BLACKLIST = "token_black_list";
         /**
          * 用户信息缓存的key

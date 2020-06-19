@@ -45,6 +45,9 @@
         <result property="groupAlias" column="user_alias"/>
     </resultMap>
 
-
+    <resultMap id="ChatIdUidDTOMap" type="com.allen.imsystem.chat.model.dto.ChatIdUidDTO">
+        <id property="chatId" column="chat_id"/>
+        <result property="uid" column="uid"/>
+    </resultMap>
 
 </mapper>

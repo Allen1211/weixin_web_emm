@@ -37,7 +37,7 @@ public interface GroupService {
      * @param gid 群id
      * @return 群成员ID集合
      */
-    Set<Object> getGroupMemberFromCache(String gid);
+    Set<String> getGroupMemberFromCache(String gid);
 
     /**
      * 获取群成员列表

@@ -4,7 +4,7 @@ import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.file.utils.ByteUtil;
-import com.allen.imsystem.message.mappers.FileMapper;
+import com.allen.imsystem.file.mappers.FileMapper;
 import com.allen.imsystem.file.model.FileUploadView;
 import com.allen.imsystem.file.model.MultiFileResponse;
 import com.allen.imsystem.file.model.MultipartFileDTO;
@@ -32,6 +32,16 @@ public class FileServiceImpl implements FileService {
     private FileMapper fileMapper;
 
 
+    /**
+     * 根据md5到数据库查询文件信息
+     *
+     * @param md5
+     * @return
+     */
+    @Override
+    public FileMd5 findFileByMd5(String md5) {
+        return fileMapper.selectFileMd5(md5);
+    }
 
     @Override
     public String uploadAvatar(MultipartFile multipartFile, String id) {

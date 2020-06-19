@@ -1,13 +1,16 @@
 package com.allen.imsystem.chat.service.impl;
 
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
-import com.allen.imsystem.chat.mappers.group.GroupMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupMapper;
 import com.allen.imsystem.chat.model.pojo.Group;
 import com.allen.imsystem.chat.model.pojo.GroupChat;
 import com.allen.imsystem.chat.model.vo.GroupMemberView;
 import com.allen.imsystem.chat.model.vo.GroupView;
 import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.common.cache.CacheExecutor;
+import com.allen.imsystem.common.cache.impl.ChatCache;
+import com.allen.imsystem.common.cache.impl.GroupCache;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.redis.RedisService;
@@ -15,7 +18,6 @@ import com.allen.imsystem.file.service.FileService;
 import com.allen.imsystem.friend.model.param.InviteParam;
 import com.allen.imsystem.friend.service.FriendQueryService;
 import com.allen.imsystem.id.IdPoolService;
-import com.allen.imsystem.message.mappers.GroupMsgRecordMapper;
 import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
 import com.allen.imsystem.message.service.MessageService;
 import com.allen.imsystem.message.service.impl.GroupNotifyFactory;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
+
 import static com.allen.imsystem.common.Const.GlobalConst.*;
 
 import java.util.*;
@@ -59,6 +62,9 @@ public class GroupServiceImpl implements GroupService {
     private RedisService redisService;
 
     @Autowired
+    private GroupCache groupCache;
+
+    @Autowired
     private MessageService messageService;
 
     @Autowired
@@ -84,12 +90,7 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     public boolean checkIsGroupMember(String uid, String gid) {
-        String setKey = RedisKey.KET_GROUP_CHAT_MEMBERS + gid;
-        if (!redisService.hasKey(setKey)) {
-            loadGroupMemberListIntoRedis(gid);
-        }
-        boolean isMember = redisService.sHasKey(setKey, uid);
-        return isMember;
+        return CacheExecutor.exist(groupCache.membersCache, gid, uid);
     }
 
     /**
@@ -99,12 +100,8 @@ public class GroupServiceImpl implements GroupService {
      * @return 群成员ID集合
      */
     @Override
-    public Set<Object> getGroupMemberFromCache(String gid) {
-        // 如果redis中没有，从数据库中加载到redis中
-        if (!redisService.hasKey(gid)) {
-            loadGroupMemberListIntoRedis(gid);
-        }
-        return redisService.setMembers(RedisKey.KET_GROUP_CHAT_MEMBERS + gid);
+    public Set<String> getGroupMemberFromCache(String gid) {
+        return CacheExecutor.get(groupCache.membersCache, gid);
     }
 
     /**
@@ -155,8 +152,6 @@ public class GroupServiceImpl implements GroupService {
         Long chatId = idPoolService.nextChatId(ChatType.GROUP_CHAT);
         GroupChat groupChat = new GroupChat(chatId, ownerId, gid, alias, ownerId, false);
         groupChatMapper.insert(groupChat);
-        // 缓存更新，默认会话不开启
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, ownerId + gid, true);
         return new GroupView(group);
 
     }
@@ -171,7 +166,7 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     @Transactional
-    public boolean inviteFriendToGroup(String inviterId, String gid, List<InviteParam> inviteParamList){
+    public boolean inviteFriendToGroup(String inviterId, String gid, List<InviteParam> inviteParamList) {
         if (!checkIsGroupMember(inviterId, gid)) {
             throw new BusinessException(ExceptionType.PERMISSION_DENIED, "你还不是该群成员，或群已解散");
         }
@@ -200,13 +195,8 @@ public class GroupServiceImpl implements GroupService {
                     // 如果被邀请者曾经是该群成员，那么将其添加到oldMemberList
                     if (oldRelation != null) {
                         oldMemberList.add(newMember);
-                        // 如果被邀请者曾经是该群成员， 开启关闭状态与原来一致
-                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, newMember.getUid() + gid,
-                                !oldRelation.getShouldDisplay());
-                    } else {// 被邀请者是新成员，会话默认是关闭状态
-                        redisService.hset(RedisKey.KEY_CHAT_REMOVE, newMember.getUid() + gid, true);
                     }
-                    redisService.sSet(RedisKey.KET_GROUP_CHAT_MEMBERS + gid, newMember.getUid());
+                    CacheExecutor.addIfExist(groupCache.membersCache, gid, newMember.getUid());
                 }
                 groupChatMapper.reActivateRelation(oldMemberList, gid);  // 激活曾经进过群的会话
                 newMemberList.removeAll(oldMemberList); // 去除掉所有曾经进过群的旧成员，只剩下未曾进过群的新成员
@@ -231,7 +221,7 @@ public class GroupServiceImpl implements GroupService {
             List<GroupMsgRecord> successNotifyList = successFactory.done();
             if (!CollectionUtils.isEmpty(successNotifyList)) {
                 // 推送成功的通知给所有人
-                Set<Object> destIdSet = getGroupMemberFromCache(gid);
+                Set<String> destIdSet = getGroupMemberFromCache(gid);
                 if (destIdSet != null) {
                     NotifyPackage successNotifyPackage = NotifyPackage.builder()
                             .receivers(destIdSet)
@@ -277,10 +267,10 @@ public class GroupServiceImpl implements GroupService {
         }
         groupChatMapper.softDeleteGroupMember(uid, gid);
         //2、 更新缓存
-        redisService.setRemove(RedisKey.KET_GROUP_CHAT_MEMBERS + gid, uid);
+        CacheExecutor.remove(groupCache.membersCache, gid, uid);
         //3、 通知群主，xxx离开了群聊
         if (StringUtils.isNotEmpty(ownerId)) {
-            Set<Object> destIdSet = new HashSet<>(1);
+            Set<String> destIdSet = new HashSet<>(1);
             destIdSet.add(ownerId);
             GroupMsgRecord notify = new GroupMsgRecord(idPoolService.nextChatId(ChatType.GROUP_CHAT), gid, gid,
                     4, relation.getUserAlias() + " 离开了群聊", "", true, new Date(), new Date());
@@ -341,8 +331,8 @@ public class GroupServiceImpl implements GroupService {
      * 踢出群成员
      *
      * @param memberList 要踢出的群成员列表
-     * @param gid          群id
-     * @param ownerId      群主id
+     * @param gid        群id
+     * @param ownerId    群主id
      */
     @Override
     @Transactional
@@ -357,10 +347,9 @@ public class GroupServiceImpl implements GroupService {
         // 群通知
         GroupNotifyFactory factory = GroupNotifyFactory.getInstance(gid);
         // 更新缓存
-        Set<Object> allMember = getGroupMemberFromCache(gid);
-        String key = RedisKey.KET_GROUP_CHAT_MEMBERS + gid;
+        Set<String> allMember = getGroupMemberFromCache(gid);
         for (GroupMemberView member : memberList) {
-            redisService.setRemove(key, member.getUid());
+            CacheExecutor.remove(groupCache.membersCache,gid, member.getUid());
             factory.appendNotify(member.getGroupAlias() + " 被群主踢出了群聊");
         }
         // 更新数据库
@@ -383,7 +372,7 @@ public class GroupServiceImpl implements GroupService {
         if (StringUtils.isEmpty(realOwnerId) || !ownerId.equals(realOwnerId)) {
             throw new BusinessException(ExceptionType.PERMISSION_DENIED, "你不是群主");
         }
-        Set<Object> allMember = getGroupMemberFromCache(gid);
+        Set<String> allMember = getGroupMemberFromCache(gid);
         // 群通知
         GroupNotifyFactory factory = GroupNotifyFactory.getInstance(gid);
         factory.appendNotify("该群已被群主解散");
@@ -393,23 +382,10 @@ public class GroupServiceImpl implements GroupService {
         groupMapper.delete(gid);
 
         // 缓存删除
-        redisService.del(RedisKey.KET_GROUP_CHAT_MEMBERS + gid);
+        CacheExecutor.remove(groupCache.membersCache,gid);
 
         // 发送群通知
         List<GroupMsgRecord> notify = factory.done();
         messageService.sendGroupNotify(allMember, gid, notify);
-    }
-
-    /**
-     * 把群成员id集合加载到缓存中
-     * @param gid 群id
-     */
-    private void loadGroupMemberListIntoRedis(String gid) {
-        Set<String> groupMemberIdSet = groupChatMapper.selectGroupMemberIdSet(gid);
-        if (groupMemberIdSet != null && groupMemberIdSet.size() > 0) {
-            String setKey = RedisKey.KET_GROUP_CHAT_MEMBERS + gid;
-            redisService.del(setKey);
-            redisService.sSetAndTime(setKey, 2 * 60 * 60L, groupMemberIdSet.toArray());
-        }
     }
 }

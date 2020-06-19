@@ -9,6 +9,8 @@
         <result property="uidA" column="uid_a"/>
         <result property="uidB" column="uid_b"/>
         <result property="userAStatus" column="user_a_status"/>
+        <result property="userAUnreadMsgCount" column="user_a_unread_msg_count"/>
+        <result property="userBUnreadMsgCount" column="user_b_unread_msg_count"/>
         <result property="userBStatus" column="user_b_status"/>
         <result property="lastMsgId" column="last_msg_id"/>
         <result property="lastMsgContent" column="last_msg_content"/>
@@ -81,6 +83,12 @@
             <if test="userBStatus != null">
                 user_b_status,
             </if>
+            <if test="userAUnreadMsgCount != null">
+                user_a_unread_msg_count,
+            </if>
+            <if test="userBUnreadMsgCount != null">
+                user_b_unread_msg_count,
+            </if>
             <if test="lastSenderId != null">
                 last_sender_id,
             </if>
@@ -112,6 +120,12 @@
             </if>
             <if test="userBStatus != null">
                 #{userBStatus,jdbcType=BOOLEAN},
+            </if>
+            <if test="userAUnreadMsgCount != null">
+                #{userAUnreadMsgCount},
+            </if>
+            <if test="userBUnreadMsgCount != null">
+                #{userBUnreadMsgCount},
             </if>
             <if test="lastSenderId != null">
                 #{lastSenderId,jdbcType=VARCHAR},
@@ -150,6 +164,12 @@
             <if test="userBStatus != null">
                 user_b_status = #{userBStatus,jdbcType=BOOLEAN},
             </if>
+            <if test="userAUnreadMsgCount != null">
+                user_a_unread_msg_count = #{userAUnreadMsgCount},
+            </if>
+            <if test="userBUnreadMsgCount != null">
+                user_b_unread_msg_count = #{userBUnreadMsgCount},
+            </if>
             <if test="lastSenderId != null">
                 last_sender_id = #{lastSenderId,jdbcType=VARCHAR},
             </if>
@@ -179,5 +199,8 @@
         WHERE chat_id = #{chatId}
     </update>
 
+    <update id="incrUnreadMsgCount" statementType="CALLABLE">
+         {call incrPrivateChatUnreadMsgCount(#{uid, mode=IN, jdbcType=VARCHAR},#{chatId, mode=IN, jdbcType=BIGINT})}
+    </update>
 
 </mapper>

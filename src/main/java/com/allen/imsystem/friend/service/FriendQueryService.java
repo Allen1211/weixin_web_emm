@@ -15,6 +15,7 @@ public interface FriendQueryService {
 
     /**
      * 搜索陌生人
+     *
      * @param uid
      * @param keyword
      * @return
@@ -23,26 +24,28 @@ public interface FriendQueryService {
 
     /**
      * 检查对方是否是自己的好友
+     *
      * @param uid
      * @param friendId
      * @return
      */
-    Boolean checkIsMyFriend(String uid, String friendId);
+    boolean checkIsMyFriend(String uid, String friendId);
 
-    Boolean checkIsTwoWayFriend(String uid, String friendId);
+    boolean checkIsTwoWayFriend(String uid, String friendId);
 
     /**
      * 检查对方是否已经把自己删除
+     *
      * @param uid
      * @param friendId
      * @return
      */
-    Boolean checkIsDeletedByFriend(String uid, String friendId);
+    boolean checkIsDeletedByFriend(String uid, String friendId);
 
     /**
      * 按分组获取好友列表
      */
-     Map<String,Object> getFriendListByGroup(String uid);
+    Map<String, Object> getFriendListByGroup(String uid);
 
     /**
      * 获取好友列表

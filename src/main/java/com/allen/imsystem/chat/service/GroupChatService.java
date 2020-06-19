@@ -1,5 +1,6 @@
 package com.allen.imsystem.chat.service;
 
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.param.CreateGroupParam;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
@@ -36,10 +37,10 @@ public interface GroupChatService {
      * 判断某个会话是否应该显示在会话列表（未被移除）
      *
      * @param uid 用户id
-     * @param gid 群id
+     * @param chatId 群id
      * @return 是否应该显示在会话列表
      */
-    boolean isOpen(String uid, String gid);
+    boolean isOpen(String uid, Long chatId);
 
     /**
      * 开启一个群聊会话
@@ -81,7 +82,7 @@ public interface GroupChatService {
      * @param uid 用户uid
      * @param gid 群gid
      */
-    void setAllMsgHasRead(String uid, String gid);
+    void setAllMsgHasRead(String uid, Long chatId);
 
     /**
      * 从群聊会话id获取gid
@@ -89,6 +90,7 @@ public interface GroupChatService {
      * @param chatId 群聊会话id
      * @return gid
      */
-    String getGidFromChatId(Long chatId);
+    String getGidFromChatId(Long chatId, String uid);
 
+    ChatCacheDTO findChatCacheDTO(Long cahtId, String uid);
 }

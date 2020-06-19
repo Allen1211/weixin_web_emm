@@ -1,4 +1,4 @@
-package com.allen.imsystem.message.mappers;
+package com.allen.imsystem.file.mappers;
 
 import com.allen.imsystem.file.model.FileMd5;
 import org.apache.ibatis.annotations.Mapper;

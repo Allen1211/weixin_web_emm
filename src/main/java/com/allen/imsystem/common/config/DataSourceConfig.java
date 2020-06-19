@@ -32,7 +32,9 @@ public class DataSourceConfig {
         dataSource.setMaxPoolSize(100);
         dataSource.setMaxStatements(300);
         dataSource.setAcquireIncrement(2);
-
+        dataSource.setIdleConnectionTestPeriod(60);
+        dataSource.setTestConnectionOnCheckout(false);
+        dataSource.setTestConnectionOnCheckin(true);
         return dataSource;
     }
 }

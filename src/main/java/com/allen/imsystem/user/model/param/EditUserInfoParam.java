@@ -11,11 +11,9 @@ public class EditUserInfoParam {
 
     private String email;
 
-    @NotEmpty
     @Length(min = 1, max = 12, message = "用户名格式错误")
     private String username;
 
-    @NotEmpty
     @Length(min = 1, max = 30, message = "个性签名长度应在1到30个字符")
     private String signWord;
 

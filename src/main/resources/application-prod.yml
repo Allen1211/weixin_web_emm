@@ -41,7 +41,7 @@ logging:
   file:
     path: /usr/logs/imsystem
   level:
-    root: debug
+    root: info
 
 mail:
   smtp:

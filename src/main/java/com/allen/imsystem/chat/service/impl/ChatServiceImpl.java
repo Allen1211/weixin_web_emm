@@ -1,7 +1,8 @@
 package com.allen.imsystem.chat.service.impl;
 
 import com.allen.imsystem.chat.mappers.PrivateChatMapper;
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
@@ -30,9 +31,6 @@ import static com.allen.imsystem.common.Const.GlobalConst.RedisKey;
 public class ChatServiceImpl implements ChatService {
 
     @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
     private PrivateChatMapper privateChatMapper;
 
     @Autowired
@@ -58,20 +56,6 @@ public class ChatServiceImpl implements ChatService {
         return chatId == null ? ChatType.UN_KNOW : ChatIdUtil.getChatType(chatId);
     }
 
-    @Override
-    public Long getChatLastMsgTimestamp(Long chatId) {
-        String val = (String) redisService.hget(RedisKey.KEY_CHAT_LAST_MSG_TIME, chatId.toString());
-        if (val == null)
-            return 0L;
-        else
-            return Long.valueOf(val);
-    }
-
-    @Override
-    public void setChatLastMsgTimestamp(Long chatId, Long timestamp) {
-        redisService.hset(RedisKey.KEY_CHAT_LAST_MSG_TIME,
-                chatId.toString(), String.valueOf(System.currentTimeMillis()));
-    }
 
     /**
      * 标识一个会话的所有消息已读
@@ -115,7 +99,7 @@ public class ChatServiceImpl implements ChatService {
                 Integer newMsgCount = null;
                 // 填充会话基本信息
                 if (chat.getIsGroupChat()) {
-                    newMsgCount = messageCounter.getUserGroupChatNewMsgCount(uid, chat.getGid());
+                    newMsgCount = messageCounter.getUserGroupChatNewMsgCount(uid, chat.getChatId());
                 } else {
                     UserInfoView userInfo = userService.findUserInfoDTO(chat.getFriendId());
                     chat.setAvatar(userInfo.getAvatar());
@@ -139,7 +123,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public Map<String,Object> getChatInfo(Long chatId, String uid) {
+    public Map<String, Object> getChatInfo(Long chatId, String uid) {
         int chatType = getChatType(chatId);
         ChatSessionInfo chatSessionInfo = null;
         if (ChatType.PRIVATE_CHAT == chatType) {// 是私聊
@@ -149,12 +133,12 @@ public class ChatServiceImpl implements ChatService {
         } else {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID, "获取会话类型失败,会话不存在");
         }
-        Map<String,Object> resultMap = new HashMap<>(3);
-        if(chatSessionInfo != null){
+        Map<String, Object> resultMap = new HashMap<>(3);
+        if (chatSessionInfo != null) {
             resultMap.put("hasThisTalk", true);
             resultMap.put("hasInTalkList", chatSessionInfo.isOpen());
             resultMap.put("talkData", chatSessionInfo);
-        }else{
+        } else {
             resultMap.put("hasThisTalk", false);
         }
         return resultMap;
@@ -175,7 +159,7 @@ public class ChatServiceImpl implements ChatService {
     public void updateChatLastMsg(int chatType, String id, Long msgId, String lastMsgContent,
                                   Date lastMsgCreateTime, String senderId) {
         if (chatType == ChatType.PRIVATE_CHAT) {
-            privateChatService.updateLastMsg(Long.parseLong(id),msgId, lastMsgContent, lastMsgCreateTime, senderId);
+            privateChatService.updateLastMsg(Long.parseLong(id), msgId, lastMsgContent, lastMsgCreateTime, senderId);
         } else {
             groupChatService.updateGroupLastMsg(id, msgId, lastMsgContent, lastMsgCreateTime, senderId);
         }
@@ -200,7 +184,7 @@ public class ChatServiceImpl implements ChatService {
                 ChatSession chatSession = privateChatMapper.selectNewMsgPrivateChatData(chatId, uid,
                         uid.equals(privateChat.getUidA()) ? privateChat.getUidB() : privateChat.getUidA());
                 if (chatSession != null) {
-                    chatSession.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(uid, chatSession.getGid()));
+                    chatSession.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(uid, chatSession.getChatId()));
                     result.put("payload", chatSession);
                 }
             }
@@ -208,15 +192,32 @@ public class ChatServiceImpl implements ChatService {
             ChatSession chatSession = groupChatMapper.selectOneGroupChatData(chatId);
             result.put("hasThisTalk", chatSession != null);
             if (chatSession != null) {
-                boolean hasInTalkList = groupChatService.isOpen(uid, chatSession.getGid());
+                boolean hasInTalkList = groupChatService.isOpen(uid, chatSession.getChatId());
                 result.put("hasInTalkList", hasInTalkList);
                 if (!hasInTalkList) {
-                    chatSession.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(uid, chatSession.getGid()));
+                    chatSession.setNewMessageCount(messageCounter.getUserGroupChatNewMsgCount(uid, chatSession.getChatId()));
                     result.put("payload", chatSession);
                 }
             }
         }
         return result;
+    }
+
+    /**
+     * 获取会话的信息用于缓存
+     *
+     * @param chatId 会话id
+     * @param uid    用户uid
+     * @return 用于缓存的会话信息
+     */
+    @Override
+    public ChatCacheDTO findChatCacheDTO(Long chatId, String uid) {
+        int chatType = getChatType(chatId);
+        if (chatType == ChatType.PRIVATE_CHAT) {
+            return privateChatService.findChatCacheDTO(chatId, uid);
+        } else {
+            return groupChatService.findChatCacheDTO(chatId, uid);
+        }
     }
 
 }

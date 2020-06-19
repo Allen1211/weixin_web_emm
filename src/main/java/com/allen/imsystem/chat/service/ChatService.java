@@ -1,5 +1,6 @@
 package com.allen.imsystem.chat.service;
 
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
@@ -32,20 +33,6 @@ public interface ChatService {
     Map<String,Object> getChatInfo(Long chatId, String uid);
 
     /**
-     * 获取某个会话最后一条消息的时间
-     * @param chatId
-     * @return
-     */
-    Long getChatLastMsgTimestamp(Long chatId);
-
-    /**
-     * 设置某个会话最后一条消息的时间
-     * @param chatId
-     * @param timestamp
-     */
-    void setChatLastMsgTimestamp(Long chatId, Long timestamp);
-
-    /**
      * 标识一个会话的所有消息已读
      * @param chatType 会话类型
      * @param uid 用户id
@@ -66,5 +53,14 @@ public interface ChatService {
                            Date lastMsgCreateTime, String senderId);
 
     Map<String,Object> validateChatId(Long chatId, String uid);
+
+    /**
+     * 获取会话的信息用于缓存
+     * @param chatId 会话id
+     * @param uid 用户uid
+     * @return 用于缓存的会话信息
+     */
+    ChatCacheDTO findChatCacheDTO(Long chatId, String uid);
+
 
 }

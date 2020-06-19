@@ -2,6 +2,7 @@ package com.allen.imsystem.message.netty;
 
 import com.alibaba.fastjson.JSONObject;
 import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.user.service.UserService;
 import com.allen.imsystem.user.utils.JWTUtil;
 import com.allen.imsystem.message.service.NotifyService;
 import com.allen.imsystem.common.redis.RedisService;

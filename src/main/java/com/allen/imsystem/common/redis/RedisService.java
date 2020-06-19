@@ -49,6 +49,25 @@ public class RedisService {
     }
 
     /**
+     * 指定缓存失效时间
+     *
+     * @param key  键
+     * @param time 时间(秒)
+     * @return
+     */
+    public boolean expire(String key, long time, TimeUnit timeUnit) {
+        try {
+            if (time > 0) {
+                redisTemplate.expire(key, time, timeUnit);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
      * 根据key 获取过期时间
      *
      * @param key 键 不能为null
@@ -255,11 +274,11 @@ public class RedisService {
      * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
      * @return true 成功 false失败
      */
-    public boolean hset(String key, String item, Object value, long time) {
+    public boolean hset(String key, String item, Object value, long time, TimeUnit timeUnit) {
         try {
             redisTemplate.opsForHash().put(key, item, value);
             if (time > 0) {
-                expire(key, time);
+                expire(key, time, timeUnit);
             }
             return true;
         } catch (Exception e) {

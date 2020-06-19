@@ -1,4 +1,4 @@
-package com.allen.imsystem.chat.mappers.group;
+package com.allen.imsystem.chat.mappers;
 
 import com.allen.imsystem.chat.model.pojo.Group;
 import org.apache.ibatis.annotations.Mapper;

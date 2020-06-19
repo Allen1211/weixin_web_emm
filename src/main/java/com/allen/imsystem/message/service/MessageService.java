@@ -39,7 +39,7 @@ public interface MessageService {
      * @param gid 群id
      * @param notifyList 通知列表
      */
-    void sendGroupNotify(Set<Object> destIdList, String gid, List<GroupMsgRecord> notifyList);
+    void sendGroupNotify(Set<String> destIdList, String gid, List<GroupMsgRecord> notifyList);
 
     /**
      * 发送群通知
@@ -47,7 +47,7 @@ public interface MessageService {
      * @param gid 群id
      * @param notify 通知
      */
-    void sendGroupNotify(Set<Object> destIdList, String gid, GroupMsgRecord notify);
+    void sendGroupNotify(Set<String> destIdList, String gid, GroupMsgRecord notify);
 
     /**
      * 发送群通知

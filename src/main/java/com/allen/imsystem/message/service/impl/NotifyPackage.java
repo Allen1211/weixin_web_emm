@@ -51,7 +51,7 @@ public class NotifyPackage {
             return this;
         }
 
-        public Builder receivers(Set<Object> receivers){
+        public Builder receivers(Set<String> receivers){
             if(receivers == null){
                 throw new NullPointerException("receiverSet cannot be null");
             }

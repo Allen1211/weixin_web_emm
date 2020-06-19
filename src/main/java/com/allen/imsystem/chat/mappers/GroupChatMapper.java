@@ -1,5 +1,6 @@
-package com.allen.imsystem.chat.mappers.group;
+package com.allen.imsystem.chat.mappers;
 
+import com.allen.imsystem.chat.model.dto.ChatIdUidDTO;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.model.vo.GroupMemberView;
@@ -99,6 +100,7 @@ public interface GroupChatMapper {
 
     ChatSession selectOneGroupChatData(Long chatId);
 
+    List<ChatIdUidDTO> findChatIdListByGidExcludeUid(@Param("uid")String uid, @Param("gid") String gid);
 
     int reActivateRelation(@Param("list") List<InviteParam> list, @Param("gid") String gid);
 
@@ -107,5 +109,9 @@ public interface GroupChatMapper {
     int softDeleteGroupMemberBatch(@Param("memberList") List<GroupMemberView> memberList, @Param("gid") String gid);
 
     int softDeleteAllMember(String gid);
+
+    int incrUnreadMsgBatchByUidList(@Param("gid")String gid, @Param("uidList") List<String> uidList);
+
+    int incrUnreadMsgBatchByChatIdList(@Param("chatIdUidList") List<ChatIdUidDTO> chatIdList);
 
 }

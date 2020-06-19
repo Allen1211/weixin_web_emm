@@ -1,12 +1,9 @@
 package com.allen.imsystem.message.service.impl;
 
-import com.allen.imsystem.chat.mappers.group.GroupMapper;
-import com.allen.imsystem.chat.service.ChatService;
 import com.allen.imsystem.chat.service.GroupChatService;
 import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.Const.GlobalConst;
 import com.allen.imsystem.common.bean.ErrMsg;
-import com.allen.imsystem.common.redis.RedisService;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.common.utils.MutableSingletonList;
 import com.allen.imsystem.friend.service.FriendQueryService;
@@ -19,7 +16,6 @@ import com.allen.imsystem.message.netty.bean.SocketResponse;
 import com.allen.imsystem.message.service.MessageService;
 import com.allen.imsystem.message.service.pipeline.MsgHandler;
 import com.allen.imsystem.message.service.pipeline.MsgHandlerFactory;
-import com.allen.imsystem.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
@@ -131,14 +127,14 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void sendGroupNotify(Set<Object> destIdSet, String gid, List<GroupMsgRecord> notifyList) {
+    public void sendGroupNotify(Set<String> destIdSet, String gid, List<GroupMsgRecord> notifyList) {
         for (GroupMsgRecord notify : notifyList) {
             sendGroupNotify(destIdSet,gid,notify);
         }
     }
 
     @Override
-    public void sendGroupNotify(Set<Object> destIdSet, String gid, GroupMsgRecord notify){
+    public void sendGroupNotify(Set<String> destIdSet, String gid, GroupMsgRecord notify){
         List<String> destIdList = new ArrayList<>(destIdSet.size());
         for (Object obj : destIdSet) {
             destIdList.add((String) obj);

@@ -44,7 +44,6 @@ public class PriMsgSaveHandler extends PrivateMsgHandler {
         try {
             PrivateMsgRecord msgRecord = msgRecordService.savePrivateMsgRecord(sendMessage);
             chatService.updateChatLastMsg(GlobalConst.ChatType.PRIVATE_CHAT, chatId.toString(), msgId,msgRecord.getContent(), msgRecord.getCreatedTime(), sendMessage.getSrcId());
-            chatService.setChatLastMsgTimestamp(chatId, Long.parseLong(sendMessage.getTimeStamp()));
         } catch (Exception e) {
             e.printStackTrace();
             messageService.handleSendFail(sendMessage, "消息入库失败");

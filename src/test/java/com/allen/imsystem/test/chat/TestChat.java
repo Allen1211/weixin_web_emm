@@ -1,9 +1,10 @@
 package com.allen.imsystem.test.chat;
 
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
 import com.allen.imsystem.chat.mappers.PrivateChatMapper;
 import com.allen.imsystem.message.mappers.PrivateMsgRecordMapper;
 import com.allen.imsystem.test.BaseTest;
+import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -65,4 +66,10 @@ public class TestChat extends BaseTest {
 //            }
 //        }
 //    }
+
+    @Test
+    public void testPrivateChatIncrUnreadMsg(){
+        privateChatMapper.incrUnreadMsgCount("81309655", 6670610914850378752L);
+
+    }
 }

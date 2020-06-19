@@ -40,7 +40,7 @@ public class WsEventHandler implements MessageListener {
         switch (eventCode) {
             case GlobalConst.WsEvent.CLIENT_SEND_MSG: {
                 SendMsgDTO sendMsgDTO = data.getObject("data", SendMsgDTO.class);
-                if (sendMsgDTO.getIsGroup()) {
+                if (sendMsgDTO.getIsGroup() != null && sendMsgDTO.getIsGroup()) {
                     messageService.saveAndForwardGroupMessage(sendMsgDTO);
                 } else {
                     messageService.saveAndForwardPrivateMessage(sendMsgDTO);

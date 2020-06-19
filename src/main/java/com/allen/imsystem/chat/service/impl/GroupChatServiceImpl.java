@@ -1,21 +1,19 @@
 package com.allen.imsystem.chat.service.impl;
 
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
-import com.allen.imsystem.chat.mappers.group.GroupMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupMapper;
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.pojo.Group;
 import com.allen.imsystem.chat.model.pojo.GroupChat;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.service.GroupChatService;
+import com.allen.imsystem.common.cache.CacheExecutor;
+import com.allen.imsystem.common.cache.impl.ChatCache;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.redis.RedisService;
-import com.allen.imsystem.file.service.FileService;
-import com.allen.imsystem.friend.service.FriendQueryService;
-import com.allen.imsystem.id.IdPoolService;
-import com.allen.imsystem.message.mappers.GroupMsgRecordMapper;
-import com.allen.imsystem.message.service.MessageService;
-import com.allen.imsystem.user.mappers.UserMapper;
+import com.allen.imsystem.message.service.impl.MessageCounter;
 import com.allen.imsystem.user.model.vo.UserInfoView;
 import com.allen.imsystem.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +41,15 @@ public class GroupChatServiceImpl implements GroupChatService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ChatCache chatCache;
+
+    @Autowired
+    private MessageCounter messageCounter;
+
     @Override
     public void updateGroupLastMsg(String gid, Long lastMsgId, String lastMsgContent, Date lastMsgCreateTime,
                                    String senderId) {
-        redisService.hset(RedisKey.KEY_CHAT_LAST_MSG_TIME, gid, String.valueOf(System.currentTimeMillis()));
         groupMapper.updateGroupLastMsg(gid, lastMsgId, lastMsgContent, lastMsgCreateTime, senderId);
     }
 
@@ -54,11 +57,19 @@ public class GroupChatServiceImpl implements GroupChatService {
      * 标识一个群聊会话的所有消息已读
      *
      * @param uid 用户uid
-     * @param gid 群gid
+     * @param chatId 群gid
      */
     @Override
-    public void setAllMsgHasRead(String uid, String gid) {
-        redisService.hset(RedisKey.KEY_CHAT_UNREAD_COUNT, uid + gid, 0L);
+    public void setAllMsgHasRead(String uid, Long chatId) {
+        // 有未读信息的话就才需要执行
+        if(messageCounter.getPrivateChatNewMsgCount(uid, chatId) > 0){
+            // 会话未读消息数清零
+            messageCounter.setUserChatNewMsgCount(uid, chatId, 0);
+            GroupChat groupChat = new GroupChat();
+            groupChat.setChatId(chatId);
+            groupChat.setUnreadMsgCount(0);
+            groupChatMapper.update(groupChat);
+        }
     }
 
     /**
@@ -94,16 +105,16 @@ public class GroupChatServiceImpl implements GroupChatService {
      * 判断某个会话是否应该显示在会话列表（未被移除）
      *
      * @param uid 用户id
-     * @param gid 群id
+     * @param chatId 群id
      * @return 是否应该显示在会话列表
      */
     @Override
-    public boolean isOpen(String uid, String gid) {
-        if (gid == null || uid == null) {
+    public boolean isOpen(String uid, Long chatId) {
+        if (chatId == null || uid == null) {
             return false;
         }
-        Boolean isRemove = (Boolean) redisService.hget(RedisKey.KEY_CHAT_REMOVE, uid + gid);
-        return isRemove != null && !isRemove;
+        return (boolean) CacheExecutor.get(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(chatId,uid),
+                ChatCache.SHOULD_DISPLAY);
     }
 
     @Override
@@ -111,19 +122,28 @@ public class GroupChatServiceImpl implements GroupChatService {
         return groupChatMapper.selectGroupAllChatData(gid);
     }
 
+    @Override
+    public String getGidFromChatId(Long chatId, String uid) {
+        return (String) CacheExecutor.get(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(chatId,uid),ChatCache.GID);
+    }
 
     @Override
-    public String getGidFromChatId(Long chatId) {
-        String key = RedisKey.KEY_CHAT_GID_MAP + chatId.toString();
-        if (!redisService.hasKey(key)) {
-            String gid = groupChatMapper.selectGidFromChatId(chatId);
-            if (gid != null) {
-                redisService.set(key, gid, 10L, TimeUnit.MINUTES);
-            } else {
-                throw new BusinessException(ExceptionType.SERVER_ERROR);
-            }
+    public ChatCacheDTO findChatCacheDTO(Long chatId, String uid) {
+        GroupChat groupChat = groupChatMapper.findByChatId(chatId);
+        if(groupChat == null){
+            return null;
         }
-        return (String) redisService.get(key);
+        Group group = groupMapper.findByGId(groupChat.getGid());
+        ChatCacheDTO chatCacheDTO = new ChatCacheDTO();
+        chatCacheDTO.setUnreadMsgCount(groupChat.getUnreadMsgCount());
+        if(group.getLastMsgCreateTime() != null){
+            chatCacheDTO.setLastMsgTimestamp(group.getLastMsgCreateTime().getTime());
+        }
+        chatCacheDTO.setChatId(groupChat.getChatId());
+        chatCacheDTO.setShouldDisplay(groupChat.getShouldDisplay());
+        chatCacheDTO.setGroup(true);
+        chatCacheDTO.setGid(group.getGid());
+        return chatCacheDTO;
     }
 
     @Override
@@ -138,7 +158,8 @@ public class GroupChatServiceImpl implements GroupChatService {
             relation.setUpdateTime(new Date());
             groupChatMapper.update(relation);
         }
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, uid + gid, false);
+        CacheExecutor.set(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(relation.getChatId(),relation.getUid()),
+                ChatCache.SHOULD_DISPLAY, true);
         Map<String, Object> result = new HashMap<>(2);
         result.put("isNewTalk", isNewTalk);
         result.put("relation", relation);
@@ -158,9 +179,10 @@ public class GroupChatServiceImpl implements GroupChatService {
             throw new BusinessException(ExceptionType.TALK_NOT_VALID, "会话不存在");
         }
         // 设置该用户对该会话的移除为是
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, uid + relation.getGid(), true);
+        CacheExecutor.set(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(relation.getChatId(),relation.getUid()),
+                ChatCache.SHOULD_DISPLAY, false);
         // 会话未读消息数全部已读
-        setAllMsgHasRead(uid, relation.getGid());
+        setAllMsgHasRead(uid, relation.getChatId());
 
         relation.setShouldDisplay(false);
         relation.setUpdateTime(new Date());

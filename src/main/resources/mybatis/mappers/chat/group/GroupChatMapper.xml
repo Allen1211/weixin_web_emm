@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.allen.imsystem.chat.mappers.group.GroupChatMapper">
+<mapper namespace="com.allen.imsystem.chat.mappers.GroupChatMapper">
 
     <resultMap id="GroupViewMap" type="com.allen.imsystem.chat.model.vo.GroupView">
         <id property="gid" column="gid"/>
@@ -30,11 +30,12 @@
         <result column="created_time" jdbcType="TIMESTAMP" property="createdTime"/>
         <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
         <result column="should_display" jdbcType="BOOLEAN" property="shouldDisplay"/>
+        <result column="unread_msg_count" property="unreadMsgCount"/>
     </resultMap>
 
     <sql id="BaseField">
         gc.chat_id, gc.`uid`, gc.gid, gc.`status`, gc.last_ack_msg_id, gc.user_alias, gc.inviter_id, gc.created_time,
-        gc.update_time, gc.should_display
+        gc.update_time, gc.should_display, gc.unread_msg_count
     </sql>
 
     <!-- 获取某用户所有有效的群聊会话列表 -->
@@ -117,6 +118,11 @@
         WHERE gc.uid=#{uid} AND gc.`status` = 1 AND g.`status`=1
     </select>
 
+    <select id="findChatIdListByGidExcludeUid" resultMap="com.allen.imsystem.chat.mappers.ChatSessionMapper.ChatIdUidDTOMap">
+        select chat_id, uid from group_chat gc
+        where gc.gid = #{gid} and gc.status=1 and gc.uid != #{uid}
+    </select>
+
     <insert id="insert" parameterType="com.allen.imsystem.chat.model.pojo.GroupChat">
         INSERT INTO `group_chat` (
         <trim suffixOverrides=",">
@@ -128,6 +134,7 @@
             <if test="inviterId!=null">inviter_id,</if>
             <if test="status!=null">status,</if>
             <if test="shouldDisplay!=null">`should_display`,</if>
+            <if test="unreadMsgCount!=null">`unread_msg_count`,</if>
             <if test="createdTime!=null">created_time,</if>
             <if test="updateTime!=null">update_time,</if>
         </trim>
@@ -142,6 +149,7 @@
             <if test="inviterId!=null">#{inviterId},</if>
             <if test="status!=null">#{status},</if>
             <if test="shouldDisplay!=null">#{shouldDisplay},</if>
+            <if test="unreadMsgCount!=null">#{unreadMsgCount},</if>
             <if test="createdTime!=null">#{createdTime},</if>
             <if test="updateTime!=null">#{updateTime},</if>
         </trim>
@@ -169,6 +177,7 @@
             <if test="inviterId!=null">inviter_id = #{inviterId},</if>
             <if test="status!=null">status = #{status},</if>
             <if test="shouldDisplay!=null">`should_display` = #{shouldDisplay},</if>
+            <if test="unreadMsgCount!=null">unread_msg_count=#{unreadMsgCount},</if>
             <if test="createdTime!=null">created_time = #{createdTime},</if>
             <if test="updateTime!=null">update_time = NOW(6),</if>
         </set>
@@ -210,4 +219,25 @@
             </foreach>
         )
     </update>
+    
+    <update id="incrUnreadMsgBatchByUidList">
+        update group_chat gc set gc.unread_msg_count = gc.unread_msg_count + 1
+        where gc.gid = #{gid} and gc.uid in (
+        <foreach collection="uidList" separator="," item="uid" index="i">
+            #{uid}
+        </foreach>
+        )
+        and gc.status = 1
+    </update>
+
+    <update id="incrUnreadMsgBatchByChatIdList">
+        update group_chat gc set gc.unread_msg_count = gc.unread_msg_count + 1
+        where gc.chat_id in (
+        <foreach collection="chatIdUidList" separator="," item="item" index="i">
+            #{item.chatId}
+        </foreach>
+        )
+        and gc.status = 1
+    </update>
+
 </mapper>

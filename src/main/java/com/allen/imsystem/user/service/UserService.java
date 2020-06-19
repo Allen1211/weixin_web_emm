@@ -68,7 +68,7 @@ public interface UserService {
     /**
      * 用户信息更改
      */
-    boolean updateUserInfo(EditUserInfoParam editUserInfoParam, String uid);
+    void updateUserInfo(EditUserInfoParam editUserInfoParam, String uid);
 
 
     /**

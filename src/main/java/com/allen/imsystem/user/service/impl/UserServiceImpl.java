@@ -1,6 +1,8 @@
 package com.allen.imsystem.user.service.impl;
 
 import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.common.cache.CacheExecutor;
+import com.allen.imsystem.common.cache.impl.UserCache;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.user.utils.HashSaltUtil;
@@ -37,13 +39,13 @@ public class UserServiceImpl implements UserService {
     private FriendGroupService friendGroupService;
 
     @Autowired
-    private RedisService redisService;
-
-    @Autowired
     private FileService fileService;
 
     @Autowired
     private IdPoolService idPoolService;
+
+    @Autowired
+    private UserCache userCache;
 
     @Override
     public User findUserAccountWithUid(String uid) {
@@ -57,12 +59,13 @@ public class UserServiceImpl implements UserService {
 
 
     public UserInfoView findUserInfoDTO(String uid){
-        UserInfoView userInfoView = (UserInfoView) redisService.get(RedisKey.KEY_USER_INFO + uid);
-        if(userInfoView == null){
-            userInfoView = userMapper.selectUserInfoDTO(uid);
-            redisService.set(RedisKey.KEY_USER_INFO + uid, userInfoView, 15L, TimeUnit.MINUTES);
-        }
-        return userInfoView;
+        return CacheExecutor.get(userCache.userInfoViewCache, uid);
+//        UserInfoView userInfoView = (UserInfoView) redisService.get(RedisKey.KEY_USER_INFO + uid);
+//        if(userInfoView == null){
+//            userInfoView = userMapper.selectUserInfoDTO(uid);
+//            redisService.set(RedisKey.KEY_USER_INFO + uid, userInfoView, 15L, TimeUnit.MINUTES);
+//        }
+//        return userInfoView;
     }
 
     public List<UserInfoView> findUserInfoDTOs(List<String> uids){
@@ -131,8 +134,7 @@ public class UserServiceImpl implements UserService {
         // 更新最后一次登录时间
         userMapper.updateLoginRecord(user.getUid(), new Date());
         // redis更新该用户的在线状态 至在线
-        redisService.hset(RedisKey.KEY_USER_STATUS, user.getUid(), GlobalConst.UserStatus.ONLINE);
-
+        CacheExecutor.set(userCache.userOnlineStatusCache, user.getUid(), GlobalConst.UserStatus.ONLINE);
         /**
          * 颁发token
          */
@@ -146,12 +148,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void logout(String uid) {
-        User user = userMapper.selectUserWithUid(uid);
-        if (user == null) {
-            throw new BusinessException(ExceptionType.USER_NOT_FOUND);
-        }
-        redisService.hset(RedisKey.KEY_USER_STATUS, uid, GlobalConst.UserStatus.OFFLINE);
-
+        CacheExecutor.set(userCache.userOnlineStatusCache, uid, UserStatus.OFFLINE);
     }
 
     @Override
@@ -170,7 +167,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean updateUserInfo(EditUserInfoParam editUserInfoParam, String uid) {
+    public void updateUserInfo(EditUserInfoParam editUserInfoParam, String uid) {
         if (StringUtils.isEmpty(editUserInfoParam.getUsername()) || editUserInfoParam.getUsername().length() > 10) {
             throw new BusinessException(ExceptionType.PARAMETER_ILLEGAL,"用户名长度不应超过十个字符");
         }
@@ -182,7 +179,7 @@ public class UserServiceImpl implements UserService {
         userInfo.setGender(editUserInfoParam.getGender());
         userInfo.setUsername(editUserInfoParam.getUsername());
 
-        return userMapper.updateUserInfo(userInfo) > 0;
+        userMapper.updateUserInfo(userInfo);
     }
 
     @Override
@@ -200,9 +197,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Integer getUserOnlineStatus(String uid) {
-        Integer onlineStatus = (Integer) redisService.hget("user_status", uid);
-        if (onlineStatus == null) onlineStatus = 1;
-        return onlineStatus;
+        return CacheExecutor.get(userCache.userOnlineStatusCache,uid);
     }
 
     @Override

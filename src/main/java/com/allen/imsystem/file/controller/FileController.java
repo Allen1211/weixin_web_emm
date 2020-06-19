@@ -2,6 +2,7 @@ package com.allen.imsystem.file.controller;
 
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
+import com.allen.imsystem.file.model.FileMd5;
 import com.allen.imsystem.file.utils.MultipartFileUtil;
 import com.allen.imsystem.file.model.FileUploadView;
 import com.allen.imsystem.common.bean.JSONResponse;
@@ -62,7 +63,15 @@ public class FileController {
      */
     @RequestMapping(value = "/getFileUploadInfo", method = RequestMethod.GET)
     public JSONResponse getFileUploadInfo(@RequestParam("md5") String md5) {
-        FileUploadView fileUploadInfo = fileService.getUnCompleteParts(md5);
+        // 查看该md5是否已经存在
+        FileMd5 fileInfo = fileService.findFileByMd5(md5);
+        FileUploadView fileUploadInfo;
+        if(fileInfo != null && fileInfo.getStatus()){
+            fileUploadInfo = new FileUploadView(1,fileInfo.getUrl());
+            fileUploadInfo.setUploadType(1);
+        }else{
+            fileUploadInfo = fileService.getUnCompleteParts(md5);
+        }
         return new JSONResponse(1).putAllData(new BeanMap(fileUploadInfo));
     }
 

@@ -91,7 +91,7 @@ public class TalkController {
             privateChatService.setAllMsgHasRead(uid, chatId);
         } else {
             String gid = params.get("gid");
-            groupChatService.setAllMsgHasRead(uid, gid);
+            groupChatService.setAllMsgHasRead(uid, chatId);
         }
         return new JSONResponse(1);
     }

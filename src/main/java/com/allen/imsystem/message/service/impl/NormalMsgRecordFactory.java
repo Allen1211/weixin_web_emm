@@ -75,10 +75,10 @@ public class NormalMsgRecordFactory extends MsgRecordFactory {
         String msgTimeStr = FormatUtil.formatMessageDate(msgTimeDate);
         msgRecord.setMsgTimeDate(msgTimeDate);
         msgRecord.setMessageTime(msgTimeStr);
-        // 4.3是否显示时间 消息发送时间 - 会话上一条消息发送时间 > 固定时间 即显示时间
-        Long chatLastMsgTime = chatService.getChatLastMsgTimestamp(chatId);
-        boolean showTime = msgSendTimestamp - chatLastMsgTime > GlobalConst.MAX_NOT_SHOW_TIME_SPACE;
-        msgRecord.setShowMessageTime(showTime);
+//        // 4.3是否显示时间 消息发送时间 - 会话上一条消息发送时间 > 固定时间 即显示时间
+//        Long chatLastMsgTime = chatService.getChatLastMsgTimestamp(chatId);
+//        boolean showTime = msgSendTimestamp - chatLastMsgTime > GlobalConst.MAX_NOT_SHOW_TIME_SPACE;
+//        msgRecord.setShowMessageTime(showTime);
 
         return msgRecord;
     }

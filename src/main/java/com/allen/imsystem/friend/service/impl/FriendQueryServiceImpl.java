@@ -4,6 +4,8 @@ import com.allen.imsystem.chat.service.ChatService;
 import com.allen.imsystem.chat.service.GroupChatService;
 import com.allen.imsystem.chat.service.GroupService;
 import com.allen.imsystem.common.Const.GlobalConst;
+import com.allen.imsystem.common.cache.CacheExecutor;
+import com.allen.imsystem.common.cache.impl.FriendCache;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.friend.mappers.FriendApplyMapper;
@@ -53,10 +55,13 @@ public class FriendQueryServiceImpl implements FriendQueryService {
     @Autowired
     private GroupService groupService;
 
+    @Autowired
+    private FriendCache friendCache;
+
     @Override
     public List<UserSearchResult> searchStranger(String uid, String keyword) {
         Map<String, UserSearchResult> map = searchMapper.search(keyword);
-        if (map == null){
+        if (map == null) {
             return new ArrayList<>();
         }
         List<String> friendId = friendMapper.selectFriendId(uid);   // 所有好友的id
@@ -87,9 +92,9 @@ public class FriendQueryServiceImpl implements FriendQueryService {
     }
 
     @Override
-    public Boolean checkIsMyFriend(String uid, String friendId) {
-        boolean isFriend = redisService.sHasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, friendId);
-        if(isFriend){
+    public boolean checkIsMyFriend(String uid, String friendId) {
+        boolean isFriend = checkIsTwoWayFriend(uid, friendId);
+        if (isFriend) {
             return true;
         }
         FriendRelation friendRelation = friendMapper.selectFriendRelation(uid, friendId);
@@ -106,25 +111,18 @@ public class FriendQueryServiceImpl implements FriendQueryService {
     }
 
     @Override
-    public Boolean checkIsTwoWayFriend(String uid, String friendId) {
-        if (!redisService.hasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid)) {
-            loadFriendListIntoRedis(uid);
-        }
-        return redisService.sHasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, friendId);
+    public boolean checkIsTwoWayFriend(String uid, String friendId) {
+        return CacheExecutor.exist(friendCache.friendSet, uid, friendId);
     }
 
     @Override
-    public Boolean checkIsDeletedByFriend(String uid, String friendId) {
-        // 先从缓存读取，缓存没有的话，再到数据库读取，并把读取出来的数据填入缓存中
-        if (!redisService.hasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid)) {
-            loadFriendListIntoRedis(uid);
-        }
-        boolean isFriend = redisService.sHasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, friendId);
+    public boolean checkIsDeletedByFriend(String uid, String friendId) {
+        boolean isFriend = CacheExecutor.exist(friendCache.friendSet, uid, friendId);
         return !isFriend;
     }
 
     @Override
-    public Map<String,Object> getFriendListByGroup(String uid) {
+    public Map<String, Object> getFriendListByGroup(String uid) {
         // 默认组的id
         Integer defaultGroupId = null;
         // 按组id升序排列的 好友列表
@@ -151,13 +149,13 @@ public class FriendQueryServiceImpl implements FriendQueryService {
             }
             resultList.add(dto);
 
-            if(friendGroupView.getIsDefault()){
+            if (friendGroupView.getIsDefault()) {
                 defaultGroupId = friendGroupView.getGroupId();
             }
         }
-        Map<String,Object> resultMap = new HashMap<>(2);
-        resultMap.put("groupList",resultList);
-        resultMap.put("defaultGroupId",defaultGroupId);
+        Map<String, Object> resultMap = new HashMap<>(2);
+        resultMap.put("groupList", resultList);
+        resultMap.put("defaultGroupId", defaultGroupId);
         return resultMap;
     }
 
@@ -169,11 +167,11 @@ public class FriendQueryServiceImpl implements FriendQueryService {
     @Override
     public List<FriendInfoForInvite> getFriendListForInvite(String uid, String gid) {
         List<FriendInfoForInvite> resultList = friendMapper.selectFriendListForInvite(uid);
-        for(FriendInfoForInvite friend : resultList){
-            if(groupService.checkIsGroupMember(friend.getFriendInfo().getUid(),gid)){
+        for (FriendInfoForInvite friend : resultList) {
+            if (groupService.checkIsGroupMember(friend.getFriendInfo().getUid(), gid)) {
                 friend.setCanInvite(false);
                 friend.setReason("已是群成员");
-            }else {
+            } else {
                 friend.setCanInvite(true);
             }
         }
@@ -189,33 +187,5 @@ public class FriendQueryServiceImpl implements FriendQueryService {
         return friendMapper.selectFriendInfo(friendId);
     }
 
-    /**
-     * 从redis中加载好友列表到redis中
-     */
-    private Long loadFriendListIntoRedis(String uid) {
-        Set<String> twoWayFriendIdList = friendMapper.selectTwoWayFriendId(uid);
-        if (twoWayFriendIdList != null) {
-            return redisService.sSetAndTime(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, 60 * 60L, twoWayFriendIdList.toArray());
-        }
-        return 0L;
-    }
 
-    /**
-     * 添加一个好友到redis中某用户的好友列表（如果存在缓存）
-     */
-    private boolean addFriendIntoRedis(String uid, String friendId) {
-        if (redisService.hasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid)) {
-            return redisService.sSet(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, friendId) > 0L;
-        }
-        return false;
-    }
-    /**
-     * 从redis缓存中移除一个好友（如果存在缓存）
-     */
-    private boolean removeFriendFromRedis(String uid, String friendId) {
-        if (redisService.hasKey(GlobalConst.RedisKey.KEY_FRIEND_SET + uid)) {
-            return redisService.setRemove(GlobalConst.RedisKey.KEY_FRIEND_SET + uid, friendId) > 0L;
-        }
-        return false;
-    }
 }

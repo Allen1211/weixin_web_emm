@@ -1,24 +1,24 @@
 package com.allen.imsystem.chat.service.impl;
 
 import com.allen.imsystem.chat.mappers.PrivateChatMapper;
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.service.GroupChatService;
 import com.allen.imsystem.chat.service.PrivateChatService;
+import com.allen.imsystem.common.cache.CacheExecutor;
+import com.allen.imsystem.common.cache.impl.ChatCache;
 import com.allen.imsystem.common.exception.BusinessException;
 import com.allen.imsystem.common.exception.ExceptionType;
 import com.allen.imsystem.common.redis.RedisService;
 import com.allen.imsystem.file.service.FileService;
 import com.allen.imsystem.friend.service.FriendQueryService;
-import com.allen.imsystem.id.ChatIdUtil;
 import com.allen.imsystem.id.IdPoolService;
 import com.allen.imsystem.message.mappers.GroupMsgRecordMapper;
 import com.allen.imsystem.message.mappers.PrivateMsgRecordMapper;
 import com.allen.imsystem.message.service.impl.MessageCounter;
 import com.allen.imsystem.user.mappers.UserMapper;
-import com.allen.imsystem.user.model.dto.UidABHelper;
-import com.allen.imsystem.user.model.pojo.UserInfo;
 import com.allen.imsystem.user.model.vo.UserInfoView;
 import com.allen.imsystem.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,19 +63,13 @@ public class PrivateChatServiceImpl implements PrivateChatService {
     private FriendQueryService friendService;
 
     @Autowired
-    private GroupChatService groupChatService;
-
-    @Autowired
-    private FileService fileService;
-
-    @Autowired
-    private RedisService redisService;
-
-    @Autowired
     private MessageCounter messageCounter;
 
     @Autowired
     private IdPoolService idPoolService;
+
+    @Autowired
+    private ChatCache chatCache;
 
     /**
      * 判断某个会话是否应该显示在会话列表（未被移除）
@@ -89,8 +83,8 @@ public class PrivateChatServiceImpl implements PrivateChatService {
         if (chatId == null || uid == null) {
             return false;
         }
-        Boolean isRemove = (Boolean) redisService.hget(RedisKey.KEY_CHAT_REMOVE, uid + chatId);
-        return isRemove != null && !isRemove;
+        return (boolean) CacheExecutor.get(chatCache.chatInfoCache, ChatCache.wrapChatInfoKey(chatId,uid),
+                ChatCache.SHOULD_DISPLAY);
     }
 
     /**
@@ -157,10 +151,6 @@ public class PrivateChatServiceImpl implements PrivateChatService {
         privateChat.setCreatedTime(new Date());
         privateChat.setUpdateTime(new Date());
         privateChatMapper.insert(privateChat);
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, uid + chatId, !status);
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, friendId + chatId, true);
-        messageCounter.setUserChatNewMsgCount(uid, chatId, 0);   // 初始化该用户对此会话未读消息数
-        messageCounter.setUserChatNewMsgCount(friendId, chatId, 0);   // 初始化该用户对此会话未读消息数
         return privateChat;
     }
 
@@ -212,8 +202,8 @@ public class PrivateChatServiceImpl implements PrivateChatService {
         // 更新数据库
         privateChatMapper.update(privateChat);
         // 设置该用户对该会话的移除为否
-        String userChatRemoveKey = uid + privateChat.getChatId();
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, userChatRemoveKey, false);
+        CacheExecutor.remove(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(privateChat.getChatId(),uid),
+                ChatCache.SHOULD_DISPLAY);
         // 初始化该用户对此会话未读消息数
         messageCounter.setUserChatNewMsgCount(uid, privateChat.getChatId(), 0);
         Map<String, Object> result = new HashMap<>(2);
@@ -232,8 +222,8 @@ public class PrivateChatServiceImpl implements PrivateChatService {
     @Transactional
     public void remove(String uid, Long chatId) {
         // 设置该用户对该会话的移除为是
-        String userChatRemoveKey = uid + chatId;
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, userChatRemoveKey, true);
+        CacheExecutor.remove(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(chatId,uid),
+                ChatCache.SHOULD_DISPLAY);
         // 会话未读消息数清零
         messageCounter.setUserChatNewMsgCount(uid, chatId, 0);
         PrivateChat privateChat = privateChatMapper.findByChatId(chatId);
@@ -271,9 +261,8 @@ public class PrivateChatServiceImpl implements PrivateChatService {
         }
         privateChatMapper.update(privateChat);
         // 设置该用户对该会话的移除为是
-        String userChatRemoveKey = uid + privateChat.getChatId();
-        redisService.hset(RedisKey.KEY_CHAT_REMOVE, userChatRemoveKey, true);
-        // 该会话所有历史消息设为已读
+        CacheExecutor.remove(chatCache.chatInfoCache,ChatCache.wrapChatInfoKey(privateChat.getChatId(),uid),
+                ChatCache.SHOULD_DISPLAY);         // 该会话所有历史消息设为已读
         setAllMsgHasRead(uid, privateChat.getChatId());
     }
 
@@ -305,6 +294,28 @@ public class PrivateChatServiceImpl implements PrivateChatService {
     @Override
     public void updateLastMsg(Long chatId, Long msgId, String lastMsgContent, Date lastMsgCreateTime, String senderId) {
         privateChatMapper.updatePrivateChatLastMsg(chatId, msgId, lastMsgContent, lastMsgCreateTime, senderId);
+    }
+
+    @Override
+    public ChatCacheDTO findChatCacheDTO(Long chatId, String uid) {
+        PrivateChat privateChat = privateChatMapper.findByChatId(chatId);
+        if(privateChat == null){
+            return null;
+        }
+        ChatCacheDTO chatCacheDTO = new ChatCacheDTO();
+        chatCacheDTO.setChatId(privateChat.getChatId());
+        if(privateChat.getLastMsgCreateTime() != null){
+            chatCacheDTO.setLastMsgTimestamp(privateChat.getLastMsgCreateTime().getTime());
+        }
+        if(uid.equals(privateChat.getUidA())){
+            chatCacheDTO.setUnreadMsgCount(privateChat.getUserAUnreadMsgCount());
+            chatCacheDTO.setShouldDisplay(privateChat.getUserAStatus());
+        }else{
+            chatCacheDTO.setUnreadMsgCount(privateChat.getUserBUnreadMsgCount());
+            chatCacheDTO.setShouldDisplay(privateChat.getUserBStatus());
+        }
+        chatCacheDTO.setGroup(false);
+        return chatCacheDTO;
     }
 
     private String[] getUidAUidB(String uid, String friendId) {

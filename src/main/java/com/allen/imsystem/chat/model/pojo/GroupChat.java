@@ -15,6 +15,7 @@ public class GroupChat {
     private String inviterId;
     private Boolean status;
     private Boolean shouldDisplay;
+    private Integer unreadMsgCount;
     private Date createdTime;
     private Date updateTime;
 

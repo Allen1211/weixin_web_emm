@@ -1,5 +1,6 @@
 package com.allen.imsystem.chat.service;
 
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 
@@ -84,4 +85,6 @@ public interface PrivateChatService {
      */
     void updateLastMsg(Long chatId, Long msgId, String lastMsgContent,
                        Date lastMsgCreateTime, String senderId);
+
+    ChatCacheDTO findChatCacheDTO(Long cahtId, String uid);
 }

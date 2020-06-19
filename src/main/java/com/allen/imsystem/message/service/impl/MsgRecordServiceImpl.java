@@ -1,6 +1,6 @@
 package com.allen.imsystem.message.service.impl;
 
-import com.allen.imsystem.chat.mappers.group.GroupChatMapper;
+import com.allen.imsystem.chat.mappers.GroupChatMapper;
 import com.allen.imsystem.chat.model.pojo.GroupChat;
 import com.allen.imsystem.chat.service.GroupChatService;
 import com.allen.imsystem.common.Const.GlobalConst;
@@ -11,7 +11,6 @@ import com.allen.imsystem.common.redis.RedisService;
 import com.allen.imsystem.common.utils.FormatUtil;
 import com.allen.imsystem.file.model.MsgFileInfo;
 import com.allen.imsystem.file.service.FileService;
-import com.allen.imsystem.friend.service.FriendQueryService;
 import com.allen.imsystem.message.mappers.GroupMsgRecordMapper;
 import com.allen.imsystem.message.mappers.PrivateMsgRecordMapper;
 import com.allen.imsystem.message.model.pojo.GroupMsgRecord;
@@ -121,7 +120,7 @@ public class MsgRecordServiceImpl implements MsgRecordService {
         List<MsgRecord> msgRecordList;
 
         if (isGroup) {
-            String gid = groupChatService.getGidFromChatId(chatId);
+            String gid = groupChatService.getGidFromChatId(chatId,uid);
             msgRecordList = groupMsgRecordMapper.selectGroupChatHistoryMsg(gid, beginMsgId, uid, pageBean);
         } else {
             msgRecordList =
@@ -211,7 +210,7 @@ public class MsgRecordServiceImpl implements MsgRecordService {
     public Integer getAllHistoryMessageSize(boolean isGroup, Long chatId, String uid, Date beginTime) {
         Integer totalSize = null;
         if (isGroup) {
-            String gid = groupChatService.getGidFromChatId(chatId);
+            String gid = groupChatService.getGidFromChatId(chatId, uid);
             totalSize = groupMsgRecordMapper.countAllGroupHistoryMsg(gid, beginTime);
         } else {
             totalSize = privateMsgRecordMapper.countAllPrivateHistoryMsg(chatId, beginTime);

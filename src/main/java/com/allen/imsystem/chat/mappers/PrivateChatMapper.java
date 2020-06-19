@@ -1,5 +1,6 @@
 package com.allen.imsystem.chat.mappers;
 
+import com.allen.imsystem.chat.model.dto.ChatCacheDTO;
 import com.allen.imsystem.chat.model.vo.ChatSession;
 import com.allen.imsystem.chat.model.vo.ChatSessionInfo;
 import com.allen.imsystem.chat.model.pojo.PrivateChat;
@@ -72,5 +73,10 @@ public interface PrivateChatMapper {
 
     ChatSessionInfo selectPrivateChatData(@Param("chatId") Long chatId, @Param("uid") String uid);
 
-
+    /**
+     * 递增未读消息数
+     * @param uid 用户id
+     * @param chatId 会话id
+     */
+    int incrUnreadMsgCount(@Param("uid")String uid, @Param("chatId") Long chatId);
 }
